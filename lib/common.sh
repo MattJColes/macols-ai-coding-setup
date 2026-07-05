@@ -253,6 +253,20 @@ ensure_cli() {
     esac
 }
 
+# handle_common_install_flag — process flags shared by every install_<tool>.sh.
+# Returns 0 when it consumed the flag (-h/--help, --no-cli, -p/--project), else 1
+# so the caller's loop handles its tool-specific flags. Relies on the caller
+# having defined `usage` and the DO_CLI / PROJECT_INSTALL vars before parsing.
+# shellcheck disable=SC2034  # DO_CLI/PROJECT_INSTALL are consumed by the install scripts that source this
+handle_common_install_flag() {
+    case "$1" in
+        -h|--help)     usage; exit 0 ;;
+        --no-cli)      DO_CLI=false; return 0 ;;
+        -p|--project)  PROJECT_INSTALL=true; DO_CLI=false; return 0 ;;
+        *)             return 1 ;;
+    esac
+}
+
 # ── Persona generation (single source: shared/personas/<name>/SKILL.md) ───────
 #
 # One generator emits each tool's native format from the SAME persona body:

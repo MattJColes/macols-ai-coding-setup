@@ -52,15 +52,13 @@ DO_CLI=true; PROJECT_INSTALL=false; SUBSET=false
 set_subset() { if [ "$SUBSET" = false ]; then DO_PROMPTS=false; DO_INSTRUCTIONS=false; DO_MCPS=false; DO_HOOKS=false; SUBSET=true; fi; }
 
 while [ $# -gt 0 ]; do
+    handle_common_install_flag "$1" && { shift; continue; }
     case "$1" in
-        -h|--help) usage; exit 0 ;;
         --list) list_personas codex; exit 0 ;;
         --prompts-only)      set_subset; DO_PROMPTS=true ;;
         --instructions-only) set_subset; DO_INSTRUCTIONS=true ;;
         --mcps-only)         set_subset; DO_MCPS=true ;;
         --hooks-only)        set_subset; DO_HOOKS=true ;;
-        --no-cli)            DO_CLI=false ;;
-        -p|--project)        PROJECT_INSTALL=true; DO_CLI=false ;;
         *) printf "${RED}Unknown option: %s${NC}\n" "$1"; usage; exit 1 ;;
     esac
     shift
