@@ -71,7 +71,7 @@ run_python_tests() {
         # Resolve pytest per project so sub-project .venvs (with their own
         # deps) win over a global tool install
         local pytest_bin
-        pytest_bin=$(find_python_pytest)
+        pytest_bin=$(find_venv_bin pytest)
         if [ -z "$pytest_bin" ]; then
             add_warning "pytest not installed - skipping Python tests ($label)"
             cd "$root_dir" || return

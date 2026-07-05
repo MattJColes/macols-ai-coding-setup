@@ -11,7 +11,6 @@
 #   code_changed         — turn-end gate: did this turn touch code?
 #   detect_project_type  — echoes "has_python:has_node:has_cdk:has_flutter" (cached)
 #   find_venv_bin <tool> — resolve a tool from a virtualenv, walking to repo root
-#   find_python_pytest   — convenience wrapper over find_venv_bin pytest
 #   find_python_projects — discover testable Python sub-projects (cached)
 #
 # The two discovery functions memoize their result for the life of the process,
@@ -170,10 +169,6 @@ find_venv_bin() {
     echo ""
 }
 
-# Convenience alias for backward compat
-find_python_pytest() {
-    find_venv_bin pytest
-}
 
 # Discover Python sub-projects — memoized for the life of the process.
 # Returns directories containing pyproject.toml that also have a test/ or tests/
