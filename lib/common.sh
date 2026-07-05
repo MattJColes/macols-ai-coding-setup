@@ -230,14 +230,6 @@ ensure_cli() {
             fi
             ;;
         pi)
-            # Oh My Pi (omp) replaces the plain pi agent — both are never
-            # provisioned together. The old pi install is kept below,
-            # commented out, for reference.
-            #
-            # command -v pi &> /dev/null && { printf "${GREEN}✓ pi already installed: %s${NC}\n" "$(command -v pi)"; return 0; }
-            # printf "${BLUE}Installing pi coding agent...${NC}\n"
-            # npm install -g --ignore-scripts @earendil-works/pi-coding-agent && return 0
-            # curl -fsSL https://pi.dev/install.sh | sh && return 0
             command -v omp &> /dev/null && omp --version &> /dev/null && { printf "${GREEN}✓ omp already installed: %s${NC}\n" "$(command -v omp)"; return 0; }
             printf "${BLUE}Installing Oh My Pi (omp) coding agent...${NC}\n"
             command -v npm &> /dev/null || { printf "${RED}Need npm to install omp. Install Node.js/npm, then re-run.${NC}\n"; return 1; }
@@ -258,6 +250,20 @@ ensure_cli() {
             ;;
         *)
             printf "${RED}ensure_cli: unknown tool '%s'${NC}\n" "$tool"; return 1 ;;
+    esac
+}
+
+# handle_common_install_flag — process flags shared by every install_<tool>.sh.
+# Returns 0 when it consumed the flag (-h/--help, --no-cli, -p/--project), else 1
+# so the caller's loop handles its tool-specific flags. Relies on the caller
+# having defined `usage` and the DO_CLI / PROJECT_INSTALL vars before parsing.
+# shellcheck disable=SC2034  # DO_CLI/PROJECT_INSTALL are consumed by the install scripts that source this
+handle_common_install_flag() {
+    case "$1" in
+        -h|--help)     usage; exit 0 ;;
+        --no-cli)      DO_CLI=false; return 0 ;;
+        -p|--project)  PROJECT_INSTALL=true; DO_CLI=false; return 0 ;;
+        *)             return 1 ;;
     esac
 }
 

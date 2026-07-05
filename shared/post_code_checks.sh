@@ -50,6 +50,35 @@ add_issue() {
     ISSUES_FOUND+=("$1")
 }
 
+# Report the post-execution result tail of a lint/type check: pass note on
+# success, finding + excerpt on failure. Findings use add_issue; the pass note
+# and the excerpt use add_message (this file's per-edit severities).
+# Usage: report_check_result <label> <exit> <output> <count_re> <noun> <timeout_msg> [<tail_grep>]
+report_check_result() {
+    local label="$1" ec="$2" output="$3" count_re="$4" noun="$5" timeout_msg="$6" tail_grep="${7:-}"
+    if [ "$ec" -eq 0 ]; then
+        add_message "$label: PASSED"
+        return
+    fi
+    if [ "$ec" -eq 124 ]; then
+        add_issue "$timeout_msg"
+        return
+    fi
+    local n
+    n=$(printf '%s' "$output" | grep -cE "$count_re" || true)
+    n="${n:-0}"
+    if [ "$n" -gt 0 ]; then
+        add_issue "$label: $n $noun"
+        local tail
+        if [ -n "$tail_grep" ]; then
+            tail=$(printf '%s' "$output" | grep "$tail_grep" | head -10)
+        else
+            tail=$(printf '%s' "$output" | head -10)
+        fi
+        add_message "$tail"
+    fi
+}
+
 # Run dart analyze
 run_dart_analyze() {
     if ! command -v dart &> /dev/null; then
@@ -57,19 +86,9 @@ run_dart_analyze() {
         return 0
     fi
 
-    local analyze_output
-    if analyze_output=$(dart analyze . 2>&1); then
-        add_message "Dart analyze: PASSED"
-    else
-        local issue_count
-        issue_count=$(echo "$analyze_output" | grep -cE "^\s*(info|warning|error) " || true)
-        if [ "$issue_count" -gt 0 ]; then
-            add_issue "Dart analyze: $issue_count issues"
-            local tail_output
-            tail_output=$(echo "$analyze_output" | head -10)
-            add_message "$tail_output"
-        fi
-    fi
+    local analyze_output ec=0
+    analyze_output=$(dart analyze . 2>&1) || ec=$?
+    report_check_result "Dart analyze" "$ec" "$analyze_output" "^\s*(info|warning|error) " "issues" "Dart analyze: TIMED OUT"
 }
 
 # Run ruff linter — scoped to the changed file.
@@ -83,20 +102,9 @@ run_ruff_check() {
         target="$FILE_PATH"
     fi
 
-    local ruff_output
-    if ruff_output=$("$ruff_bin" check "$target" 2>&1); then
-        add_message "Ruff: PASSED"
-    else
-        local error_count
-        error_count=$(echo "$ruff_output" | grep -cE "^.+:[0-9]+:[0-9]+:" || true)
-        error_count="${error_count:-0}"
-        if [ "$error_count" -gt 0 ]; then
-            add_issue "Ruff: $error_count linting issues"
-            local tail_output
-            tail_output=$(echo "$ruff_output" | head -10)
-            add_message "$tail_output"
-        fi
-    fi
+    local ruff_output ec=0
+    ruff_output=$("$ruff_bin" check "$target" 2>&1) || ec=$?
+    report_check_result "Ruff" "$ec" "$ruff_output" "^.+:[0-9]+:[0-9]+:" "linting issues" "Ruff: TIMED OUT"
 }
 
 # Run mypy type checker — scoped to the changed file.
@@ -120,26 +128,10 @@ run_mypy_check() {
         fi
     fi
 
-    local mypy_output
+    local mypy_output ec=0
     local mypy_cmd="${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME }$mypy_bin --no-error-summary $target"
-    if mypy_output=$(eval "$mypy_cmd" 2>&1); then
-        add_message "Mypy: PASSED"
-    else
-        local exit_code=$?
-        if [ $exit_code -eq 124 ]; then
-            add_issue "Mypy: TIMED OUT after ${MAX_TEST_TIME}s"
-        else
-            local error_count
-            error_count=$(echo "$mypy_output" | grep -c ": error:" || true)
-            error_count="${error_count:-0}"
-            if [ "$error_count" -gt 0 ]; then
-                add_issue "Mypy: $error_count type errors"
-                local tail_output
-                tail_output=$(echo "$mypy_output" | grep ": error:" | head -10)
-                add_message "$tail_output"
-            fi
-        fi
-    fi
+    mypy_output=$(eval "$mypy_cmd" 2>&1) || ec=$?
+    report_check_result "Mypy" "$ec" "$mypy_output" ": error:" "type errors" "Mypy: TIMED OUT after ${MAX_TEST_TIME}s" ": error:"
 }
 
 # Run ESLint — scoped to the changed file. Prefers a project-local eslint binary
@@ -163,25 +155,10 @@ run_eslint_check() {
         target="."
     fi
 
-    local eslint_output
+    local eslint_output ec=0
     local eslint_cmd="${TIMEOUT_CMD:+$TIMEOUT_CMD 60 }$eslint_bin --no-warn-on-unmatched-pattern \"$target\""
-    if eslint_output=$(eval "$eslint_cmd" 2>&1); then
-        add_message "ESLint: PASSED"
-    else
-        local exit_code=$?
-        if [ $exit_code -eq 124 ]; then
-            add_issue "ESLint: TIMED OUT"
-        else
-            local error_count
-            error_count=$(echo "$eslint_output" | grep -cE "^.+:[0-9]+:[0-9]+" || true)
-            if [ "$error_count" -gt 0 ]; then
-                add_issue "ESLint: $error_count issues"
-                local tail_output
-                tail_output=$(echo "$eslint_output" | head -10)
-                add_message "$tail_output"
-            fi
-        fi
-    fi
+    eslint_output=$(eval "$eslint_cmd" 2>&1) || ec=$?
+    report_check_result "ESLint" "$ec" "$eslint_output" "^.+:[0-9]+:[0-9]+" "issues" "ESLint: TIMED OUT"
 }
 
 # Main orchestrator — fast, file-scoped lint/type-check only.

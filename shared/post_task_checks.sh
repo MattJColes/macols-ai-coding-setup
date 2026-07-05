@@ -53,6 +53,36 @@ add_critical_issue() {
     CRITICAL_ISSUES+=("$1")
 }
 
+# Report the post-execution result tail of a lint/type check: pass warning on
+# success, critical finding + critical excerpt on failure. This file's turn-end
+# battery surfaces lint failures as critical issues (they block the turn); the
+# excerpt carries a tool prefix so the appended output is self-describing.
+# Usage: report_check_result <label> <exit> <output> <count_re> <noun> <timeout_msg> <excerpt_prefix> [<tail_grep>]
+report_check_result() {
+    local label="$1" ec="$2" output="$3" count_re="$4" noun="$5" timeout_msg="$6" excerpt_prefix="$7" tail_grep="${8:-}"
+    if [ "$ec" -eq 0 ]; then
+        add_warning "$label: PASSED"
+        return
+    fi
+    if [ "$ec" -eq 124 ]; then
+        add_critical_issue "$timeout_msg"
+        return
+    fi
+    local n
+    n=$(printf '%s' "$output" | grep -cE "$count_re" || true)
+    n="${n:-0}"
+    if [ "$n" -gt 0 ]; then
+        add_critical_issue "$label: $n $noun"
+        local tail
+        if [ -n "$tail_grep" ]; then
+            tail=$(printf '%s' "$output" | grep "$tail_grep" | head -10)
+        else
+            tail=$(printf '%s' "$output" | head -10)
+        fi
+        add_critical_issue "$excerpt_prefix:\n$tail"
+    fi
+}
+
 # Run Python tests — monorepo-aware: runs pytest from each sub-project directory
 run_python_tests() {
     local root_dir="$PWD"
@@ -71,7 +101,7 @@ run_python_tests() {
         # Resolve pytest per project so sub-project .venvs (with their own
         # deps) win over a global tool install
         local pytest_bin
-        pytest_bin=$(find_python_pytest)
+        pytest_bin=$(find_venv_bin pytest)
         if [ -z "$pytest_bin" ]; then
             add_warning "pytest not installed - skipping Python tests ($label)"
             cd "$root_dir" || return
@@ -202,19 +232,9 @@ run_dart_analyze() {
         return 0
     fi
 
-    local analyze_output
-    if analyze_output=$(dart analyze . 2>&1); then
-        add_warning "Dart analyze: PASSED"
-    else
-        local issue_count
-        issue_count=$(echo "$analyze_output" | grep -cE "^\s*(info|warning|error) " || true)
-        if [ "$issue_count" -gt 0 ]; then
-            add_critical_issue "Dart analyze: $issue_count issues"
-            local tail_output
-            tail_output=$(echo "$analyze_output" | head -10)
-            add_critical_issue "Dart analyze output:\n$tail_output"
-        fi
-    fi
+    local analyze_output ec=0
+    analyze_output=$(dart analyze . 2>&1) || ec=$?
+    report_check_result "Dart analyze" "$ec" "$analyze_output" "^\s*(info|warning|error) " "issues" "Dart analyze: TIMED OUT" "Dart analyze output"
 }
 
 # Run semgrep SAST scan — the project's single static-analysis security tool.
@@ -361,19 +381,9 @@ run_ruff_check() {
             targets=(".")
         fi
 
-        local ruff_output
-        if ruff_output=$("$ruff_bin" check "${targets[@]}" 2>&1); then
-            add_warning "Ruff ($label): PASSED"
-        else
-            local error_count
-            error_count=$(echo "$ruff_output" | grep -cE "^.+:[0-9]+:[0-9]+:" || true)
-            if [ "$error_count" -gt 0 ]; then
-                add_critical_issue "Ruff ($label): $error_count linting issues"
-                local tail_output
-                tail_output=$(echo "$ruff_output" | head -10)
-                add_critical_issue "Ruff output:\n$tail_output"
-            fi
-        fi
+        local ruff_output ec=0
+        ruff_output=$("$ruff_bin" check "${targets[@]}" 2>&1) || ec=$?
+        report_check_result "Ruff ($label)" "$ec" "$ruff_output" "^.+:[0-9]+:[0-9]+:" "linting issues" "Ruff ($label): TIMED OUT" "Ruff output"
 
         cd "$root_dir" || return
     done
@@ -433,25 +443,10 @@ run_mypy_check() {
             fi
         fi
 
-        local mypy_output
+        local mypy_output ec=0
         local mypy_cmd="${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME }$mypy_bin --no-error-summary ${targets[*]}"
-        if mypy_output=$(eval "$mypy_cmd" 2>&1); then
-            add_warning "Mypy ($label): PASSED"
-        else
-            local exit_code=$?
-            if [ $exit_code -eq 124 ]; then
-                add_critical_issue "Mypy ($label): TIMED OUT after ${MAX_TEST_TIME}s"
-            else
-                local error_count
-                error_count=$(echo "$mypy_output" | grep -c ": error:" || true)
-                if [ "$error_count" -gt 0 ]; then
-                    add_critical_issue "Mypy ($label): $error_count type errors"
-                    local tail_output
-                    tail_output=$(echo "$mypy_output" | grep ": error:" | head -10)
-                    add_critical_issue "Mypy output:\n$tail_output"
-                fi
-            fi
-        fi
+        mypy_output=$(eval "$mypy_cmd" 2>&1) || ec=$?
+        report_check_result "Mypy ($label)" "$ec" "$mypy_output" ": error:" "type errors" "Mypy ($label): TIMED OUT after ${MAX_TEST_TIME}s" "Mypy output" ": error:"
 
         cd "$root_dir" || return
     done
@@ -485,25 +480,10 @@ run_eslint_check() {
         targets=(".")
     fi
 
-    local eslint_output
+    local eslint_output ec=0
     local eslint_cmd="${TIMEOUT_CMD:+$TIMEOUT_CMD 60 }$eslint_bin --no-warn-on-unmatched-pattern ${targets[*]}"
-    if eslint_output=$(eval "$eslint_cmd" 2>&1); then
-        add_warning "ESLint: PASSED"
-    else
-        local exit_code=$?
-        if [ $exit_code -eq 124 ]; then
-            add_critical_issue "ESLint: TIMED OUT"
-        else
-            local error_count
-            error_count=$(echo "$eslint_output" | grep -cE "^.+:[0-9]+:[0-9]+" || true)
-            if [ "$error_count" -gt 0 ]; then
-                add_critical_issue "ESLint: $error_count issues"
-                local tail_output
-                tail_output=$(echo "$eslint_output" | head -10)
-                add_critical_issue "ESLint output:\n$tail_output"
-            fi
-        fi
-    fi
+    eslint_output=$(eval "$eslint_cmd" 2>&1) || ec=$?
+    report_check_result "ESLint" "$ec" "$eslint_output" "^.+:[0-9]+:[0-9]+" "issues" "ESLint: TIMED OUT" "ESLint output"
 }
 
 # Run npm audit

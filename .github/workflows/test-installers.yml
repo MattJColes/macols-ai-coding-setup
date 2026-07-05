@@ -64,21 +64,3 @@ jobs:
 
       - name: Verify ${{ matrix.tool }} configuration
         run: ./tests/verify_install.sh ${{ matrix.tool }}
-
-  # Optional smoke test that drives a real one-shot agent task. Disabled by
-  # default because it needs API keys. To enable, provide the relevant secret
-  # and flip `if: false` to a condition on the secret.
-  #
-  # smoke-test:
-  #   needs: install
-  #   if: false
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v7
-  #     - name: Drive a one-shot task
-  #       env:
-  #         ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-  #       run: |
-  #         ./install_claudecode.sh
-  #         echo "Create a file hello.txt containing hi" | claude --print
-  #         test -f hello.txt
