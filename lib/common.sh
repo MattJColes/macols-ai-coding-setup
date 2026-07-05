@@ -4,9 +4,9 @@
 #
 # Sourced by install_claudecode.sh / install_codex.sh / install_opencode.sh /
 # install_pi.sh. Holds everything those installers have in common: colours,
-# Node bootstrap, Homebrew / CLI bootstrap, persona generation, steering
-# assembly, MCP registration and hook wiring — all driven from the single
-# sources of truth under shared/.
+# Node bootstrap, Homebrew / CLI / jj bootstrap, persona generation, steering
+# assembly, ponytail install, MCP registration and hook wiring — all driven
+# from the single sources of truth under shared/.
 #
 # Not meant to be executed directly.
 
@@ -26,6 +26,18 @@ PERSONAS_DIR="$SHARED_DIR/personas"
 STEERING_DIR="$SHARED_DIR/steering"
 HOOKS_DIR="$SHARED_DIR/hooks"
 MCP_CONFIG_FILE="$SHARED_DIR/mcp-config.json"
+
+# ── Pinned versions ──────────────────────────────────────────────────────────
+# Jujutsu (jj) — the single place the version is pinned. Bump here only.
+JJ_VERSION="0.43.0"
+
+# Ponytail (https://github.com/DietrichGebert/ponytail) — installed for every
+# agent via that agent's native mechanism (Claude Code plugin, omp package,
+# AGENTS.md ruleset block). The marker comments delimit the AGENTS.md block so
+# re-runs replace it instead of duplicating it.
+PONYTAIL_REPO="DietrichGebert/ponytail"
+PONYTAIL_MARKER_START="<!-- ponytail:ruleset:start (managed by macols-configs — do not edit between markers) -->"
+PONYTAIL_MARKER_END="<!-- ponytail:ruleset:end -->"
 
 # Ensure Node.js is in PATH (sources NVM/fnm if needed). Node powers persona
 # generation, steering assembly and the JSON config writers.
@@ -90,6 +102,101 @@ ensure_mcp_prereqs() {
     fi
 }
 
+# ensure_jj — install jujutsu (jj) at the pinned JJ_VERSION and configure it.
+#
+# Idempotent: skips the download when `jj --version` already reports the pinned
+# version. Installs the official prebuilt release binary for this OS/arch into
+# ~/.local/bin (no cargo fallback — nothing else here uses cargo). Configuration
+# (identity from the git identity these scripts already set, plus
+# ui.default-command) is applied on every run; `jj config set` overwrites in
+# place, so re-runs are no-ops.
+ensure_jj() {
+    local os arch target tarball tmpdir bin_dir="$HOME/.local/bin"
+
+    if command -v jj &> /dev/null && jj --version 2>/dev/null | grep -q "$JJ_VERSION"; then
+        printf "${GREEN}✓ jj %s already installed${NC}\n" "$JJ_VERSION"
+        configure_jj
+        return 0
+    fi
+
+    case "$(detect_os)" in
+        macos) os="apple-darwin" ;;
+        linux) os="unknown-linux-musl" ;;
+        *) printf "${RED}ensure_jj: unsupported OS for prebuilt jj binaries${NC}\n"; return 1 ;;
+    esac
+    case "$(uname -m)" in
+        x86_64|amd64)  arch="x86_64" ;;
+        arm64|aarch64) arch="aarch64" ;;
+        *) printf "${RED}ensure_jj: unsupported arch '%s'${NC}\n" "$(uname -m)"; return 1 ;;
+    esac
+    target="${arch}-${os}"
+    tarball="jj-v${JJ_VERSION}-${target}.tar.gz"
+
+    printf "${BLUE}Installing jj %s (%s)...${NC}\n" "$JJ_VERSION" "$target"
+    tmpdir=$(mktemp -d)
+    if ! curl -fsSL --retry 3 -o "$tmpdir/$tarball" \
+        "https://github.com/jj-vcs/jj/releases/download/v${JJ_VERSION}/${tarball}"; then
+        rm -rf "$tmpdir"
+        printf "${RED}Failed to download jj %s — check network, or install manually: https://jj-vcs.github.io/jj/latest/install-and-setup/${NC}\n" "$JJ_VERSION"
+        return 1
+    fi
+    tar -xzf "$tmpdir/$tarball" -C "$tmpdir"
+    local jj_bin
+    jj_bin=$(find "$tmpdir" -name jj -type f | head -n1)
+    if [ -z "$jj_bin" ]; then
+        rm -rf "$tmpdir"
+        printf "${RED}jj binary not found inside %s${NC}\n" "$tarball"
+        return 1
+    fi
+    mkdir -p "$bin_dir"
+    install -m 0755 "$jj_bin" "$bin_dir/jj"
+    rm -rf "$tmpdir"
+    export PATH="$bin_dir:$PATH"
+
+    # Persist ~/.local/bin on PATH for future shells (same grep-guarded rc
+    # pattern the Terminal scripts use).
+    local rc
+    for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do
+        if [ -f "$rc" ] && ! grep -q '\.local/bin' "$rc" 2>/dev/null; then
+            # shellcheck disable=SC2016
+            echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$rc"
+        fi
+    done
+
+    printf "${GREEN}✓ Installed jj %s to %s/jj${NC}\n" "$JJ_VERSION" "$bin_dir"
+    configure_jj
+}
+
+# configure_jj — user-level jj config: reuse the git identity these scripts
+# already configure, and default `jj` (bare) to `jj log`. Colocated mode is a
+# per-repo choice (`jj git init --colocate`), so nothing global is set for it.
+configure_jj() {
+    command -v jj &> /dev/null || return 0
+    local git_name git_email
+    git_name=$(git config --global user.name 2>/dev/null || true)
+    git_email=$(git config --global user.email 2>/dev/null || true)
+    [ -n "$git_name" ]  && jj config set --user user.name "$git_name"
+    [ -n "$git_email" ] && jj config set --user user.email "$git_email"
+    jj config set --user ui.default-command log
+    printf "${GREEN}✓ jj configured (user.name/user.email from git, ui.default-command=log)${NC}\n"
+}
+
+# ensure_node_on_noninteractive_path — ponytail's hooks (and our JSON config
+# writers) invoke node outside interactive shells, where NVM/fnm rc wiring
+# never loads. Symlink the resolved node/npm/npx into ~/.local/bin, which is on
+# PATH for login and agent-spawned shells. Idempotent: ln -sf re-points in place.
+ensure_node_on_noninteractive_path() {
+    require_node || return 1
+    local bin_dir="$HOME/.local/bin" tool src
+    mkdir -p "$bin_dir"
+    for tool in node npm npx; do
+        src=$(command -v "$tool" 2>/dev/null) || continue
+        [ "$src" = "$bin_dir/$tool" ] && continue
+        ln -sf "$src" "$bin_dir/$tool"
+    done
+    printf "${GREEN}✓ node/npm/npx linked into %s for non-interactive shells${NC}\n" "$bin_dir"
+}
+
 # ensure_cli <claudecode|codex|opencode|pi> — install the CLI binary if missing.
 ensure_cli() {
     local tool="$1" os
@@ -123,16 +230,31 @@ ensure_cli() {
             fi
             ;;
         pi)
-            command -v pi &> /dev/null && { printf "${GREEN}✓ pi already installed: %s${NC}\n" "$(command -v pi)"; return 0; }
-            printf "${BLUE}Installing pi coding agent...${NC}\n"
-            if command -v npm &> /dev/null; then
-                npm install -g --ignore-scripts @earendil-works/pi-coding-agent && return 0
-                printf "${YELLOW}npm install failed; falling back to pi.dev install script${NC}\n"
+            # Oh My Pi (omp) replaces the plain pi agent — both are never
+            # provisioned together. The old pi install is kept below,
+            # commented out, for reference.
+            #
+            # command -v pi &> /dev/null && { printf "${GREEN}✓ pi already installed: %s${NC}\n" "$(command -v pi)"; return 0; }
+            # printf "${BLUE}Installing pi coding agent...${NC}\n"
+            # npm install -g --ignore-scripts @earendil-works/pi-coding-agent && return 0
+            # curl -fsSL https://pi.dev/install.sh | sh && return 0
+            command -v omp &> /dev/null && omp --version &> /dev/null && { printf "${GREEN}✓ omp already installed: %s${NC}\n" "$(command -v omp)"; return 0; }
+            printf "${BLUE}Installing Oh My Pi (omp) coding agent...${NC}\n"
+            command -v npm &> /dev/null || { printf "${RED}Need npm to install omp. Install Node.js/npm, then re-run.${NC}\n"; return 1; }
+            # omp's npm bundle targets the Bun runtime (engines.bun >= 1.3.14),
+            # so make sure a current bun is on PATH first.
+            if ! command -v bun &> /dev/null; then
+                printf "${BLUE}Installing bun (omp runtime)...${NC}\n"
+                npm install -g bun || { printf "${RED}Could not install bun (required by omp).${NC}\n"; return 1; }
             fi
-            if command -v curl &> /dev/null; then
-                curl -fsSL https://pi.dev/install.sh | sh && return 0
+            npm install -g --ignore-scripts @oh-my-pi/pi-coding-agent || { printf "${RED}Could not install omp via npm.${NC}\n"; return 1; }
+            if ! omp --version &> /dev/null; then
+                # An older pre-existing bun can be too old for omp's bundle —
+                # upgrade it and re-check before giving up.
+                printf "${YELLOW}omp failed to run; upgrading bun and retrying...${NC}\n"
+                npm install -g bun || true
+                omp --version &> /dev/null || { printf "${RED}omp installed but does not run — check 'bun --version' (needs >= 1.3.14).${NC}\n"; return 1; }
             fi
-            printf "${RED}Could not install pi. Install Node.js/npm or curl, then re-run.${NC}\n"; return 1
             ;;
         *)
             printf "${RED}ensure_cli: unknown tool '%s'${NC}\n" "$tool"; return 1 ;;
@@ -295,6 +417,67 @@ for (const [k, v] of Object.entries(vars)) {
 fs.writeFileSync(process.env.DEST, out);
 '
     printf "${GREEN}✓ Wrote steering to %s${NC}\n" "$dest"
+}
+
+# ── Ponytail (github.com/DietrichGebert/ponytail) ────────────────────────────
+# Every agent gets ponytail via its native mechanism: Claude Code as a plugin,
+# omp as a package (see install_pi.sh), and the AGENTS.md-driven tools (Codex,
+# OpenCode, omp) as a marker-delimited ruleset block appended to AGENTS.md.
+
+# append_ponytail_ruleset <agents_md> — merge ponytail's AGENTS.md ruleset
+# (vendored from the upstream repo into shared/steering/ponytail.AGENTS.md)
+# into an AGENTS.md without clobbering existing content. Idempotent and
+# self-healing: an existing marker block is removed before the current one is
+# appended, so re-runs never duplicate it.
+append_ponytail_ruleset() {
+    local dest="$1" src="$STEERING_DIR/ponytail.AGENTS.md"
+    [ -f "$src" ] || { printf "${RED}ponytail ruleset source not found: %s${NC}\n" "$src"; return 1; }
+    mkdir -p "$(dirname "$dest")"
+    [ -f "$dest" ] || : > "$dest"
+    if grep -qF "$PONYTAIL_MARKER_START" "$dest"; then
+        awk -v s="$PONYTAIL_MARKER_START" -v e="$PONYTAIL_MARKER_END" \
+            'index($0, s) { skip = 1 } skip != 1 { print } index($0, e) { skip = 0 }' \
+            "$dest" > "$dest.tmp" && mv "$dest.tmp" "$dest"
+    fi
+    {
+        echo ""
+        echo "$PONYTAIL_MARKER_START"
+        cat "$src"
+        echo "$PONYTAIL_MARKER_END"
+    } >> "$dest"
+    printf "${GREEN}✓ Ponytail ruleset merged into %s${NC}\n" "$dest"
+}
+
+# install_claude_ponytail — add the ponytail marketplace + plugin for Claude
+# Code, non-interactively. Prefers the `claude plugin` CLI (idempotent: re-add
+# and re-install are no-ops); if the CLI is missing or cannot fetch the repo,
+# falls back to declaring the marketplace + plugin in user settings, which
+# Claude Code resolves on next launch.
+install_claude_ponytail() {
+    printf "${BLUE}Installing ponytail plugin (Claude Code)...${NC}\n"
+    if command -v claude &> /dev/null && claude plugin --help &> /dev/null; then
+        if { claude plugin marketplace list 2>/dev/null | grep -qi ponytail \
+              || claude plugin marketplace add "$PONYTAIL_REPO"; } \
+           && { claude plugin list 2>/dev/null | grep -q "ponytail@ponytail" \
+              || claude plugin install ponytail@ponytail; }; then
+            printf "${GREEN}✓ ponytail plugin installed (ponytail@ponytail)${NC}\n"
+            return 0
+        fi
+        printf "${YELLOW}⚠ claude plugin CLI could not fetch %s — declaring it in settings.json instead${NC}\n" "$PONYTAIL_REPO"
+    fi
+    require_node || return 1
+    mkdir -p "$HOME/.claude"
+    SETTINGS_FILE="$HOME/.claude/settings.json" PONYTAIL_REPO="$PONYTAIL_REPO" node -e '
+const fs = require("fs"), env = process.env;
+let s = {};
+if (fs.existsSync(env.SETTINGS_FILE)) { try { s = JSON.parse(fs.readFileSync(env.SETTINGS_FILE, "utf8")); } catch (e) {} }
+s.extraKnownMarketplaces = s.extraKnownMarketplaces || {};
+s.extraKnownMarketplaces.ponytail = { source: { source: "github", repo: env.PONYTAIL_REPO } };
+s.enabledPlugins = s.enabledPlugins || {};
+s.enabledPlugins["ponytail@ponytail"] = true;
+fs.writeFileSync(env.SETTINGS_FILE, JSON.stringify(s, null, 2) + "\n");
+'
+    printf "${GREEN}✓ ponytail marketplace + plugin declared in ~/.claude/settings.json (fetched on next launch)${NC}\n"
 }
 
 # ── MCP registration (single source: shared/mcp-config.json) ──────────────────

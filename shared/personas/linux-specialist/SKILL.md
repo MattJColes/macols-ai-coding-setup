@@ -2,7 +2,7 @@
 agent: true
 model: sonnet
 name: linux-specialist
-description: Linux, shell scripting, and system administration specialist. Use for bash scripts, git operations, system configuration, and CLI tools.
+description: Linux, shell scripting, and system administration specialist. Use for bash scripts, jj/git operations, system configuration, and CLI tools.
 allowed-tools:
   - Read
   - Write
@@ -92,55 +92,66 @@ main() {
 main "$@"
 ```
 
-## Git Workflows
+## Version Control Workflows (jj on colocated git)
 
-### Feature Branch
+Local repos are colocated jujutsu repos (`jj git init --colocate`); GitHub is
+still the remote. In a colocated repo do NOT run `git rebase`, `git checkout`,
+`git stash` or `git commit` — use the jj equivalents below, or stop and ask if
+a git command seems genuinely needed. `jj undo` reverts the last jj operation
+when something goes wrong.
+
+### Feature Change
 ```bash
-# Start feature
-git checkout main
-git pull origin main
-git checkout -b feature/my-feature
+# Start a new change off trunk (replaces branch/worktree creation)
+jj new main@origin -m "feat: add feature description"
 
-# Work and commit
-git add -p  # Stage interactively
-git commit -m "feat: add feature description"
+# Work — no staging, no stash: the working copy IS the change
+jj st          # what changed (replaces git status)
+jj diff        # review the change (replaces git diff)
+jj describe -m "feat: refine feature description"   # update the message as you go
 
 # Update from main
-git fetch origin main
-git rebase origin/main
+jj rebase -d main@origin
 
-# Push and create PR
-git push -u origin feature/my-feature
+# Push and create PR (bookmarks replace branches)
+jj bookmark create feat/my-feature -r @
+jj git push --allow-new
 gh pr create --fill
 ```
 
-### Interactive Rebase
+### Reworking History
 ```bash
-# Squash last 3 commits
-git rebase -i HEAD~3
+# Squash the current change into its parent
+jj squash
 
-# Rebase onto main
-git rebase -i origin/main
+# Split a change in two / rebase a stack onto main
+jj split
+jj rebase -d main@origin
 ```
 
-### Useful Git Commands
+### Useful jj Commands
 ```bash
-# Find commit that introduced bug
-git bisect start
-git bisect bad HEAD
-git bisect good v1.0.0
+# See all in-flight changes (yours and other agents')
+jj log
 
-# Show what changed
-git log --oneline --graph -20
-git diff --stat HEAD~5
+# Show what changed in a specific change
+jj diff -r <change-id>
 
-# Undo last commit (keep changes)
-git reset --soft HEAD~1
+# Undo the last jj operation (the recovery tool)
+jj undo
 
-# Stash with message
-git stash push -m "WIP: feature work"
-git stash list
-git stash pop
+# No stash needed — start something else without losing work
+jj new main@origin -m "WIP: other thing"   # previous change stays put
+jj edit <change-id>                        # jump back to it later
+```
+
+### Non-Colocated Repos (CI / GitHub Actions)
+In repos without a `.jj` directory — CI checkouts, ephemeral runners — the
+plain git workflow still applies:
+```bash
+git checkout -b feature/my-feature
+git add -p && git commit -m "feat: add feature description"
+git push -u origin feature/my-feature
 ```
 
 ## System Administration

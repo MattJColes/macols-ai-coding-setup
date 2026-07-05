@@ -78,7 +78,12 @@ done
 
 banner "Claude Code Installer"
 
-if [ "$DO_CLI" = true ]; then ensure_brew; ensure_cli claudecode; install_claude_launcher "$CLAUDE_DIR"; echo ""; fi
+if [ "$DO_CLI" = true ]; then
+    ensure_brew; ensure_cli claudecode; install_claude_launcher "$CLAUDE_DIR"
+    ensure_jj || printf "${YELLOW}⚠ jj install skipped/failed${NC}\n"
+    ensure_node_on_noninteractive_path || printf "${YELLOW}⚠ node PATH linking skipped/failed${NC}\n"
+    echo ""
+fi
 if [ "$DO_AGENTS" = true ]; then
     if [ "$PROJECT_INSTALL" = true ]; then install_agents "./.claude/agents"; else install_agents "$AGENTS_DIR"; fi; echo ""
 fi
@@ -87,6 +92,7 @@ if [ "$DO_SKILLS" = true ]; then
 fi
 if [ "$DO_MCPS" = true ] && [ "$PROJECT_INSTALL" = false ]; then register_mcps_claude || printf "${YELLOW}⚠ MCP registration skipped/failed${NC}\n"; echo ""; fi
 if [ "$DO_HOOKS" = true ] && [ "$PROJECT_INSTALL" = false ]; then write_claude_hooks "$SETTINGS_FILE"; echo ""; fi
+if [ "$PROJECT_INSTALL" = false ] && [ "$SUBSET" = false ]; then install_claude_ponytail || printf "${YELLOW}⚠ ponytail plugin install skipped/failed${NC}\n"; echo ""; fi
 
 done_banner
 echo "Next steps:"
@@ -95,5 +101,6 @@ echo "  • Restart Claude Code to load the new configuration"
 [ "$DO_CLI" = true ] && echo "    (drops root → non-root automatically; alias it, e.g. alias cc=$CLAUDE_DIR/bin/claude-launch)"
 echo "  • Agents run automatically or via 'Use the <agent> agent ...'"
 echo "  • Skills are available as slash commands (e.g. /python-backend)"
+echo "  • Ponytail is installed as a plugin (run '/plugin' in Claude Code to inspect)"
 [ "$DO_MCPS" = true ] && echo "  • Configure AWS credentials (~/.aws/credentials) for the aws-* MCPs"
 echo ""

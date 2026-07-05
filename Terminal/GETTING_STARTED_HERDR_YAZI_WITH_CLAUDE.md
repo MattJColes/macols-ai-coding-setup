@@ -1,6 +1,6 @@
 # Getting Started: Herdr + Yazi + Claude Code
 
-A workflow guide for using Herdr as your terminal workspace manager, Yazi as your file navigator, and Claude Code in worktree mode to watch changes live.
+A workflow guide for using Herdr as your terminal workspace manager, Yazi as your file navigator, and Claude Code working in jj changes (on a colocated git repo) so you can watch its work live.
 
 ## Quick Install
 
@@ -88,13 +88,13 @@ Set up a three-pane layout for active development:
 +-------------------+------------------+
 |                   |                  |
 |   Claude Code     |   Yazi / Editor  |
-|   (worktree)      |                  |
+|   (jj change)     |                  |
 |                   |                  |
 +-------------------+------------------+
 ```
 
 1. Start Herdr: `herdr`
-2. In the first pane, launch Claude in worktree mode (see section 5)
+2. In the first pane, launch Claude on its own jj change (see section 5)
 3. Split vertical: `Ctrl+b` then `v`
 4. In the second pane, launch Yazi: `yazi`
 
@@ -151,29 +151,40 @@ When you press `Enter` on a file, Yazi opens it in `$EDITOR` (nvim). After editi
 
 ---
 
-## 5. Claude Code in Worktree Mode
+## 5. Claude Code on a jj Change
 
-Run Claude Code with the `-w` flag to use git worktree isolation. This lets Claude make changes on a separate branch without disrupting your working tree:
+Repos are colocated jujutsu repos (`jj git init --colocate` once in each
+existing git clone). Instead of branches or worktrees, each agent works on its
+own jj change off trunk -- no separate directory needed, and several agents can
+run in parallel in the same repo:
 
 ```bash
-claude -w
+jj new main@origin -m "feat: describe the task"
+claude
 ```
 
 Claude will:
-- Create a temporary git worktree
-- Make all changes there (invisible to your main checkout)
-- You can review changes in Yazi or lazygit before merging
+- Edit files directly -- the working copy IS the change (no staging, no stash)
+- Keep the change description up to date with `jj describe -m`
+- Leave every in-flight change visible in `jj log`
 
 ### Watching Claude's changes live
 
-In your Yazi pane, navigate to the worktree directory that Claude creates. The git-peek preview will show diffs as Claude writes code. Use `g c` to see which files Claude has modified.
+In your Yazi pane the git-peek preview shows diffs as Claude writes code
+(colocation keeps `.git` in sync, so the git-based previews keep working).
+Use `g c` to see which files Claude has modified, or run `jj st` / `jj diff`
+in any pane.
 
 ### Typical workflow
 
-1. Pane 1: `claude -w` -- give Claude a task
-2. Pane 2: `yazi` -- browse the worktree, watch diffs appear in preview
-3. Use `g i` in Yazi to open lazygit and review/stage/commit changes
-4. When satisfied, merge the worktree branch into your main branch
+1. Pane 1: `jj new main@origin -m "..."` then `claude` -- give Claude a task
+2. Pane 2: `yazi` -- watch diffs appear in preview, or `jj log` to see all agents' changes
+3. Review with `jj log` + `jj diff -r <change>` (lazygit via `g i` still works for browsing history)
+4. When satisfied: `jj bookmark create feat/name -r @` and `jj git push --allow-new`, then open a PR
+
+If something goes sideways, `jj undo` reverts the last operation. Avoid
+`git rebase` / `git checkout` / `git stash` / `git commit` inside colocated
+repos -- use the jj equivalents.
 
 ---
 
@@ -226,8 +237,9 @@ The which-key popup is your best friend -- press `Space` and pause for 300ms to 
 # Start your workspace
 herdr --session dev
 
-# Pane 1: Claude doing work in a worktree
-claude -w
+# Pane 1: Claude doing work on its own jj change
+jj new main@origin -m "feat: the task"
+claude
 
 # Ctrl+b, v to split
 
@@ -237,8 +249,11 @@ yazi
 # Inside Yazi:
 #   g c  -> see what Claude changed
 #   g d  -> see the diff
-#   g i  -> open lazygit to review/commit
 #   Enter -> open file in nvim to edit
+# In any shell pane:
+#   jj log                 -> all in-flight changes (every agent)
+#   jj diff -r <change>    -> review one change
+#   jj bookmark create feat/name -r @ && jj git push --allow-new
 ```
 
 ### Tips

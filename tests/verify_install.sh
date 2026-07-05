@@ -28,6 +28,7 @@ soft() { if eval "$2"; then green "$1"; else warn "$1 (soft)"; fi; }
 
 count_gt0() { [ "$(find "$1" -maxdepth "${3:-2}" -name "${2}" 2>/dev/null | wc -l)" -gt 0 ]; }
 has_jq() { command -v jq &> /dev/null; }
+has_ponytail_block() { grep -q 'ponytail:ruleset:start' "$1" 2>/dev/null; }
 
 verify_claudecode() {
     local d="$HOME/.claude"
@@ -42,6 +43,11 @@ verify_claudecode() {
     else
         warn "jq not available — skipping JSON assertions"
     fi
+    # Ponytail lands either as an installed plugin (CLI path) or as a settings
+    # declaration (offline fallback) — either satisfies the check.
+    pass "ponytail plugin installed or declared" \
+        "grep -qs 'ponytail@ponytail' '$d/plugins/installed_plugins.json' || grep -qs 'ponytail@ponytail' '$d/settings.json'"
+    soft "jj --version at pinned version" "command -v jj >/dev/null && jj --version >/dev/null 2>&1"
     soft "claude mcp list shows filesystem" "command -v claude >/dev/null && claude mcp list 2>/dev/null | grep -q filesystem"
 }
 
@@ -50,6 +56,7 @@ verify_codex() {
     soft "codex --version" "command -v codex >/dev/null && codex --version >/dev/null 2>&1"
     pass "prompts in ~/.codex/prompts/*.md"       "count_gt0 '$d/prompts' '*.md' 1"
     pass "~/.codex/AGENTS.md is System-Level Codex" "grep -q 'System-Level Codex' '$d/AGENTS.md'"
+    pass "~/.codex/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
     if has_jq; then
         pass "hooks.json has PostToolUse hook"     "jq -e '.PostToolUse[0].hooks[0].command' '$d/hooks.json' >/dev/null"
     fi
@@ -62,6 +69,7 @@ verify_opencode() {
     pass "agents in ~/.config/opencode/agents/*.md"       "count_gt0 '$d/agents' '*.md' 1"
     pass "skills in ~/.config/opencode/skills/*/SKILL.md" "count_gt0 '$d/skills' 'SKILL.md' 3"
     pass "~/.config/opencode/AGENTS.md is System-Level OpenCode" "grep -q 'System-Level OpenCode' '$d/AGENTS.md'"
+    pass "~/.config/opencode/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
     pass "plugins/post_code_hook_plugin.mjs exists" "[ -f '$d/plugins/post_code_hook_plugin.mjs' ]"
     if has_jq; then
         pass "opencode.json has filesystem MCP under .mcp" "jq -e '.mcp.filesystem' '$d/opencode.json' >/dev/null"
@@ -69,10 +77,12 @@ verify_opencode() {
 }
 
 verify_pi() {
-    local d="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
-    soft "pi --version" "command -v pi >/dev/null && pi --version >/dev/null 2>&1"
-    pass "skills in ~/.pi/agent/skills/*/SKILL.md" "count_gt0 '$d/skills' 'SKILL.md' 3"
-    pass "~/.pi/agent/AGENTS.md is System-Level Pi" "grep -q 'System-Level Pi' '$d/AGENTS.md'"
+    local d="${PI_CODING_AGENT_DIR:-$HOME/.omp/agent}"
+    soft "omp --version" "command -v omp >/dev/null && omp --version >/dev/null 2>&1"
+    pass "plain pi is not provisioned" "! command -v pi >/dev/null"
+    pass "skills in ~/.omp/agent/skills/*/SKILL.md" "count_gt0 '$d/skills' 'SKILL.md' 3"
+    pass "~/.omp/agent/AGENTS.md is System-Level Pi" "grep -q 'System-Level Pi' '$d/AGENTS.md'"
+    pass "~/.omp/agent/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
     pass "extensions/pi-checks.ts exists" "[ -f '$d/extensions/pi-checks.ts' ]"
 }
 

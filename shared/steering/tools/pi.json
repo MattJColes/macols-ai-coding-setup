@@ -16,14 +16,14 @@
   "EXTRA_SECTION": [
     "",
     "",
-    "## Pi: Skills & Tools",
+    "## Pi (Oh My Pi): Skills & Tools",
     "",
     "- This install ships specialist personas as Agent Skills. Invoke one with",
     "  `/skill:<name>` (e.g. `/skill:python-backend`, `/skill:code-reviewer`) when a",
     "  task matches its specialism, and follow the loaded SKILL.md instructions.",
     "- Pi has no MCP. When you need an external capability, prefer a well-documented",
     "  CLI tool (with a README the agent can read) or a Skill over reaching for a",
-    "  protocol server.",
+    "  protocol server, or install a package via `omp install <pkg>`.",
     "- A `pi-checks` extension runs tests, lint, type-checks and security scans after",
     "  file edits and at the end of a turn. Its output is advisory — read the",
     "  findings and fix real issues, but it will not block you."

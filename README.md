@@ -1,9 +1,16 @@
 # macols-configs
 
 One source of truth for four agentic coding CLIs — **Claude Code**, **Codex**,
-**OpenCode** and **Pi** — plus the terminal/dev-environment setup. Personas,
-steering, MCP servers and check hooks are authored once under `shared/` and each
-tool's installer renders them into that tool's native format, so nothing drifts.
+**OpenCode** and **Oh My Pi** (`omp`, tool keyword `pi`) — plus the
+terminal/dev-environment setup. Personas, steering, MCP servers and check hooks
+are authored once under `shared/` and each tool's installer renders them into
+that tool's native format, so nothing drifts.
+
+Each installer also provisions **jujutsu (jj)** at a pinned version (see
+`JJ_VERSION` in `lib/common.sh`) for the jj-on-colocated-git workflow the
+steering teaches, and installs the
+[ponytail](https://github.com/DietrichGebert/ponytail) minimal-mode ruleset for
+every agent via that agent's native mechanism.
 
 ## Structure
 
@@ -11,9 +18,9 @@ tool's installer renders them into that tool's native format, so nothing drifts.
 macols-configs/
 ├── install.sh              # orchestrator: env (optional) + all four tools
 ├── install_claudecode.sh   # self-contained per-tool installers
-├── install_codex.sh        #   (ensure brew + CLI, then install configs)
+├── install_codex.sh        #   (ensure brew + CLI + jj, then install configs)
 ├── install_opencode.sh
-├── install_pi.sh
+├── install_pi.sh           # installs Oh My Pi (omp)
 ├── lib/
 │   └── common.sh           # shared install functions used by all installers
 ├── bin/
@@ -44,7 +51,7 @@ hooks. Run one, several, or all:
 
 ```bash
 ./install.sh                  # all four tools (binaries + configs)
-./install.sh claudecode pi    # just Claude Code and Pi
+./install.sh claudecode pi    # just Claude Code and Oh My Pi
 ./install.sh --env            # run the Terminal dev-environment setup first
 ./install_codex.sh            # one tool directly
 ```
@@ -95,11 +102,43 @@ user is preferred.
 | Claude Code | agents `~/.claude/agents/`, skills `~/.claude/skills/` | `~/.claude/CLAUDE.md` | `claude mcp add-json` → `~/.claude.json` | `~/.claude/settings.json` |
 | Codex | prompts `~/.codex/prompts/` | `~/.codex/AGENTS.md` | `codex mcp add` → `~/.codex/config.toml` | `~/.codex/hooks.json` |
 | OpenCode | agents `~/.config/opencode/agents/`, skills `…/skills/` | `~/.config/opencode/AGENTS.md` | `mcp` key in `~/.config/opencode/opencode.json` | plugin in `…/plugins/` |
-| Pi | Agent Skills `~/.pi/agent/skills/` (`/skill:<name>`) | `~/.pi/agent/AGENTS.md` | none by design | `pi-checks` extension |
+| Oh My Pi | Agent Skills `~/.omp/agent/skills/` (`/skill:<name>`) | `~/.omp/agent/AGENTS.md` | none by design | `pi-checks` extension |
 
-**Pi is deliberately different:** it has no MCP — external capabilities come from
-CLI tools, Agent Skills and pluggable packages (`pi install <pkg>`, e.g.
-`pi-agent-web-access`, `pi-subagents`, `pi-ask-user`).
+**Oh My Pi is deliberately different:** it has no MCP — external capabilities
+come from CLI tools, Agent Skills and pluggable packages (`omp install <pkg>`,
+e.g. `pi-agent-web-access`, `pi-subagents`, `pi-ask-user`). It replaces the
+plain `pi` agent (the old install is retired) and its npm bundle runs on Bun,
+which the installer provisions automatically.
+
+### Jujutsu (jj) and the colocated workflow
+
+Every installer provisions jj at the pinned `JJ_VERSION` (prebuilt release
+binary into `~/.local/bin`; idempotent — skipped when the pinned version is
+already installed) and mirrors the git identity into `jj config --user`. The
+steering teaches agents a jj-on-colocated-git loop: run `jj git init --colocate`
+once in an existing clone, then agents start work with `jj new main@origin -m
+"<desc>"`, track it with `jj st` / `jj diff` / `jj describe`, and publish with
+`jj bookmark create <name> -r @` + `jj git push --allow-new`. Review everything
+in one view with `jj log` + `jj diff -r <change>`. Agents are steered away from
+`git rebase`/`checkout`/`stash`/`commit` in colocated repos; CI contexts keep
+plain git.
+
+### Ponytail
+
+[Ponytail](https://github.com/DietrichGebert/ponytail) (lazy/YAGNI mode) is
+installed for every agent via its native mechanism:
+
+- **Claude Code** — plugin: `claude plugin marketplace add DietrichGebert/ponytail`
+  + `claude plugin install ponytail@ponytail` (falls back to declaring both in
+  `~/.claude/settings.json` when offline; fetched on next launch).
+- **Oh My Pi** — package: `omp install git:github.com/DietrichGebert/ponytail`.
+- **Codex / OpenCode / Oh My Pi AGENTS.md** — ponytail's AGENTS.md ruleset
+  (vendored at `shared/steering/ponytail.AGENTS.md`) is appended inside
+  `<!-- ponytail:ruleset:start/end -->` marker comments; re-runs replace the
+  block instead of duplicating it. Re-vendor the file to pick up upstream changes.
+
+Ponytail's hooks need `node` on the non-interactive PATH; the installers link
+`node`/`npm`/`npx` into `~/.local/bin` to guarantee that.
 
 ## Personas
 
@@ -115,13 +154,13 @@ cdk-expert-ts, cdk-expert-python, data-scientist ·
 **Security:** security-specialist ·
 **Management:** documentation-engineer, product-manager, project-coordinator, engineering-manager ·
 **Writing:** writing-blog-posts, writing-documents, writing-style ·
-**Workflow:** commit (run checks, conventional commit and push), ponytail (minimal/YAGNI mode)
+**Workflow:** commit (run checks, describe the jj change and push its bookmark), ponytail (minimal/YAGNI mode)
 
 ## MCP servers
 
 Defined once in `shared/mcp-config.json` and registered into each tool's native
 config: **filesystem**, **puppeteer**, **playwright**, **context7**, **dart**.
-(Pi excluded by design.)
+(Oh My Pi excluded by design.)
 
 ## Hooks
 
@@ -152,6 +191,8 @@ aws configure                                   # AWS credentials for aws-* MCPs
 podman machine init && podman machine start     # containers (macOS)
 uv tool install 'lgtmaybe[bedrock]'             # optional: Claude Code turn-end LLM review hook
 claude --version && codex --version             # sanity check
+omp --version && jj --version                   # oh-my-pi + jujutsu
+jj git init --colocate                          # once per existing git clone
 ```
 
 ## Troubleshooting

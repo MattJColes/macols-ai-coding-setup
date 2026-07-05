@@ -1,6 +1,7 @@
-// pi-checks — wires the shared post-code / post-task check scripts into pi.
+// pi-checks — wires the shared post-code / post-task check scripts into
+// Oh My Pi (omp).
 //
-// Pi has no settings.json hook array (hooks are extensions), so this small
+// omp has no settings.json hook array (hooks are extensions), so this small
 // extension subscribes to the two events that mirror the PostToolUse + Stop
 // hooks the other CLIs use:
 //
@@ -13,7 +14,7 @@
 // HOOKS_DIR is substituted with the repo's shared/hooks path by install_pi.sh
 // (the scripts are referenced in place, not copied).
 
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI } from "@oh-my-pi/pi-coding-agent";
 
 const HOOKS_DIR = "__PI_HOOKS_DIR__";
 const WRITE_TOOL = /(write|edit|create|patch|replace)/i;
