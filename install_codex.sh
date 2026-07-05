@@ -68,12 +68,21 @@ done
 
 banner "Codex CLI Installer"
 
-if [ "$DO_CLI" = true ]; then ensure_brew; ensure_cli codex; echo ""; fi
+if [ "$DO_CLI" = true ]; then
+    ensure_brew; ensure_cli codex
+    ensure_jj || printf "${YELLOW}⚠ jj install skipped/failed${NC}\n"
+    ensure_node_on_noninteractive_path || printf "${YELLOW}⚠ node PATH linking skipped/failed${NC}\n"
+    echo ""
+fi
 if [ "$DO_PROMPTS" = true ]; then
     if [ "$PROJECT_INSTALL" = true ]; then install_prompts "./.codex/prompts"; else install_prompts "$PROMPTS_DIR"; fi; echo ""
 fi
 if [ "$DO_INSTRUCTIONS" = true ]; then
-    if [ "$PROJECT_INSTALL" = true ]; then assemble_steering codex "./AGENTS.md"; else assemble_steering codex "$AGENTS_FILE"; fi; echo ""
+    if [ "$PROJECT_INSTALL" = true ]; then
+        assemble_steering codex "./AGENTS.md"; append_ponytail_ruleset "./AGENTS.md"
+    else
+        assemble_steering codex "$AGENTS_FILE"; append_ponytail_ruleset "$AGENTS_FILE"
+    fi; echo ""
 fi
 if [ "$DO_MCPS" = true ] && [ "$PROJECT_INSTALL" = false ]; then register_mcps_codex || printf "${YELLOW}⚠ MCP registration skipped/failed${NC}\n"; echo ""; fi
 if [ "$DO_HOOKS" = true ] && [ "$PROJECT_INSTALL" = false ]; then write_codex_hooks "$HOOKS_JSON"; echo ""; fi

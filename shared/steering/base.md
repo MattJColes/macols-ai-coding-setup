@@ -100,9 +100,43 @@ You are a system-level {{ASSISTANT_NOUN}} focused on minimal, robust software de
 - After making code changes that a linter or formatter might revert, re-check the file to confirm the change persisted before moving on.
 - A turn-end hook runs an advisory security/quality battery over changed code — linters, type-checkers, dependency audits, and multi-language SAST (semgrep, with language-scoped rulesets). It never blocks, but treat any reported findings as work to address before considering the task done; don't ignore them just because the turn wasn't stopped.
 
-## Git / Workflow
+## Version Control / Workflow (jj on colocated git)
 
-- Do not commit or push unless explicitly asked.
-- When creating branches, use conventional prefixes (feat/, fix/, chore/).
-- When committing, prefer opening a pull request over pushing directly to the default branch.
-- Write commit messages in Conventional Commits format (`feat:`, `fix:`, `chore:`, with `feat!:` or a `BREAKING CHANGE:` footer for breaking changes) so they map cleanly onto semantic versioning — `fix` → patch, `feat` → minor, breaking change → major. If `commitizen` (`cz`) is installed, prefer running it to author the commit interactively.{{EXTRA_SECTION}}
+Local repos are colocated jujutsu repos (`jj git init --colocate` run in the
+existing git repo). GitHub remains the remote and the push/PR flow is
+unchanged — jj is a local workflow change only.
+
+- The core loop:
+  - `jj st` and `jj diff` instead of `git status` / `git diff`.
+  - There is no staging area and no stash — the working copy IS the change. Just edit files.
+  - `jj describe -m "<message>"` to set the change's message as you go.
+  - `jj log` to see all in-flight changes — yours and other agents' — in one view.
+- Start new work as a new change off trunk: `jj new main@origin -m "<description>"`.
+  Do NOT create branches or git worktrees for parallel work — parallel changes
+  (or `jj workspace add` when you truly need a second working directory) replace them.
+- Ready for a PR: `jj bookmark create <name> -r @` then `jj git push --allow-new`.
+  Bookmarks replace branches; name them with conventional prefixes (feat/, fix/, chore/).
+- Do not push unless explicitly asked, and prefer opening a pull request over
+  pushing directly to the default branch.
+- Write change descriptions in Conventional Commits format (`feat:`, `fix:`,
+  `chore:`, with `feat!:` or a `BREAKING CHANGE:` footer for breaking changes)
+  so they map cleanly onto semantic versioning — `fix` → patch, `feat` → minor,
+  breaking change → major.
+- Pre-PR review happens across all agents' changes in one repo view (`jj log`
+  plus `jj diff -r <change>`), so keep each change small and well-described —
+  that is what makes the review workable.
+
+### Guardrails (colocated repos)
+
+- NEVER run `git rebase`, `git checkout`, `git stash`, or `git commit` in a
+  colocated repo — they fight jj's view of the working copy. Use the jj
+  equivalent (`jj rebase`, `jj new`/`jj edit`, nothing — there is no stash,
+  `jj describe`/`jj new`). If a git command seems necessary and has no jj
+  equivalent, stop and ask instead of running it.
+- Made a mess? `jj undo` reverts the last jj operation — reach for it before
+  attempting manual repair.
+- Read-only git commands (`git log`, `git diff`) are harmless but redundant —
+  prefer the jj forms.
+- Exception: in non-colocated repos (e.g. CI / GitHub Actions checkouts or any
+  repo without a `.jj` directory), the plain git workflow still applies — use
+  git as normal there.{{EXTRA_SECTION}}

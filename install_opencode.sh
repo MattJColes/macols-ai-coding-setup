@@ -46,7 +46,7 @@ install_agents() {
     printf "${BLUE}Installing agents to: %s${NC}\n" "$target"
     generate_personas opencode agent "$target" || return 1
     printf "${GREEN}✓ Installed %s agents${NC}\n" "$PERSONA_COUNT"
-    if [ "$target" = "$AGENTS_DIR" ]; then assemble_steering opencode "$AGENTS_MD"; fi
+    if [ "$target" = "$AGENTS_DIR" ]; then assemble_steering opencode "$AGENTS_MD"; append_ponytail_ruleset "$AGENTS_MD"; fi
 }
 
 install_skills() {
@@ -79,7 +79,12 @@ done
 
 banner "OpenCode Installer"
 
-if [ "$DO_CLI" = true ]; then ensure_brew; ensure_cli opencode; echo ""; fi
+if [ "$DO_CLI" = true ]; then
+    ensure_brew; ensure_cli opencode
+    ensure_jj || printf "${YELLOW}⚠ jj install skipped/failed${NC}\n"
+    ensure_node_on_noninteractive_path || printf "${YELLOW}⚠ node PATH linking skipped/failed${NC}\n"
+    echo ""
+fi
 if [ "$DO_AGENTS" = true ]; then
     if [ "$PROJECT_INSTALL" = true ]; then install_agents "./.opencode/agents"; else install_agents "$AGENTS_DIR"; fi; echo ""
 fi

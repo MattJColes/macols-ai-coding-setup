@@ -3,9 +3,10 @@
 # Top-level orchestrator for macols-configs.
 #
 # Installs the agentic CLIs and their configuration. By default it configures
-# all four tools (Claude Code, Codex, OpenCode, Pi); pass tool names to scope
-# it. Each per-tool installer is self-contained (it ensures Homebrew + the CLI
-# binary, then installs configs from the single sources of truth under shared/).
+# all four tools (Claude Code, Codex, OpenCode, Oh My Pi — tool keyword `pi`);
+# pass tool names to scope it. Each per-tool installer is self-contained (it
+# ensures Homebrew + the CLI binary + jj, then installs configs from the single
+# sources of truth under shared/).
 #
 # Examples:
 #   ./install.sh                 # all four tools
@@ -23,6 +24,7 @@ usage() {
 Usage: $0 [--env] [TOOL ...]
 
 TOOL is one or more of: claudecode codex opencode pi  (default: all four).
+(`pi` installs Oh My Pi — the `omp` binary.)
 
 Options:
     -h, --help    Show this help message

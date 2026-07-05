@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 #
-# Self-contained installer for the Pi coding agent (@earendil-works/pi-coding-agent).
+# Self-contained installer for the Oh My Pi coding agent (@oh-my-pi/pi-coding-agent).
 #
-# Ensures the `pi` CLI, then installs Agent Skills, the system AGENTS.md, the
-# pi-checks extension and Pi's pluggable packages — all from the single sources
-# of truth under shared/.
+# Oh My Pi (`omp`) replaces the plain Pi agent — the tool keyword and this
+# file's name stay `pi` so existing invocations keep working. Ensures the
+# `omp` CLI, then installs Agent Skills, the system AGENTS.md, the pi-checks
+# extension and omp's pluggable packages — all from the single sources of
+# truth under shared/.
 #
-# Pi differs from the other CLIs: skills are invoked as /skill:<name>, hooks are
-# TypeScript extensions (not a settings hook array), and there is NO MCP — Pi
-# exposes external capabilities through CLI tools, Agent Skills and packages.
+# omp differs from the other CLIs: skills are invoked as /skill:<name>, hooks
+# are TypeScript extensions (not a settings hook array), and there is NO MCP —
+# omp exposes external capabilities through CLI tools, Agent Skills and packages.
 #
 set -euo pipefail
 
@@ -16,45 +18,44 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=lib/common.sh
 source "$SCRIPT_DIR/lib/common.sh"
 
-PI_DIR="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
+# omp keeps pi's PI_CODING_AGENT_DIR override but defaults to ~/.omp/agent.
+PI_DIR="${PI_CODING_AGENT_DIR:-$HOME/.omp/agent}"
 SKILLS_DIR="$PI_DIR/skills"
 EXTENSIONS_DIR="$PI_DIR/extensions"
 AGENTS_FILE="$PI_DIR/AGENTS.md"
 
-# Pi packages (https://pi.dev/packages), installed via `pi install <source>`.
-# These are all published on npm, so they need the explicit `npm:` source
-# prefix — a bare name (e.g. `pi install pi-btw`) is treated by pi as a local
-# filesystem PATH and fails with "Path does not exist".
+# omp packages, installed via `omp install <source>`. The npm-published ones
+# need the explicit `npm:` source prefix — a bare name (e.g. `omp install
+# pi-agent-web-access`) is treated as a local filesystem PATH and fails with
+# "Path does not exist". Git-hosted packages use the `git:` prefix.
+#
+# The other legacy pi packages (context-mode, pi-subagents, pi-ask-user,
+# pi-markdown-preview, pi-btw) fail omp's extension validation — omp ships
+# those capabilities natively (bundled task agents, ask-user, markdown
+# rendering, context management) — so they are deliberately not installed.
 #   • pi-agent-web-access  — web search, page fetch, YouTube transcripts, GitHub browsing
-#   • context-mode         — context management / session continuity
-#   • pi-subagents         — delegate work to specialised subagents (parallel/chain)
-#   • pi-ask-user          — interactive ask_user tool (split-pane select, multi-select)
-#   • pi-markdown-preview  — preview Markdown/LaTeX/code/diff output in terminal/browser
-#   • pi-btw               — /btw side-question command without polluting the conversation
-PI_PACKAGES="npm:pi-agent-web-access
-npm:context-mode
-npm:pi-subagents
-npm:pi-ask-user
-npm:pi-markdown-preview
-npm:pi-btw"
+#   • ponytail             — lazy/YAGNI mode extension (github.com/DietrichGebert/ponytail;
+#                            also published as npm:@dietrichgebert/ponytail if git fetch is blocked)
+OMP_PACKAGES="npm:pi-agent-web-access
+git:github.com/$PONYTAIL_REPO"
 
 usage() {
     cat << EOF
 Usage: $0 [OPTIONS]
 
-Installs (and, unless told otherwise, the pi CLI itself) Agent Skills, the
-system AGENTS.md, the pi-checks extension and Pi packages from shared/.
+Installs (and, unless told otherwise, the omp CLI itself) Agent Skills, the
+system AGENTS.md, the pi-checks extension and omp packages from shared/.
 
 Options:
     -h, --help        Show this help message
     --skills-only     Install only Agent Skills (/skill:<name>)
     --context-only    Install only the system AGENTS.md
     --hooks-only      Install only the pi-checks extension
-    --packages-only   Install only the pi packages
-    --mcps-only       (pi has no MCP — prints guidance and exits)
-    --no-pi           Skip installing/upgrading the pi binary
-    --no-packages     Skip installing pi packages
-    -p, --project     Install skills to ./.pi/skills and AGENTS.md to ./AGENTS.md (implies --no-pi)
+    --packages-only   Install only the omp packages
+    --mcps-only       (omp has no MCP — prints guidance and exits)
+    --no-pi           Skip installing/upgrading the omp binary
+    --no-packages     Skip installing omp packages
+    -p, --project     Install skills to ./.omp/skills and AGENTS.md to ./AGENTS.md (implies --no-pi)
     --list            List available personas and exit
 EOF
 }
@@ -70,22 +71,22 @@ install_skills() {
 }
 
 install_packages() {
-    command -v pi &> /dev/null || { printf "${RED}pi not found — install pi first (drop --no-pi)${NC}\n"; return 1; }
-    printf "${BLUE}Installing pi packages...${NC}\n"
+    command -v omp &> /dev/null || { printf "${RED}omp not found — install omp first (drop --no-pi)${NC}\n"; return 1; }
+    printf "${BLUE}Installing omp packages...${NC}\n"
     local pkg
-    for pkg in $PI_PACKAGES; do
-        printf "${BLUE}  → pi install %s${NC}\n" "$pkg"
-        if pi install "$pkg"; then printf "${GREEN}  ✓ %s${NC}\n" "$pkg"; else printf "${YELLOW}  ⚠ Failed to install %s (continuing)${NC}\n" "$pkg"; fi
+    for pkg in $OMP_PACKAGES; do
+        printf "${BLUE}  → omp install %s${NC}\n" "$pkg"
+        if omp install "$pkg"; then printf "${GREEN}  ✓ %s${NC}\n" "$pkg"; else printf "${YELLOW}  ⚠ Failed to install %s (continuing)${NC}\n" "$pkg"; fi
     done
 }
 
 print_mcp_guidance() {
-    printf "${YELLOW}Pi has no built-in MCP support.${NC}\n"
+    printf "${YELLOW}omp has no built-in MCP support.${NC}\n"
     cat << EOF
-Pi deliberately omits MCP — it exposes capabilities as CLI tools (with READMEs)
-and Agent Skills instead. To give pi an external capability, install a CLI tool
+omp deliberately omits MCP — it exposes capabilities as CLI tools (with READMEs)
+and Agent Skills instead. To give omp an external capability, install a CLI tool
 and document it, add a skill under $SKILLS_DIR, or install a package via
-'pi install <pkg>'. Nothing to register here.
+'omp install <pkg>'. Nothing to register here.
 EOF
 }
 
@@ -110,22 +111,31 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-banner "Pi Coding Agent Installer"
+banner "Oh My Pi Coding Agent Installer"
 
-if [ "$DO_PI" = true ] && [ "$PROJECT_INSTALL" = false ]; then ensure_cli pi; echo ""; fi
+if [ "$DO_PI" = true ] && [ "$PROJECT_INSTALL" = false ]; then
+    ensure_cli pi
+    ensure_jj || printf "${YELLOW}⚠ jj install skipped/failed${NC}\n"
+    ensure_node_on_noninteractive_path || printf "${YELLOW}⚠ node PATH linking skipped/failed${NC}\n"
+    echo ""
+fi
 if [ "$DO_PACKAGES" = true ] && [ "$PROJECT_INSTALL" = false ]; then install_packages; echo ""; fi
 if [ "$DO_SKILLS" = true ]; then
-    if [ "$PROJECT_INSTALL" = true ]; then install_skills "./.pi/skills"; else install_skills "$SKILLS_DIR"; fi; echo ""
+    if [ "$PROJECT_INSTALL" = true ]; then install_skills "./.omp/skills"; else install_skills "$SKILLS_DIR"; fi; echo ""
 fi
 if [ "$DO_CONTEXT" = true ]; then
-    if [ "$PROJECT_INSTALL" = true ]; then assemble_steering pi "./AGENTS.md"; else assemble_steering pi "$AGENTS_FILE"; fi; echo ""
+    if [ "$PROJECT_INSTALL" = true ]; then
+        assemble_steering pi "./AGENTS.md"; append_ponytail_ruleset "./AGENTS.md"
+    else
+        assemble_steering pi "$AGENTS_FILE"; append_ponytail_ruleset "$AGENTS_FILE"
+    fi; echo ""
 fi
 if [ "$DO_HOOKS" = true ] && [ "$PROJECT_INSTALL" = false ]; then install_pi_extension "$EXTENSIONS_DIR"; echo ""; fi
 
 done_banner
 echo "Next steps:"
-echo "  • Run 'pi' to start the agent (or '/reload' inside pi to pick up the extension)"
+echo "  • Run 'omp' to start the agent (or '/reload' inside omp to pick up the extension)"
 echo "  • Skills are available as /skill:<name> (e.g. /skill:python-backend)"
 echo "  • The pi-checks extension runs tests/lint/security advisories after edits and turns"
-echo "  • Pi has no MCP — expose external capabilities as CLI tools + skills + packages"
+echo "  • omp has no MCP — expose external capabilities as CLI tools + skills + packages"
 echo ""
