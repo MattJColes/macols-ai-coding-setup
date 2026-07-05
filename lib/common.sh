@@ -230,14 +230,6 @@ ensure_cli() {
             fi
             ;;
         pi)
-            # Oh My Pi (omp) replaces the plain pi agent — both are never
-            # provisioned together. The old pi install is kept below,
-            # commented out, for reference.
-            #
-            # command -v pi &> /dev/null && { printf "${GREEN}✓ pi already installed: %s${NC}\n" "$(command -v pi)"; return 0; }
-            # printf "${BLUE}Installing pi coding agent...${NC}\n"
-            # npm install -g --ignore-scripts @earendil-works/pi-coding-agent && return 0
-            # curl -fsSL https://pi.dev/install.sh | sh && return 0
             command -v omp &> /dev/null && omp --version &> /dev/null && { printf "${GREEN}✓ omp already installed: %s${NC}\n" "$(command -v omp)"; return 0; }
             printf "${BLUE}Installing Oh My Pi (omp) coding agent...${NC}\n"
             command -v npm &> /dev/null || { printf "${RED}Need npm to install omp. Install Node.js/npm, then re-run.${NC}\n"; return 1; }
