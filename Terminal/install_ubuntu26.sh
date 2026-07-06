@@ -221,7 +221,10 @@ fi
 # its agents/skills/prompts, steering, MCPs and hooks come from the per-tool
 # installers, driven by the single sources of truth under ../shared.
 echo "Installing agentic coding CLIs and configs..."
-CONFIGS_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Derive from SCRIPT_DIR (absolute, set at the top) — NOT $0, which resolves
+# against the current cwd, and an earlier `cd /tmp` makes $0-based paths point
+# at / (regression: install.sh became //install.sh).
+CONFIGS_ROOT="$(dirname "$SCRIPT_DIR")"
 "$CONFIGS_ROOT/install.sh"
 
 # Install Ollama
