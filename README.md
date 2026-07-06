@@ -156,8 +156,17 @@ cdk-expert-ts, cdk-expert-python, data-scientist ·
 ## MCP servers
 
 Defined once in `shared/mcp-config.json` and registered into each tool's native
-config: **filesystem**, **puppeteer**, **playwright**, **context7**, **dart**.
-(Oh My Pi excluded by design.)
+config: **filesystem**, **puppeteer**, **playwright**, **context7**, **dart**,
+**aws-mcp**, **aws-iac**. (Oh My Pi excluded by design.)
+
+- **aws-mcp** — the managed [AWS MCP Server](https://aws.amazon.com/blogs/aws/the-aws-mcp-server-is-now-generally-available/)
+  (Agent Toolkit for AWS), reached through the `mcp-proxy-for-aws` package,
+  which SigV4-signs requests with your ambient AWS credentials. The endpoint
+  pins the server region (`us-east-1` here); the operations it performs default
+  to your credential chain's region.
+- **aws-iac** — the [AWS IaC MCP Server](https://awslabs.github.io/mcp/servers/aws-iac-mcp-server)
+  (`awslabs.aws-iac-mcp-server` via uvx): CloudFormation/CDK validation,
+  documentation search and best-practice checks. Uses ambient AWS credentials.
 
 ## Hooks
 
