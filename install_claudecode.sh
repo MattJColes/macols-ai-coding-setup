@@ -78,7 +78,6 @@ banner "Claude Code Installer"
 
 if [ "$DO_CLI" = true ]; then
     ensure_brew; ensure_cli claudecode; install_claude_launcher "$CLAUDE_DIR"
-    ensure_jj || printf "${YELLOW}⚠ jj install skipped/failed${NC}\n"
     ensure_node_on_noninteractive_path || printf "${YELLOW}⚠ node PATH linking skipped/failed${NC}\n"
     echo ""
 fi
@@ -89,7 +88,14 @@ if [ "$DO_SKILLS" = true ]; then
     if [ "$PROJECT_INSTALL" = true ]; then install_skills "./.claude/skills"; else install_skills "$SKILLS_DIR"; fi; echo ""
 fi
 if [ "$DO_MCPS" = true ] && [ "$PROJECT_INSTALL" = false ]; then register_mcps_claude || printf "${YELLOW}⚠ MCP registration skipped/failed${NC}\n"; echo ""; fi
-if [ "$DO_HOOKS" = true ] && [ "$PROJECT_INSTALL" = false ]; then write_claude_hooks "$SETTINGS_FILE"; echo ""; fi
+if [ "$DO_HOOKS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
+    write_claude_hooks "$SETTINGS_FILE"
+    # The Stop hook and code-reviewer persona consume lgtmaybe; install the CLI
+    # and ask (interactively) which provider/model it should use. Advisory-only,
+    # so failures never block the install.
+    { ensure_lgtmaybe && configure_lgtmaybe; } || printf "${YELLOW}⚠ lgtmaybe install/config skipped — advisory review disabled until installed${NC}\n"
+    echo ""
+fi
 if [ "$PROJECT_INSTALL" = false ] && [ "$SUBSET" = false ]; then install_claude_ponytail || printf "${YELLOW}⚠ ponytail plugin install skipped/failed${NC}\n"; echo ""; fi
 
 done_banner

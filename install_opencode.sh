@@ -79,7 +79,6 @@ banner "OpenCode Installer"
 
 if [ "$DO_CLI" = true ]; then
     ensure_brew; ensure_cli opencode
-    ensure_jj || printf "${YELLOW}⚠ jj install skipped/failed${NC}\n"
     ensure_node_on_noninteractive_path || printf "${YELLOW}⚠ node PATH linking skipped/failed${NC}\n"
     echo ""
 fi

@@ -4,7 +4,7 @@
 #
 # Sourced by install_claudecode.sh / install_codex.sh / install_opencode.sh /
 # install_pi.sh. Holds everything those installers have in common: colours,
-# Node bootstrap, Homebrew / CLI / jj bootstrap, persona generation, steering
+# Node bootstrap, Homebrew / CLI bootstrap, persona generation, steering
 # assembly, ponytail install, MCP registration and hook wiring — all driven
 # from the single sources of truth under shared/.
 #
@@ -28,9 +28,6 @@ HOOKS_DIR="$SHARED_DIR/hooks"
 MCP_CONFIG_FILE="$SHARED_DIR/mcp-config.json"
 
 # ── Pinned versions ──────────────────────────────────────────────────────────
-# Jujutsu (jj) — the single place the version is pinned. Bump here only.
-JJ_VERSION="0.43.0"
-
 # Ponytail (https://github.com/DietrichGebert/ponytail) — installed for every
 # agent via that agent's native mechanism (Claude Code plugin, omp package,
 # AGENTS.md ruleset block). The marker comments delimit the AGENTS.md block so
@@ -102,59 +99,11 @@ ensure_mcp_prereqs() {
     fi
 }
 
-# ensure_jj — install jujutsu (jj) at the pinned JJ_VERSION and configure it.
-#
-# Idempotent: skips the download when `jj --version` already reports the pinned
-# version. Installs the official prebuilt release binary for this OS/arch into
-# ~/.local/bin (no cargo fallback — nothing else here uses cargo). Configuration
-# (identity from the git identity these scripts already set, plus
-# ui.default-command) is applied on every run; `jj config set` overwrites in
-# place, so re-runs are no-ops.
-ensure_jj() {
-    local os arch target tarball tmpdir bin_dir="$HOME/.local/bin"
-
-    if command -v jj &> /dev/null && jj --version 2>/dev/null | grep -q "$JJ_VERSION"; then
-        printf "${GREEN}✓ jj %s already installed${NC}\n" "$JJ_VERSION"
-        configure_jj
-        return 0
-    fi
-
-    case "$(detect_os)" in
-        macos) os="apple-darwin" ;;
-        linux) os="unknown-linux-musl" ;;
-        *) printf "${RED}ensure_jj: unsupported OS for prebuilt jj binaries${NC}\n"; return 1 ;;
-    esac
-    case "$(uname -m)" in
-        x86_64|amd64)  arch="x86_64" ;;
-        arm64|aarch64) arch="aarch64" ;;
-        *) printf "${RED}ensure_jj: unsupported arch '%s'${NC}\n" "$(uname -m)"; return 1 ;;
-    esac
-    target="${arch}-${os}"
-    tarball="jj-v${JJ_VERSION}-${target}.tar.gz"
-
-    printf "${BLUE}Installing jj %s (%s)...${NC}\n" "$JJ_VERSION" "$target"
-    tmpdir=$(mktemp -d)
-    if ! curl -fsSL --retry 3 -o "$tmpdir/$tarball" \
-        "https://github.com/jj-vcs/jj/releases/download/v${JJ_VERSION}/${tarball}"; then
-        rm -rf "$tmpdir"
-        printf "${RED}Failed to download jj %s — check network, or install manually: https://jj-vcs.github.io/jj/latest/install-and-setup/${NC}\n" "$JJ_VERSION"
-        return 1
-    fi
-    tar -xzf "$tmpdir/$tarball" -C "$tmpdir"
-    local jj_bin
-    jj_bin=$(find "$tmpdir" -name jj -type f | head -n1)
-    if [ -z "$jj_bin" ]; then
-        rm -rf "$tmpdir"
-        printf "${RED}jj binary not found inside %s${NC}\n" "$tarball"
-        return 1
-    fi
-    mkdir -p "$bin_dir"
-    install -m 0755 "$jj_bin" "$bin_dir/jj"
-    rm -rf "$tmpdir"
-    export PATH="$bin_dir:$PATH"
-
-    # Persist ~/.local/bin on PATH for future shells (same grep-guarded rc
-    # pattern the Terminal scripts use).
+# persist_local_bin_path — keep ~/.local/bin on PATH now and for future shells
+# (same grep-guarded rc pattern the Terminal scripts use). uv tool shims and
+# other user-level binaries land there.
+persist_local_bin_path() {
+    export PATH="$HOME/.local/bin:$PATH"
     local rc
     for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do
         if [ -f "$rc" ] && ! grep -q '\.local/bin' "$rc" 2>/dev/null; then
@@ -162,23 +111,96 @@ ensure_jj() {
             echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$rc"
         fi
     done
-
-    printf "${GREEN}✓ Installed jj %s to %s/jj${NC}\n" "$JJ_VERSION" "$bin_dir"
-    configure_jj
 }
 
-# configure_jj — user-level jj config: reuse the git identity these scripts
-# already configure, and default `jj` (bare) to `jj log`. Colocated mode is a
-# per-repo choice (`jj git init --colocate`), so nothing global is set for it.
-configure_jj() {
-    command -v jj &> /dev/null || return 0
-    local git_name git_email
-    git_name=$(git config --global user.name 2>/dev/null || true)
-    git_email=$(git config --global user.email 2>/dev/null || true)
-    [ -n "$git_name" ]  && jj config set --user user.name "$git_name"
-    [ -n "$git_email" ] && jj config set --user user.email "$git_email"
-    jj config set --user ui.default-command log
-    printf "${GREEN}✓ jj configured (user.name/user.email from git, ui.default-command=log)${NC}\n"
+# ensure_lgtmaybe — install the lgtmaybe review CLI consumed by the advisory
+# Stop hook (shared/hooks/lgtmaybe_review_hook.sh) and the code-reviewer
+# persona. Idempotent: returns immediately when the CLI is already on PATH.
+# Prefers `uv tool install` (bootstrapping uv with the same official script
+# ensure_mcp_prereqs uses), falling back to pipx. Verification is offline-only
+# (--version/--help) — never runs a billed review at install time.
+ensure_lgtmaybe() {
+    if command -v lgtmaybe &> /dev/null; then
+        printf "${GREEN}✓ lgtmaybe already installed${NC}\n"
+        return 0
+    fi
+    printf "${BLUE}Installing lgtmaybe (advisory review CLI)...${NC}\n"
+    if ! command -v uv &> /dev/null && ! command -v pipx &> /dev/null; then
+        printf "${YELLOW}Neither uv nor pipx found. Installing uv...${NC}\n"
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+    fi
+    if command -v uv &> /dev/null; then
+        uv tool install 'lgtmaybe[bedrock]' || true
+    elif command -v pipx &> /dev/null; then
+        pipx install 'lgtmaybe[bedrock]' || true
+    fi
+    persist_local_bin_path
+    if lgtmaybe --version &> /dev/null || lgtmaybe --help &> /dev/null; then
+        printf "${GREEN}✓ lgtmaybe installed: %s${NC}\n" "$(command -v lgtmaybe)"
+        return 0
+    fi
+    printf "${RED}lgtmaybe install failed — the advisory review stays disabled until it is installed (uv tool install 'lgtmaybe[bedrock]').${NC}\n"
+    return 1
+}
+
+# configure_lgtmaybe — interactive provider/model setup for lgtmaybe.
+#
+# Asks which provider lgtmaybe should use (Anthropic API vs AWS Bedrock) and
+# which model, then persists the answers as a marker-delimited LGTMAYBE_CONFIG
+# block in ~/.bashrc and ~/.zshrc. The Stop hook and the code-reviewer persona
+# both read LGTMAYBE_PROVIDER / LGTMAYBE_MODEL from the environment, so this
+# one block drives every lgtmaybe consumer. Strip-then-re-add keeps re-runs
+# idempotent and lets you change answers by re-running the installer.
+# Non-interactive runs (CI, piped stdin) skip the prompts entirely and leave
+# the built-in defaults (anthropic / claude-sonnet-4-6) in place.
+configure_lgtmaybe() {
+    if [ ! -t 0 ]; then
+        printf "${YELLOW}Non-interactive shell — skipping lgtmaybe config prompts (defaults: anthropic / claude-sonnet-4-6)${NC}\n"
+        return 0
+    fi
+
+    local provider model default_model api_key=""
+    printf "${BLUE}lgtmaybe configuration${NC}\n"
+    printf "  Provider: [1] anthropic (needs ANTHROPIC_API_KEY)  [2] bedrock (ambient AWS creds)\n"
+    read -r -p "  Choose provider [1]: " provider
+    case "$provider" in
+        2|bedrock) provider="bedrock";   default_model="us.anthropic.claude-sonnet-4-6" ;;
+        *)         provider="anthropic"; default_model="claude-sonnet-4-6" ;;
+    esac
+    read -r -p "  Model [$default_model]: " model
+    model="${model:-$default_model}"
+
+    if [ "$provider" = "anthropic" ] && [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+        # Never echoed; blank skips (export it yourself later if preferred).
+        read -r -s -p "  ANTHROPIC_API_KEY (blank to skip): " api_key
+        echo ""
+    fi
+
+    local rc
+    for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
+        [ -f "$rc" ] || continue
+        if grep -qF 'LGTMAYBE_CONFIG' "$rc"; then
+            # Strip-then-re-add (same idempotent pattern as HERDR_AUTOLAUNCH);
+            # avoid `sed -i` — GNU and BSD sed disagree on its argument.
+            sed '/# LGTMAYBE_CONFIG start/,/# LGTMAYBE_CONFIG end/d' "$rc" > "$rc.tmp" && mv "$rc.tmp" "$rc"
+        fi
+        {
+            echo ""
+            echo "# LGTMAYBE_CONFIG start (managed by macols-configs — re-run install_claudecode.sh to change)"
+            echo "export LGTMAYBE_PROVIDER=\"$provider\""
+            echo "export LGTMAYBE_MODEL=\"$model\""
+            if [ -n "$api_key" ]; then
+                echo "export ANTHROPIC_API_KEY=\"$api_key\""
+            fi
+            echo "# LGTMAYBE_CONFIG end"
+        } >> "$rc"
+    done
+    export LGTMAYBE_PROVIDER="$provider" LGTMAYBE_MODEL="$model"
+    if [ -n "$api_key" ]; then
+        export ANTHROPIC_API_KEY="$api_key"
+    fi
+    printf "${GREEN}✓ lgtmaybe configured: provider=%s model=%s (persisted to ~/.bashrc + ~/.zshrc)${NC}\n" "$provider" "$model"
 }
 
 # ensure_node_on_noninteractive_path — ponytail's hooks (and our JSON config

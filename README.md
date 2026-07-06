@@ -6,9 +6,8 @@ terminal/dev-environment setup. Personas, steering, MCP servers and check hooks
 are authored once under `shared/` and each tool's installer renders them into
 that tool's native format, so nothing drifts.
 
-Each installer also provisions **jujutsu (jj)** at a pinned version (see
-`JJ_VERSION` in `lib/common.sh`) for the jj-on-colocated-git workflow the
-steering teaches, and installs the
+The steering teaches a plain-git workflow — one branch per change, git
+worktrees for parallel work — and each installer installs the
 [ponytail](https://github.com/DietrichGebert/ponytail) minimal-mode ruleset for
 every agent via that agent's native mechanism.
 
@@ -18,7 +17,7 @@ every agent via that agent's native mechanism.
 macols-configs/
 ├── install.sh              # orchestrator: env (optional) + all four tools
 ├── install_claudecode.sh   # self-contained per-tool installers
-├── install_codex.sh        #   (ensure brew + CLI + jj, then install configs)
+├── install_codex.sh        #   (ensure brew + CLI, then install configs)
 ├── install_opencode.sh
 ├── install_pi.sh           # installs Oh My Pi (omp)
 ├── lib/
@@ -110,18 +109,16 @@ e.g. `pi-agent-web-access`, `pi-subagents`, `pi-ask-user`). It replaces the
 plain `pi` agent (the old install is retired) and its npm bundle runs on Bun,
 which the installer provisions automatically.
 
-### Jujutsu (jj) and the colocated workflow
+### Git worktree workflow
 
-Every installer provisions jj at the pinned `JJ_VERSION` (prebuilt release
-binary into `~/.local/bin`; idempotent — skipped when the pinned version is
-already installed) and mirrors the git identity into `jj config --user`. The
-steering teaches agents a jj-on-colocated-git loop: run `jj git init --colocate`
-once in an existing clone, then agents start work with `jj new main@origin -m
-"<desc>"`, track it with `jj st` / `jj diff` / `jj describe`, and publish with
-`jj bookmark create <name> -r @` + `jj git push --allow-new`. Review everything
-in one view with `jj log` + `jj diff -r <change>`. Agents are steered away from
-`git rebase`/`checkout`/`stash`/`commit` in colocated repos; CI contexts keep
-plain git.
+The steering teaches agents a plain-git loop: start each change on its own
+branch (`git checkout -b feat/x`), commit in small conventional commits, and
+publish with `git push -u origin <branch>` + a PR. Parallel agents each get
+their own git worktree (`git worktree add ../repo-task -b feat/task`) so they
+never collide in one checkout; review everything in one view with
+`git log --oneline --graph --all`. In herdr, `Ctrl+b` `Shift+g` creates a new
+worktree, and the herdr-plus wildcard worktree layout (installed by the
+Terminal setup) automatically opens Claude Code + yazi in each one.
 
 ### Ponytail
 
@@ -154,7 +151,7 @@ cdk-expert-ts, cdk-expert-python, data-scientist ·
 **Security:** security-specialist ·
 **Management:** documentation-engineer, product-manager, project-coordinator, engineering-manager ·
 **Writing:** writing-blog-posts, writing-documents, writing-style ·
-**Workflow:** commit (run checks, describe the jj change and push its bookmark), ponytail (minimal/YAGNI mode)
+**Workflow:** commit (run checks, create a conventional commit and push the branch), ponytail (minimal/YAGNI mode)
 
 ## MCP servers
 
@@ -170,7 +167,7 @@ advisory (never blocking) checks:
 - **post-code** (per edit) — fast, file-scoped lint/type-check
 - **post-task** (turn end) — full test/security battery (linters, audits, semgrep), only when code changed
 - **pre-deploy** (Claude/Codex) — confirms `cdk diff` before `cdk deploy`/`destroy`
-- **lgtmaybe** (Claude Code Stop only) — advisory LLM review of uncommitted changes via [lgtmaybe](https://github.com/MattJColes/lgtmaybe); runs after post-task when code changed. Requires `uv tool install 'lgtmaybe[bedrock]'` and ambient AWS creds with `bedrock:InvokeModel*`. Disable with `LGTMAYBE_HOOK_ENABLED=false`.
+- **lgtmaybe** (Claude Code Stop only) — advisory LLM review of uncommitted changes via [lgtmaybe](https://github.com/MattJColes/lgtmaybe); runs after post-task when code changed. The CLI is installed automatically by `install_claudecode.sh`, which also prompts for provider/model and persists them as a `LGTMAYBE_CONFIG` block (`LGTMAYBE_PROVIDER` / `LGTMAYBE_MODEL`) in your shell rc — `anthropic` needs `ANTHROPIC_API_KEY`, `bedrock` needs ambient AWS creds with `bedrock:InvokeModel*`. The code-reviewer persona reads the same variables for its automated review pass. Disable the hook with `LGTMAYBE_HOOK_ENABLED=false`.
 
 ## Testing
 
@@ -189,10 +186,8 @@ matrix.
 ```bash
 aws configure                                   # AWS credentials for aws-* MCPs
 podman machine init && podman machine start     # containers (macOS)
-uv tool install 'lgtmaybe[bedrock]'             # optional: Claude Code turn-end LLM review hook
 claude --version && codex --version             # sanity check
-omp --version && jj --version                   # oh-my-pi + jujutsu
-jj git init --colocate                          # once per existing git clone
+omp --version && lgtmaybe --version             # oh-my-pi + lgtmaybe (auto-installed)
 ```
 
 ## Troubleshooting

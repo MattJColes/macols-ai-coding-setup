@@ -9,7 +9,7 @@ set -euo pipefail
 
 echo ""
 echo "=============================="
-echo " [1/7] Homebrew"
+echo " [1/8] Homebrew"
 echo "=============================="
 
 if ! command -v brew &>/dev/null; then
@@ -32,7 +32,7 @@ fi
 
 echo ""
 echo "=============================="
-echo " [2/7] Installing packages"
+echo " [2/8] Installing packages"
 echo "=============================="
 
 echo "Installing neovim, yazi, lazygit, delta, and tmux..."
@@ -54,7 +54,127 @@ fi
 
 echo ""
 echo "=============================="
-echo " [3/7] LazyVim setup"
+echo " [3/8] herdr plugins + layouts"
+echo "=============================="
+
+HERDR_CONFIG_DIR="$HOME/.config/herdr"
+HERDR_PLUS_CFG="$HERDR_CONFIG_DIR/plugins/config/cloudmanic.herdr-plus"
+
+# Go is needed to build herdr-plus from source.
+if command -v go &>/dev/null; then
+    echo "go already installed."
+else
+    echo "Installing go (required to build herdr plugins)..."
+    brew install go || echo "  WARNING: go install failed — the herdr-plus build may fail."
+fi
+
+# Live plugin commands only make sense when herdr itself is present (the brew
+# formula can be missing — see the WARNING above). The configs further down
+# are still written either way and activate once herdr lands on PATH, same
+# philosophy as the auto-launch hook.
+if command -v herdr &>/dev/null; then
+    herdr_plugin_installed() { herdr plugin list 2>/dev/null | grep -qF "$1"; }
+
+    if herdr_plugin_installed "cloudmanic.herdr-plus"; then
+        echo "  herdr-plus already installed."
+    else
+        herdr plugin install cloudmanic/herdr-plus --yes \
+            || echo "  WARNING: herdr-plus install failed — retry manually: herdr plugin install cloudmanic/herdr-plus --yes"
+        herdr_plugin_installed "cloudmanic.herdr-plus" \
+            && echo "  herdr-plus installed." \
+            || echo "  WARNING: herdr-plus not visible in 'herdr plugin list'."
+    fi
+
+    if herdr_plugin_installed "persiyanov.reviewr"; then
+        echo "  herdr-reviewr already installed."
+    else
+        herdr plugin install persiyanov/herdr-reviewr --yes \
+            || echo "  WARNING: herdr-reviewr install failed — retry manually: herdr plugin install persiyanov/herdr-reviewr --yes"
+        herdr_plugin_installed "persiyanov.reviewr" \
+            && echo "  herdr-reviewr installed." \
+            || echo "  WARNING: herdr-reviewr not visible in 'herdr plugin list'."
+    fi
+else
+    echo "  herdr not on PATH — skipping plugin installs (configs below are still"
+    echo "  written and will activate once herdr is installed)."
+fi
+
+# Keybindings: merge into config.toml, never overwrite user config. Each
+# [[keys.command]] block is grep-guarded on its command string so re-runs
+# don't duplicate entries.
+mkdir -p "$HERDR_CONFIG_DIR"
+touch "$HERDR_CONFIG_DIR/config.toml"
+# Repair a missing trailing newline before appending TOML blocks.
+if [ -s "$HERDR_CONFIG_DIR/config.toml" ] && [ -n "$(tail -c1 "$HERDR_CONFIG_DIR/config.toml")" ]; then
+    echo >> "$HERDR_CONFIG_DIR/config.toml"
+fi
+
+if ! grep -qF 'cloudmanic.herdr-plus.projects' "$HERDR_CONFIG_DIR/config.toml"; then
+    cat >> "$HERDR_CONFIG_DIR/config.toml" << 'EOF'
+
+[[keys.command]]
+key = "prefix+p"
+type = "plugin_action"
+command = "cloudmanic.herdr-plus.projects"
+EOF
+    echo "  Added prefix+p -> herdr-plus projects keybinding."
+else
+    echo "  herdr-plus projects keybinding already present."
+fi
+
+if ! grep -qF 'persiyanov.reviewr.toggle' "$HERDR_CONFIG_DIR/config.toml"; then
+    cat >> "$HERDR_CONFIG_DIR/config.toml" << 'EOF'
+
+[[keys.command]]
+key = "cmd+r"
+type = "plugin_action"
+command = "persiyanov.reviewr.toggle"
+EOF
+    echo "  Added cmd+r -> reviewr toggle keybinding."
+else
+    echo "  reviewr keybinding already present."
+fi
+
+# herdr-plus layouts (plugin-owned files — full overwrite, same convention as
+# the yazi configs below).
+mkdir -p "$HERDR_PLUS_CFG/projects" "$HERDR_PLUS_CFG/worktrees"
+
+echo "  Writing herdr-plus project layout..."
+cat > "$HERDR_PLUS_CFG/projects/default.toml" << 'EOF'
+name = "Dev (Claude + Yazi)"
+description = "Claude Code dangerously in worktree (left) + yazi (right)"
+
+[[tabs]]
+name = "claude"
+command = "claude --dangerously-skip-permissions"
+
+[[tabs.panes]]
+split = "right"
+command = "yazi"
+EOF
+
+echo "  Writing herdr-plus worktree layout (applies to every repo)..."
+cat > "$HERDR_PLUS_CFG/worktrees/default.toml" << 'EOF'
+repo = "*"
+
+[[tabs]]
+name = "claude"
+command = "claude --dangerously-skip-permissions"
+
+[[tabs.panes]]
+split = "right"
+command = "yazi"
+EOF
+
+# Pick up the new config if the herdr server is running (non-fatal otherwise).
+if command -v herdr &>/dev/null; then
+    herdr server reload-config >/dev/null 2>&1 \
+        || echo "  (herdr server not running — config loads on next start)"
+fi
+
+echo ""
+echo "=============================="
+echo " [4/8] LazyVim setup"
 echo "=============================="
 
 if [[ ! -d "$HOME/.config/nvim" ]]; then
@@ -99,7 +219,7 @@ EOF
 
 echo ""
 echo "=============================="
-echo " [4/7] Verifying installations"
+echo " [5/8] Verifying installations"
 echo "=============================="
 
 yazi --version
@@ -110,7 +230,7 @@ nvim --version | head -1
 
 echo ""
 echo "=============================="
-echo " [5/7] Installing Yazi plugins"
+echo " [6/8] Installing Yazi plugins"
 echo "=============================="
 
 ya pkg add yazi-rs/plugins:git || true
@@ -119,7 +239,7 @@ ya pkg install --discard || true
 
 echo ""
 echo "=============================="
-echo " [6/7] Writing Yazi config"
+echo " [7/8] Writing Yazi config"
 echo "=============================="
 
 YAZI_CONFIG="$HOME/.config/yazi"
@@ -295,7 +415,7 @@ echo "  Done."
 
 echo ""
 echo "=============================="
-echo " [7/7] Shell configuration"
+echo " [8/8] Shell configuration"
 echo "=============================="
 
 BREW_LINE='eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'

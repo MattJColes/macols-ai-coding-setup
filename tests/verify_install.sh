@@ -47,7 +47,9 @@ verify_claudecode() {
     # declaration (offline fallback) — either satisfies the check.
     pass "ponytail plugin installed or declared" \
         "grep -qs 'ponytail@ponytail' '$d/plugins/installed_plugins.json' || grep -qs 'ponytail@ponytail' '$d/settings.json'"
-    soft "jj --version at pinned version" "command -v jj >/dev/null && jj --version >/dev/null 2>&1"
+    soft "git worktree available" "git worktree list >/dev/null 2>&1 || git worktree --help >/dev/null 2>&1"
+    soft "lgtmaybe CLI installed" "command -v lgtmaybe >/dev/null && { lgtmaybe --version >/dev/null 2>&1 || lgtmaybe --help >/dev/null 2>&1; }"
+    soft "code-reviewer skill has lgtmaybe pass" "grep -q 'lgtmaybe' '$d/skills/code-reviewer/SKILL.md' 2>/dev/null"
     soft "claude mcp list shows filesystem" "command -v claude >/dev/null && claude mcp list 2>/dev/null | grep -q filesystem"
 }
 
