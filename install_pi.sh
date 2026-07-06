@@ -33,11 +33,15 @@ AGENTS_FILE="$PI_DIR/AGENTS.md"
 # pi-markdown-preview, pi-btw) fail omp's extension validation — omp ships
 # those capabilities natively (bundled task agents, ask-user, markdown
 # rendering, context management) — so they are deliberately not installed.
-#   • pi-agent-web-access  — web search, page fetch, YouTube transcripts, GitHub browsing
+#
+# pi-agent-web-access is also deliberately skipped: it deep-imports linkedom's
+# internal canvas.cjs, which assigns module.exports inside a try/catch. omp's
+# Bun loader detects default exports via static analysis (cjs-module-lexer),
+# which ignores try blocks, so it reports "Missing 'default' export" and the
+# install rolls back — it never installs. Re-add if fixed upstream.
 #   • ponytail             — lazy/YAGNI mode extension (github.com/DietrichGebert/ponytail;
 #                            also published as npm:@dietrichgebert/ponytail if git fetch is blocked)
-OMP_PACKAGES="npm:pi-agent-web-access
-git:github.com/$PONYTAIL_REPO"
+OMP_PACKAGES="git:github.com/$PONYTAIL_REPO"
 
 usage() {
     cat << EOF
