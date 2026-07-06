@@ -2,7 +2,7 @@
 agent: true
 model: sonnet
 name: linux-specialist
-description: Linux, shell scripting, and system administration specialist. Use for bash scripts, jj/git operations, system configuration, and CLI tools.
+description: Linux, shell scripting, and system administration specialist. Use for bash scripts, git operations, system configuration, and CLI tools.
 allowed-tools:
   - Read
   - Write
@@ -92,66 +92,56 @@ main() {
 main "$@"
 ```
 
-## Version Control Workflows (jj on colocated git)
+## Version Control Workflows (git + git worktrees)
 
-Local repos are colocated jujutsu repos (`jj git init --colocate`); GitHub is
-still the remote. In a colocated repo do NOT run `git rebase`, `git checkout`,
-`git stash` or `git commit` — use the jj equivalents below, or stop and ask if
-a git command seems genuinely needed. `jj undo` reverts the last jj operation
-when something goes wrong.
+Plain git with GitHub as the remote. One branch per change; parallel work gets
+its own git worktree instead of branch-juggling in a single checkout.
 
 ### Feature Change
 ```bash
-# Start a new change off trunk (replaces branch/worktree creation)
-jj new main@origin -m "feat: add feature description"
+# Branch off the default branch
+git checkout -b feat/my-feature
 
-# Work — no staging, no stash: the working copy IS the change
-jj st          # what changed (replaces git status)
-jj diff        # review the change (replaces git diff)
-jj describe -m "feat: refine feature description"   # update the message as you go
+# Work — inspect as you go
+git status
+git diff
+
+# Commit in small, focused steps
+git add -p && git commit -m "feat: add feature description"
 
 # Update from main
-jj rebase -d main@origin
+git fetch origin && git rebase origin/main
 
-# Push and create PR (bookmarks replace branches)
-jj bookmark create feat/my-feature -r @
-jj git push --allow-new
+# Push and create PR
+git push -u origin feat/my-feature
 gh pr create --fill
 ```
 
-### Reworking History
+### Parallel Work (git worktrees)
 ```bash
-# Squash the current change into its parent
-jj squash
+# One worktree per concurrent task — separate directory, separate branch
+git worktree add ../myrepo-fix-login -b fix/login
+cd ../myrepo-fix-login   # work here without disturbing the main checkout
 
-# Split a change in two / rebase a stack onto main
-jj split
-jj rebase -d main@origin
+git worktree list                        # see all worktrees
+git worktree remove ../myrepo-fix-login  # clean up after merge
+git branch -d fix/login
 ```
 
-### Useful jj Commands
+### Useful git Commands
 ```bash
-# See all in-flight changes (yours and other agents')
-jj log
+# See all in-flight branches (yours and other agents')
+git log --oneline --graph --all
 
-# Show what changed in a specific change
-jj diff -r <change-id>
+# Show what changed on a specific branch
+git diff main...<branch>
 
-# Undo the last jj operation (the recovery tool)
-jj undo
+# Park uncommitted work / pick it back up
+git stash
+git stash pop
 
-# No stash needed — start something else without losing work
-jj new main@origin -m "WIP: other thing"   # previous change stays put
-jj edit <change-id>                        # jump back to it later
-```
-
-### Non-Colocated Repos (CI / GitHub Actions)
-In repos without a `.jj` directory — CI checkouts, ephemeral runners — the
-plain git workflow still applies:
-```bash
-git checkout -b feature/my-feature
-git add -p && git commit -m "feat: add feature description"
-git push -u origin feature/my-feature
+# The recovery tool when something goes wrong
+git reflog
 ```
 
 ## System Administration

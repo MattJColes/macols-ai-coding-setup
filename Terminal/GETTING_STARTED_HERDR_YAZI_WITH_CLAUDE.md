@@ -1,6 +1,6 @@
 # Getting Started: Herdr + Yazi + Claude Code
 
-A workflow guide for using Herdr as your terminal workspace manager, Yazi as your file navigator, and Claude Code working in jj changes (on a colocated git repo) so you can watch its work live.
+A workflow guide for using Herdr as your terminal workspace manager, Yazi as your file navigator, and Claude Code working in git worktrees so you can watch its work live.
 
 ## Quick Install
 
@@ -74,6 +74,17 @@ All Herdr commands start with the prefix key `Ctrl+b`.
 | Close workspace | `Ctrl+b` then `Shift+d` |
 | New worktree | `Ctrl+b` then `Shift+g` |
 
+### Plugin keybindings (installed by the setup script)
+
+| Action | Keys |
+|--------|------|
+| herdr-plus project picker | `Ctrl+b` then `p` |
+| Toggle reviewr | `Cmd+r` |
+
+The herdr-plus **worktree layout** (`repo = "*"`) applies to every repo: each
+new worktree opens with Claude Code (`--dangerously-skip-permissions`) on the
+left and Yazi split right, automatically.
+
 ### Help
 
 Press `Ctrl+b` then `?` to see all keybindings.
@@ -88,15 +99,18 @@ Set up a three-pane layout for active development:
 +-------------------+------------------+
 |                   |                  |
 |   Claude Code     |   Yazi / Editor  |
-|   (jj change)     |                  |
+|   (git worktree)  |                  |
 |                   |                  |
 +-------------------+------------------+
 ```
 
 1. Start Herdr: `herdr`
-2. In the first pane, launch Claude on its own jj change (see section 5)
+2. In the first pane, launch Claude in its own git worktree (see section 5)
 3. Split vertical: `Ctrl+b` then `v`
 4. In the second pane, launch Yazi: `yazi`
+
+With the herdr-plus worktree layout installed, `Ctrl+b` then `Shift+g` gives
+you this layout automatically in a fresh worktree.
 
 ---
 
@@ -151,40 +165,45 @@ When you press `Enter` on a file, Yazi opens it in `$EDITOR` (nvim). After editi
 
 ---
 
-## 5. Claude Code on a jj Change
+## 5. Claude Code in a Git Worktree
 
-Repos are colocated jujutsu repos (`jj git init --colocate` once in each
-existing git clone). Instead of branches or worktrees, each agent works on its
-own jj change off trunk -- no separate directory needed, and several agents can
-run in parallel in the same repo:
+Each agent works in its own git worktree -- a separate directory checked out on
+its own branch -- so several agents can run in parallel without colliding in
+one checkout. Three ways to get one:
+
+1. **Herdr built-in**: `Ctrl+b` then `Shift+g` creates a new worktree for the
+   current repo. With the herdr-plus worktree layout installed, the new tab
+   opens with Claude Code on the left and Yazi split right, automatically.
+2. **herdr-plus project picker**: `Ctrl+b` then `p` opens the project layouts
+   (the default "Dev (Claude + Yazi)" layout launches the same split).
+3. **Manually**:
 
 ```bash
-jj new main@origin -m "feat: describe the task"
+git worktree add ../myrepo-feat-x -b feat/x
+cd ../myrepo-feat-x
 claude
 ```
 
 Claude will:
-- Edit files directly -- the working copy IS the change (no staging, no stash)
-- Keep the change description up to date with `jj describe -m`
-- Leave every in-flight change visible in `jj log`
+- Edit files on the worktree's branch, committing in small conventional commits
+- Leave every in-flight branch visible in `git log --oneline --graph --all`
 
 ### Watching Claude's changes live
 
-In your Yazi pane the git-peek preview shows diffs as Claude writes code
-(colocation keeps `.git` in sync, so the git-based previews keep working).
-Use `g c` to see which files Claude has modified, or run `jj st` / `jj diff`
-in any pane.
+In your Yazi pane the git-peek preview shows diffs as Claude writes code.
+Use `g c` to see which files Claude has modified, or run `git status` /
+`git diff` in any pane of the same worktree.
 
 ### Typical workflow
 
-1. Pane 1: `jj new main@origin -m "..."` then `claude` -- give Claude a task
-2. Pane 2: `yazi` -- watch diffs appear in preview, or `jj log` to see all agents' changes
-3. Review with `jj log` + `jj diff -r <change>` (lazygit via `g i` still works for browsing history)
-4. When satisfied: `jj bookmark create feat/name -r @` and `jj git push --allow-new`, then open a PR
+1. Pane 1: create a worktree (`Ctrl+b` `Shift+g`, or `git worktree add ../repo-task -b feat/task && cd ../repo-task`) then `claude` -- give Claude a task
+2. Pane 2: `yazi` -- watch diffs appear in preview, or `git log --oneline --graph --all` to see all agents' branches
+3. Review with `git diff main...feat/task` (lazygit via `g i` still works for browsing history)
+4. When satisfied: `git push -u origin feat/task`, then open a PR
+5. After merge: `git worktree remove ../repo-task && git branch -d feat/task`
 
-If something goes sideways, `jj undo` reverts the last operation. Avoid
-`git rebase` / `git checkout` / `git stash` / `git commit` inside colocated
-repos -- use the jj equivalents.
+If something goes sideways, `git reflog` finds the commit you were on before
+things went wrong.
 
 ---
 
@@ -237,8 +256,10 @@ The which-key popup is your best friend -- press `Space` and pause for 300ms to 
 # Start your workspace
 herdr --session dev
 
-# Pane 1: Claude doing work on its own jj change
-jj new main@origin -m "feat: the task"
+# Pane 1: Claude doing work in its own git worktree
+# (or just Ctrl+b, Shift+g — the herdr-plus layout opens Claude + Yazi for you)
+git worktree add ../myrepo-the-task -b feat/the-task
+cd ../myrepo-the-task
 claude
 
 # Ctrl+b, v to split
@@ -251,9 +272,9 @@ yazi
 #   g d  -> see the diff
 #   Enter -> open file in nvim to edit
 # In any shell pane:
-#   jj log                 -> all in-flight changes (every agent)
-#   jj diff -r <change>    -> review one change
-#   jj bookmark create feat/name -r @ && jj git push --allow-new
+#   git log --oneline --graph --all   -> all in-flight branches (every agent)
+#   git diff main...feat/the-task     -> review one branch
+#   git push -u origin feat/the-task  -> publish, then open a PR
 ```
 
 ### Tips

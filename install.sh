@@ -5,7 +5,7 @@
 # Installs the agentic CLIs and their configuration. By default it configures
 # all four tools (Claude Code, Codex, OpenCode, Oh My Pi — tool keyword `pi`);
 # pass tool names to scope it. Each per-tool installer is self-contained (it
-# ensures Homebrew + the CLI binary + jj, then installs configs from the single
+# ensures Homebrew + the CLI binary, then installs configs from the single
 # sources of truth under shared/).
 #
 # Examples:

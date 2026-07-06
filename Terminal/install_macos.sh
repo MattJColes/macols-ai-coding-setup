@@ -163,13 +163,6 @@ if [ -n "$git_email" ]; then
     echo "Git email set to: $git_email"
 fi
 
-# Mirror the git identity into jj (installed by the agent installers above).
-if command -v jj &> /dev/null; then
-    [ -n "$git_username" ] && jj config set --user user.name "$git_username"
-    [ -n "$git_email" ] && jj config set --user user.email "$git_email"
-    echo "jj identity set from git identity"
-fi
-
 # AWS configuration
 echo ""
 echo "Configuring AWS CLI..."
@@ -189,7 +182,6 @@ echo "   - aws --version"
 echo "   - claude --version"
 echo "   - codex --version"
 echo "   - omp --version"
-echo "   - jj --version"
 echo "   - flutter --version"
 echo "   - dart --version"
 echo "   - ruff --version"

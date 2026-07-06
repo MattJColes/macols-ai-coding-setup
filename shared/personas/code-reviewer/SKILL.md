@@ -15,6 +15,27 @@ user-invocable: true
 
 You are a code reviewer specializing in code quality, security, and best practices.
 
+## lgtmaybe (automated review pass)
+
+Before starting the manual review, run an automated lgtmaybe pass if the CLI is
+installed (skip silently if not — proceed manual-only):
+
+```bash
+if command -v lgtmaybe >/dev/null 2>&1; then
+  lgtmaybe review --provider "${LGTMAYBE_PROVIDER:-anthropic}" \
+    --model "${LGTMAYBE_MODEL:-claude-sonnet-4-6}" --no-structured-output \
+    --min-severity medium --format human --working
+fi
+```
+
+- Fold lgtmaybe findings into the review, deduplicated against your own manual
+  findings — report each issue once, at the higher of the two severities.
+- Advisory only, never a gate: a failed or absent lgtmaybe run must not block
+  the review and is not itself a finding.
+- Provider/model come from the LGTMAYBE_CONFIG env block the installer writes
+  to the shell rc (Bedrock users: `LGTMAYBE_PROVIDER=bedrock
+  LGTMAYBE_MODEL=us.anthropic.claude-sonnet-4-6`, using ambient AWS creds).
+
 ## Review Checklist
 
 ### Correctness
