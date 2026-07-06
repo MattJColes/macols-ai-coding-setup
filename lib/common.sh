@@ -144,6 +144,28 @@ ensure_lgtmaybe() {
     return 1
 }
 
+# ensure_openspec — install the OpenSpec CLI (github.com/Fission-AI/openspec)
+# used for spec-driven development across every agent. Idempotent: returns
+# immediately when the CLI is on PATH. Global npm install (needs Node 20.19+;
+# require_node's floor is lower, so a very old Node may still fail — npm will
+# say so). Project setup stays manual/per-repo (`openspec init`) — the steering
+# teaches agents to use the workflow only where an openspec/ directory exists.
+ensure_openspec() {
+    if command -v openspec &> /dev/null; then
+        printf "${GREEN}✓ openspec already installed${NC}\n"
+        return 0
+    fi
+    printf "${BLUE}Installing OpenSpec CLI (spec-driven development)...${NC}\n"
+    command -v npm &> /dev/null || { printf "${RED}Need npm to install openspec. Install Node.js/npm, then re-run.${NC}\n"; return 1; }
+    npm install -g @fission-ai/openspec@latest || { printf "${RED}Could not install openspec via npm.${NC}\n"; return 1; }
+    if openspec --version &> /dev/null; then
+        printf "${GREEN}✓ openspec installed: %s${NC}\n" "$(command -v openspec)"
+    else
+        printf "${RED}openspec installed but does not run — check 'node --version' (needs >= 20.19).${NC}\n"
+        return 1
+    fi
+}
+
 # configure_lgtmaybe — interactive provider/model setup for lgtmaybe.
 #
 # Asks which provider lgtmaybe should use (Anthropic API vs AWS Bedrock) and

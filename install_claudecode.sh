@@ -78,6 +78,7 @@ banner "Claude Code Installer"
 
 if [ "$DO_CLI" = true ]; then
     ensure_brew; ensure_cli claudecode; install_claude_launcher "$CLAUDE_DIR"
+    ensure_openspec || printf "${YELLOW}⚠ openspec install skipped/failed${NC}\n"
     ensure_node_on_noninteractive_path || printf "${YELLOW}⚠ node PATH linking skipped/failed${NC}\n"
     echo ""
 fi

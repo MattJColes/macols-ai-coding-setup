@@ -9,7 +9,9 @@ that tool's native format, so nothing drifts.
 The steering teaches a plain-git workflow — one branch per change, git
 worktrees for parallel work — and each installer installs the
 [ponytail](https://github.com/DietrichGebert/ponytail) minimal-mode ruleset for
-every agent via that agent's native mechanism.
+every agent via that agent's native mechanism, plus the
+[OpenSpec](https://github.com/Fission-AI/openspec) CLI for spec-driven
+development in repos that opt in.
 
 ## Structure
 
@@ -137,6 +139,17 @@ installed for every agent via its native mechanism:
 Ponytail's hooks need `node` on the non-interactive PATH; the installers link
 `node`/`npm`/`npx` into `~/.local/bin` to guarantee that.
 
+### OpenSpec
+
+Every installer provisions the [OpenSpec](https://github.com/Fission-AI/openspec)
+CLI (`npm install -g @fission-ai/openspec`, Node ≥ 20.19) for spec-driven
+development. Adoption is per-repo and opt-in: run `openspec init` in a project
+to create its `openspec/` directory and generate the agent slash commands
+(`/opsx:explore`, `/opsx:propose`, `/opsx:apply`, `/opsx:archive`). The
+steering teaches agents to follow the propose → approve → implement → archive
+loop wherever an `openspec/` directory exists, and never to `openspec init`
+uninvited.
+
 ## Personas
 
 Each persona is one file: `shared/personas/<name>/SKILL.md`. Its frontmatter
@@ -197,6 +210,8 @@ aws configure                                   # AWS credentials for aws-* MCPs
 podman machine init && podman machine start     # containers (macOS)
 claude --version && codex --version             # sanity check
 omp --version && lgtmaybe --version             # oh-my-pi + lgtmaybe (auto-installed)
+openspec --version                              # spec-driven dev CLI (auto-installed)
+openspec init                                   # opt a project into OpenSpec (per repo)
 ```
 
 ## Troubleshooting
