@@ -129,6 +129,11 @@ files matching `specs/anchors/*.yml`, follow this workflow around every change:
 
 - Anchors are ast-grep rules in sidecar YAML, keyed by spec-section id; each
   rule pins one section of a spec to the one code site that implements it.
+  Spec sections carry their id as an invisible HTML comment
+  (`<!-- anchor: <id> -->`, dotted lowercase ids) so docs render unchanged.
+- Write rules as node kind + name-field regex (e.g. `kind: function_definition`
+  with `has: { field: name, regex: '^fn$' }`), scoped by a `files:` glob — not
+  `pattern:` strings, which silently match nothing for some constructs.
 - Before planning a change, run the anchor rules (with ast-grep, or the repo's
   anchor script if it has one) against the files you expect to touch and read
   only the spec sections whose anchors match — not the whole spec. This pass is
@@ -146,6 +151,13 @@ files matching `specs/anchors/*.yml`, follow this workflow around every change:
   dangling anchor (fix it in the same change); multiple matches means the rule
   is too loose (tighten with `inside` or a more specific pattern). Both are
   drift.
+- Rules for languages the installed ast-grep cannot parse belong outside the
+  anchors dir (e.g. `specs/anchors/quarantine/`) — one unloadable rule aborts
+  a whole scan.
+- Repos may run a drift gate in CI (conventionally
+  `scripts/spec_drift_gate.sh`). It warns — never blocks — on DANGLING (rule matched at the merge-base,
+  nothing now: a rename nobody re-pointed) and DRIFT (anchored code changed,
+  spec section didn't). Treat its warnings as part of the change, not noise.
 
 Repos without `specs/anchors/` are not using spec anchors — skip this workflow.
 

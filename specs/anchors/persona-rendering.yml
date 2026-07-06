@@ -1,0 +1,20 @@
+# Spec anchors — persona-rendering capability
+# (openspec/specs/persona-rendering/spec.md)
+#
+# Format: <spec-section id> → { language, rule, files }. Rules match code
+# shape (node kind + name regex), never `pattern:` strings. Each rule must
+# resolve to exactly one site — scripts/spec_drift_gate.sh --check enforces it.
+
+persona-rendering.generator:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^generate_personas$' }
+  files: [lib/common.sh]
+
+persona-rendering.list:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^list_personas$' }
+  files: [lib/common.sh]

@@ -1,0 +1,23 @@
+# Spec anchors — mcp-registration capability
+# (openspec/specs/mcp-registration/spec.md)
+
+mcp-registration.claude:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^register_mcps_claude$' }
+  files: [lib/common.sh]
+
+mcp-registration.codex:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^register_mcps_codex$' }
+  files: [lib/common.sh]
+
+mcp-registration.opencode:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^register_mcps_opencode$' }
+  files: [lib/common.sh]
