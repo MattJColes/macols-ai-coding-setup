@@ -50,6 +50,7 @@ verify_claudecode() {
     soft "git worktree available" "git worktree list >/dev/null 2>&1 || git worktree --help >/dev/null 2>&1"
     soft "lgtmaybe CLI installed" "command -v lgtmaybe >/dev/null && { lgtmaybe --version >/dev/null 2>&1 || lgtmaybe --help >/dev/null 2>&1; }"
     soft "openspec CLI installed" "command -v openspec >/dev/null && openspec --version >/dev/null 2>&1"
+    soft "ast-grep CLI installed" "command -v ast-grep >/dev/null && ast-grep --version >/dev/null 2>&1"
     soft "code-reviewer skill has lgtmaybe pass" "grep -q 'lgtmaybe' '$d/skills/code-reviewer/SKILL.md' 2>/dev/null"
     soft "claude mcp list shows filesystem" "command -v claude >/dev/null && claude mcp list 2>/dev/null | grep -q filesystem"
 }

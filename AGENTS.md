@@ -48,6 +48,9 @@ Edit the single source, never the rendered output:
   (written to shell rc by `configure_lgtmaybe`).
 - **OpenSpec is per-repo opt-in** — the installers provision the CLI only;
   never run `openspec init` for the user.
+- **Spec anchors are per-repo opt-in** — the installers provision the ast-grep
+  CLI only (`ensure_ast_grep`); the steering workflow gates on
+  `specs/anchors/*.yml` existing in the target repo.
 
 ## Rule: resolve script paths from `${BASH_SOURCE[0]}`, never `$0` after a `cd`
 

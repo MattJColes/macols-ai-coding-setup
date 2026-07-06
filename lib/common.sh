@@ -166,6 +166,30 @@ ensure_openspec() {
     fi
 }
 
+# ensure_ast_grep — install the ast-grep structural-search CLI used by the
+# code-reviewer persona and the Spec Anchors steering section. Idempotent:
+# returns immediately when the CLI is on PATH. Global npm install (the
+# @ast-grep/cli package ships both `ast-grep` and `sg` binaries) — npm is the
+# one toolchain every installer already bootstraps, whereas brew is not
+# guaranteed here (ensure_brew no-ops on Linux). Guard and verify on
+# `ast-grep`, never `sg`: Linux ships an unrelated /usr/sbin/sg (setgroups)
+# that would false-positive a `command -v sg` check and skip the install.
+ensure_ast_grep() {
+    if command -v ast-grep &> /dev/null; then
+        printf "${GREEN}✓ ast-grep already installed${NC}\n"
+        return 0
+    fi
+    printf "${BLUE}Installing ast-grep CLI (structural code search)...${NC}\n"
+    command -v npm &> /dev/null || { printf "${RED}Need npm to install ast-grep. Install Node.js/npm, then re-run.${NC}\n"; return 1; }
+    npm install -g @ast-grep/cli@latest || { printf "${RED}Could not install ast-grep via npm.${NC}\n"; return 1; }
+    if ast-grep --version &> /dev/null; then
+        printf "${GREEN}✓ ast-grep installed: %s${NC}\n" "$(command -v ast-grep)"
+    else
+        printf "${RED}ast-grep installed but does not run — check 'node --version'.${NC}\n"
+        return 1
+    fi
+}
+
 # configure_lgtmaybe — interactive provider/model setup for lgtmaybe.
 #
 # Asks which provider lgtmaybe should use (Anthropic API vs AWS Bedrock) and
