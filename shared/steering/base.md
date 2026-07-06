@@ -121,6 +121,34 @@ Repos without an `openspec/` directory are not using OpenSpec — do not run
 `openspec init` uninvited; suggest it when a project would benefit from
 spec-driven workflow and let the user decide.
 
+## Spec Anchors (ast-grep)
+
+Projects may pin spec sections to the code that implements them with
+[ast-grep](https://ast-grep.github.io) anchor rules. If the repo has anchor
+files matching `specs/anchors/*.yml`, follow this workflow around every change:
+
+- Anchors are ast-grep rules in sidecar YAML, keyed by spec-section id; each
+  rule pins one section of a spec to the one code site that implements it.
+- Before planning a change, run the anchor rules (with ast-grep, or the repo's
+  anchor script if it has one) against the files you expect to touch and read
+  only the spec sections whose anchors match — not the whole spec. This pass is
+  best-effort; the end-of-task re-run over the files you actually changed is
+  what closes the gap.
+- At the end of the task, re-run the anchors over your changed files. If the
+  behaviour a matched section describes has changed, propose the spec update as
+  a diff for the human to apply — never edit spec prose directly. Most tasks
+  correctly produce no spec change; do not invent one.
+- Anchor rules are yours to maintain, unlike prose: if your change renames or
+  moves matched code and breaks a rule, re-point the rule in the same change.
+- Keep spec sections under a ~40-line soft cap. If an update would push a
+  section past it, propose a split — do not append past the cap.
+- Anchor hygiene: a rule should match exactly one site. Zero matches is a
+  dangling anchor (fix it in the same change); multiple matches means the rule
+  is too loose (tighten with `inside` or a more specific pattern). Both are
+  drift.
+
+Repos without `specs/anchors/` are not using spec anchors — skip this workflow.
+
 ## Version Control / Workflow (git + git worktrees)
 
 Plain git with GitHub as the remote: one branch per change, git worktrees for

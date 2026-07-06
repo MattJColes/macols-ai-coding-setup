@@ -156,6 +156,16 @@ steering teaches agents to follow the propose → approve → implement → arch
 loop wherever an `openspec/` directory exists, and never to `openspec init`
 uninvited.
 
+### ast-grep
+
+Every installer provisions the [ast-grep](https://ast-grep.github.io) CLI
+(`npm install -g @ast-grep/cli`, ships both `ast-grep` and `sg` binaries) for
+structural code search. It backs the code-reviewer persona and the Spec
+Anchors steering section: repos that pin spec sections to code with anchor
+rules under `specs/anchors/*.yml` get the resolve-before-change /
+propose-spec-diff-after workflow. Adoption is per-repo and opt-in — no anchor
+files, no workflow.
+
 ## Personas
 
 Each persona is one file: `shared/personas/<name>/SKILL.md`. Its frontmatter
@@ -218,6 +228,7 @@ claude --version && codex --version             # sanity check
 omp --version && lgtmaybe --version             # oh-my-pi + lgtmaybe (auto-installed)
 openspec --version                              # spec-driven dev CLI (auto-installed)
 openspec init                                   # opt a project into OpenSpec (per repo)
+ast-grep --version                              # structural search CLI (auto-installed)
 ```
 
 ## Troubleshooting

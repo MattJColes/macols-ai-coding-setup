@@ -76,7 +76,7 @@ fi
 - Exposing internal details in responses
 
 ## Tools
-- **ast-grep** (`sg`) — structural (AST-based) code search. Use it instead of text
+- **ast-grep** (`ast-grep`, alias `sg`) — structural (AST-based) code search. Use it instead of text
   grep when you need to find a *pattern* across the codebase (e.g. every bare
   `except:`, every `os.path.join`, every `any` over a DB query). It matches
   syntax, so renames, whitespace and formatting don't cause misses.
