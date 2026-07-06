@@ -46,9 +46,10 @@ in the matching `install_<tool>.sh`.
 
 ## Install
 
-Each `install_<tool>.sh` is self-contained — it ensures Homebrew (macOS) and the
-CLI binary, then installs that tool's agents/skills/prompts, steering, MCPs and
-hooks. Run one, several, or all:
+Each `install_<tool>.sh` is self-contained — it ensures Homebrew (macOS), the
+CLI binary and the OpenSpec CLI, then installs that tool's
+agents/skills/prompts, steering, MCPs and hooks (the Claude Code installer also
+installs and configures lgtmaybe). Run one, several, or all:
 
 ```bash
 ./install.sh                  # all four tools (binaries + configs)
@@ -70,11 +71,16 @@ Useful flags (per installer; run `--help` for the full list):
 ./install.sh --env            # picks the right Terminal script for your OS
 # or directly:
 cd Terminal && ./install_macos.sh        # macOS
-cd Terminal && ./install_ubuntu26.sh     # Ubuntu 26 / WSL2
+cd Terminal && ./install_ubuntu26.sh     # Ubuntu 24/26 / WSL2
 ```
 
 See **[Terminal/README.md](Terminal/README.md)** for the full toolchain
 (Python 3.x + uv, Node 22 + TypeScript/CDK, Podman, AWS CLI, LazyVim, etc.).
+The Terminal setup also installs **herdr** with the **herdr-plus** and
+**herdr-reviewr** plugins: `prefix+p` opens the project picker, `cmd+r` toggles
+reviewr, and a wildcard worktree layout opens Claude Code + yazi in every new
+worktree (see
+[Terminal/GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md](Terminal/GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md)).
 
 ### Running with `--dangerously-skip-permissions`
 
