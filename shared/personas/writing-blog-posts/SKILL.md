@@ -86,6 +86,69 @@ publishing process. Read it before drafting or editing any post.
   confident humour: it's a deliberate principal-engineer workflow choice (spec well,
   delegate, review), not laziness. Useful as a recurring wink, especially in meta/intro posts.
 
+## Editing passes (structure, evidence & polish)
+Matt asks for tightening/condensing passes once a draft exists — this is where a
+decent draft becomes publishable, and where most of the work in a session lands.
+
+**Claims and evidence, especially "I built/tested it" posts:**
+- If the thing has actually been run, write it past-tense and fold the results in. Don't
+  keep a "here's the design, about to try it" framing while using what you already learned —
+  it reads as pretending ignorance. A design write-up you've since used becomes "I designed
+  this, applied it to my own work over the past few weeks, and it corrected me on N things."
+- Prefer lived-use framing over lab framing. "I've been applying this to my own work over the
+  past few weeks" reads like a principal engineer; "I ran a pilot / experiment / study on a real
+  repo" reads like a paper. Keep the concrete numbers, drop the academic staging (pilot, replay,
+  survival experiment) — attribute figures to "in practice", "on my repo", "running it back over
+  40 commits", not to a formal study.
+- Don't promise a follow-up you won't write. No manufactured "fuller writeup / part 2 coming
+  separately" hooks — they age badly and read as bait; land the post on its own unless there is
+  genuinely more coming.
+- Treat "here's where my own reasoning was wrong" as headline material, not a buried caveat.
+  The most confident claim in a draft is often the one a real test breaks; when it does, that
+  inversion is the most interesting part of the post, so give it room where the claim lives.
+- Number corrections against a promise: if the intro says the pilot "corrected me on three
+  things", land them as correction one/two/three where each occurs — a through-line the
+  reader follows, not a rule-of-three flourish.
+- Attribute every number to what it actually measured. Don't let a stat borrow credibility
+  for a claim it doesn't support (a gate-noise replay does not prove "patches stay cheap to
+  review" — that's a separate, untested question; say so).
+- Don't soften figures: "3 of the 5 warnings were true positives" beats "most were real" —
+  state the fraction and own the false-positive rate. And swap hand-wavy performance imagery
+  for the measured number when you have it ("5–37× less context", not "a thousand tokens
+  versus a swamp") — the results-claim rule from Avoid, applied at edit time.
+- Reconcile a figure everywhere it appears (a line count, a ratio) so mentions don't contradict.
+
+**FAQs — only when the post uses the `{{< faq >}}` shortcode (GEO-heavy technical posts, not essays):**
+- Questions must be the ones a reader still has *after* the body: objections and comparisons
+  ("Isn't this just X?", "How's this different from Y?", "Does it scale?"), never restatements
+  of what the post just said. A restatement FAQ is SEO-slop that adds nothing for a human even
+  though it still feeds the FAQPage JSON-LD.
+- Keep at most one clean definitional Q for LLM extraction; make the rest earn their place.
+  Self-gloss any acronym inside the answer ("an ADR is a separate decision log…") so a
+  newcomer follows without a lookup.
+
+**Diagrams, tables & pictures:**
+- Prefer ASCII / monospace. On the paper-terminal theme they sit in the dark code panel and
+  render identically in light and dark for free; a coloured SVG / D2 / screenshot needs
+  dual-theme handling and reads as bolted-on — and don't add a build dependency for one picture.
+- One visual per distinct load: value prop, workflow, decision logic. Two or three is plenty
+  for a ~1500-word essay; more tips illustrated into decorated. Place each right after the
+  sentence it crystallises, not in a separate diagram dump.
+- A small table can beat prose for a contrast (a survival matrix of what-survives-which-edit,
+  with one honest "breaks (by design)" cell carrying the limitation). When a diagram carries
+  the branch logic, trim the prose that would restate it.
+
+**Openings, closings & when to explain:**
+- Keep the cold open a claim, not a definition — let a concrete example teach the core term by
+  demonstration (a spec pointing at a file that then gets refactored *is* "spec rot") rather
+  than an "an X is a…" line that flattens the hook.
+- Definition-on-demand: introduce a precise distinction only in the section where it turns
+  load-bearing, not up front. Front-loading taxonomy for a technical reader condescends and
+  costs the open.
+- Don't end on an administrative pointer ("a follow-up is coming") — move it up and land the
+  final line on the thesis, ideally bookending the opening stakes. The last line is what a
+  reader, or an LLM, quotes.
+
 ## Hands-on tutorial / how-to mode (the build-along voice)
 Matt has a back catalogue of hands-on AWS tutorials, originally on "Devs in the
 Shed" (tagline: "Getting hands on with AWS") — for example the AWS CDK in Python
