@@ -1,0 +1,30 @@
+# Spec anchors — hook-wiring capability
+# (openspec/specs/hook-wiring/spec.md)
+
+hook-wiring.claude:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^write_claude_hooks$' }
+  files: [lib/common.sh]
+
+hook-wiring.codex:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^write_codex_hooks$' }
+  files: [lib/common.sh]
+
+hook-wiring.opencode-plugin:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^install_opencode_plugin$' }
+  files: [lib/common.sh]
+
+hook-wiring.pi-extension:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^install_pi_extension$' }
+  files: [lib/common.sh]

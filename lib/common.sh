@@ -190,6 +190,34 @@ ensure_ast_grep() {
     fi
 }
 
+# ensure_yq — install a yq YAML CLI, used by the spec-anchor drift gate
+# (scripts/spec_drift_gate.sh) to convert specs/anchors/*.yml to JSON.
+# Idempotent: any flavor on PATH satisfies the guard — the gate's yaml2json
+# shim handles both the mikefarah Go yq (brew, GitHub runners) and the
+# kislyuk jq-wrapper yq (Ubuntu apt). Same install channels as jq in
+# ensure_mcp_prereqs: brew on macOS, apt on Linux.
+ensure_yq() {
+    if command -v yq &> /dev/null; then
+        printf "${GREEN}✓ yq already installed${NC}\n"
+        return 0
+    fi
+    printf "${BLUE}Installing yq (YAML CLI for the spec-anchor drift gate)...${NC}\n"
+    if [ "$(detect_os)" = "macos" ] && command -v brew &> /dev/null; then
+        brew install yq
+    elif [ "$(detect_os)" = "linux" ]; then
+        sudo apt-get update -y && sudo apt-get install -y yq
+    else
+        printf "${RED}Please install yq manually: https://github.com/mikefarah/yq${NC}\n"
+        return 1
+    fi
+    if yq --version &> /dev/null; then
+        printf "${GREEN}✓ yq installed: %s${NC}\n" "$(command -v yq)"
+    else
+        printf "${RED}yq install failed — the spec-anchor drift gate needs it.${NC}\n"
+        return 1
+    fi
+}
+
 # configure_lgtmaybe — interactive provider/model setup for lgtmaybe.
 #
 # Asks which provider lgtmaybe should use (Anthropic API vs AWS Bedrock) and

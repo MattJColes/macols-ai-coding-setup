@@ -1,0 +1,16 @@
+# Spec anchors — spec-anchoring capability (the gate anchors itself)
+# (openspec/specs/spec-anchoring/spec.md)
+
+spec-anchoring.hygiene:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^check_hygiene$' }
+  files: [scripts/spec_drift_gate.sh]
+
+spec-anchoring.drift:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^classify_rule$' }
+  files: [scripts/spec_drift_gate.sh]

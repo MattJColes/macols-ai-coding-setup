@@ -60,6 +60,13 @@ fi
 - [ ] Functions are single-purpose
 - [ ] No code duplication
 
+### Spec drift (only when the repo has specs/anchors/*.yml)
+- [ ] Changed lines that overlap a spec-anchor match come with a spec-section
+      update or an explicit "no behaviour change" note
+- [ ] No dangling or loose anchor rules introduced — a rename must re-point
+      its rule in the same change (run `scripts/spec_drift_gate.sh --check`
+      if the repo has it, else resolve each anchor with `ast-grep scan`)
+
 ## Severity Levels
 | Level | Description | Action |
 |-------|-------------|--------|

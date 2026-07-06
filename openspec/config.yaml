@@ -1,0 +1,23 @@
+schema: spec-driven
+
+# Project context — shown to AI when creating artifacts.
+context: |
+  macols-configs is a config *generator*, not a config dump: personas,
+  steering, MCP servers and hooks are authored once under shared/ and rendered
+  into each tool's native format by four installers (install_claudecode.sh,
+  install_codex.sh, install_opencode.sh, install_pi.sh) backed by
+  lib/common.sh. Everything is Bash targeting macOS + Ubuntu 24/26.
+  Conventions: idempotent installers (command -v guards, grep-guarded appends,
+  marker-delimited blocks), merge-don't-overwrite for user-owned config,
+  non-fatal optional steps, no `sed -i`, script paths from ${BASH_SOURCE[0]}.
+  Living specs live in openspec/specs/<capability>/spec.md and are pinned to
+  code by ast-grep anchor rules in specs/anchors/*.yml, checked by
+  scripts/spec_drift_gate.sh (see the spec-anchoring capability).
+  Conventional Commits; plain git + git worktrees (no jujutsu).
+
+# Per-artifact rules.
+rules:
+  specs:
+    - Keep each spec section under a ~40-line soft cap; propose a split instead of appending past it
+    - Anchored requirements carry their id as an HTML comment on the line after the requirement text (<!-- anchor: <id> -->), never as the first block under the heading
+    - At task end, propose spec updates as a diff for a human to apply — never edit main spec prose directly

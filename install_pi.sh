@@ -121,6 +121,7 @@ if [ "$DO_PI" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     ensure_cli pi
     ensure_openspec || printf "${YELLOW}⚠ openspec install skipped/failed${NC}\n"
     ensure_ast_grep || printf "${YELLOW}⚠ ast-grep install skipped/failed${NC}\n"
+    ensure_yq || printf "${YELLOW}⚠ yq install skipped/failed${NC}\n"
     ensure_node_on_noninteractive_path || printf "${YELLOW}⚠ node PATH linking skipped/failed${NC}\n"
     echo ""
 fi

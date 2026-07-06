@@ -1,0 +1,30 @@
+# Spec anchors — cli-provisioning capability
+# (openspec/specs/cli-provisioning/spec.md)
+
+cli-provisioning.cli:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^ensure_cli$' }
+  files: [lib/common.sh]
+
+cli-provisioning.openspec:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^ensure_openspec$' }
+  files: [lib/common.sh]
+
+cli-provisioning.ast-grep:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^ensure_ast_grep$' }
+  files: [lib/common.sh]
+
+cli-provisioning.yq:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^ensure_yq$' }
+  files: [lib/common.sh]
