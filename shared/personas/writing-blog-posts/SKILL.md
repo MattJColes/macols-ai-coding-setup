@@ -186,6 +186,15 @@ What defines these posts:
 - Link a companion repo. Ship the full working code in a public GitHub repo and
   link it (the CDK posts pointed at a `cdk-python-imports` repo). The post walks
   the key parts; the repo holds the rest.
+- Keep the snippets in sync with that repo, and check it before publishing or on
+  any edit pass. Clone the repo and quote the code that actually ships, not an
+  earlier sketch — a mechanism that got replaced (a `Transform` that became
+  middleware) or a value that changed will mislead the readers most likely to
+  copy-paste, and they're the whole audience for a build-along. The repo's
+  hardening commits are content, not just code: the guard added after the first
+  draft (validate an id that becomes an S3 key, reject a bool where a number is
+  expected, log the caller's groups) is exactly the "here's what I got wrong
+  first" material the edit-pass rule above wants — mine them into the prose.
 - End on the concrete payoff. Close on what the reader should now see working —
   "you should see an EC2 instance created in a few minutes" — not a summary
   paragraph.
@@ -216,6 +225,19 @@ voice.
 - Body starts headings at `##` — the title is the only H1.
 - Link to related posts where it helps the reader.
 
+## Cross-linking and first-screen payoff (what the coles.codes analytics showed)
+Two things the traffic data made concrete. Build both into every post.
+
+**Don't let a post be a dead end.** Views-per-user sat around 1.2 (almost nobody read a second post) because the posts that pulled the traffic had no internal links out: the local-models post drove ~70% of a quarter's traffic and didn't link to, or even mention, its sibling projects. The fix is two-directional:
+- Every post ends with a related block (the `{{< related >}}` shortcode). Table stakes, not optional.
+- Add inline links to your other posts where they already fit the sentence, never bolted on. local-models linked to lgtmaybe on its "good harness" line and to herdr on its "hardware I control" line, both phrases already in the prose, so the link rides along instead of interrupting. High-traffic posts matter most: that's where the readers are, so a dead end there costs the most.
+- Pin the related block when auto-pick would miss a strong neighbour. `{{< related >}}` scores by shared tags, so a highly relevant post that shares only one tag gets edged out (lgtmaybe shares just "llms" with local-models). Pin the best two or three by slug: `{{< related "building-lgtmaybe" "herding-agents-with-herdr" >}}`.
+- Never link a post that isn't live yet. A future-dated or draft target 404s, and a pinned related slug that isn't published drops with a build warning. Link a published alternative and swap the precise target in once it ships.
+
+**Lead with the payoff on the first screen.** The ast-grep post pulled clicks but readers bounced at ~11s, because the opening ran three paragraphs of problem-framing and the thing that makes the idea click (the survive/break table and a worked example) sat 40 lines down. Show the core idea working inside the first screen, roughly the first 200 words: demonstrate the term on a concrete example right after the cold open, and move the most scannable artifact (a small table, a before/after) up near the top. Trim any downstream restatement so nothing is said twice. This is the "cold open a claim, teach by demonstration" rule measured against the bounce: if a skimmer can't see why the post is worth reading on the first screen, they leave.
+
+**Cadence beats one-off brilliance for retention.** The single best result was a dated survey of a topic with ongoing search volume ("local models in mid-2026"). Write those as repeatable: a "local models, late 2026" follow-up compounds in search and gives returning readers a reason to come back, which a run of unrelated one-off posts never does.
+
 ## SEO hygiene checklist
 Front matter:
 - `title` — specific, search-friendly, and short. Prefer "Building X: what it is" over a
@@ -226,8 +248,34 @@ Front matter:
   OpenGraph, JSON-LD, and llms.txt, so make it count.
 - `tags` — relevant, consistent.
 - `date`, plus `lastmod` when the post is materially edited.
+- `ogImage` — a per-post 1200×630 share card (see below). Beats the generic
+  `og.png` for social/LLM click-through.
 
 Body:
 - Descriptive link text (no "click here") and image alt text.
 - Link to related posts.
 - Keep slugs stable once a post is published.
+
+## Share images (OG cards)
+Every post gets its own 1200×630 Open Graph card in the "paper terminal" look:
+warm-paper background, the post title in Source Serif 4, a `coles.codes $`
+wordmark and a tag footer in IBM Plex Mono, terracotta accent rule and `$`. It's
+the same palette and fonts as the site, so the cards read as one system.
+
+Don't hand-build these. The repo has a generator that lays each card out in HTML
+with the site's own self-hosted fonts and screenshots it in headless Chrome, so
+the title auto-shrinks to fit any length. From the repo root:
+
+```bash
+python3 scripts/generate-og-images.py            # posts missing an ogImage
+python3 scripts/generate-og-images.py --all      # every post
+python3 scripts/generate-og-images.py <slug> …   # specific posts
+```
+
+It writes `hugo/static/posts/<slug>-og.png` and adds `ogImage: "posts/<slug>-og.png"`
+to the front matter if it's missing, so a new post just needs a run after the
+prose is settled. To retune the look (palette, layout, footer), edit the template
+at the top of that script — keep the palette in step with
+`hugo/assets/css/00-variables.css`. Needs Google Chrome (or `CHROME=/path`); no
+pip dependencies. The site-wide `static/og.png` / `home-og.png` fallbacks are
+separate; regenerate those by hand if the brand shifts.
