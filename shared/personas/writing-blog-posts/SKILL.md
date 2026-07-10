@@ -61,7 +61,15 @@ publishing process. Read it before drafting or editing any post.
   faster than noise" — just say it plainly); skip cutesy understatement ("gently out of
   hand", "far too many containers", "out-ranked by our cats"). Vary sentence length, use plain
   words ("marker" not "sentinel", "freeze up" not "go inert", "clear" not "unambiguous"), and
-  keep a couple of genuinely personal asides.
+  keep a couple of real personal asides.
+- Considered-sounding intensifiers and smooth-cadence padding — a strong, specific AI tell.
+  Adverbs like "genuinely," "quietly," "subtly," "notably," "simply," "truly," and emphatic
+  phrases like "exactly when" dress up a plain claim to sound reflective. Examples from a
+  real edit of the skills-vs-MCP post: "Skills got genuinely good" → "Skills work well now";
+  "quietly assumes" → "assumes"; "exactly when you need the server" → "when you need the
+  server." Rule: drop the adverb, state the claim plainly. Same family in smooth-cadence
+  hedges — "the whole answer," "stops being enough," "the first thing I reach for." Fine
+  once, but they accumulate and read as commentary, not a person.
 - Metaphors where a factual sentence does the job — especially for results and performance
   claims. "Missed planted bugs that every frontier model caught" beats "caught without
   blinking", "clawed some of it back", or "a floor you don't get under": state what happened
