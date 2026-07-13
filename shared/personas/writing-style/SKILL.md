@@ -294,6 +294,7 @@ unsure if we have that considering everything we're working on / across
   - Contrastive reframes ("not X, but Y", "we stopped trying - instead we...") - the dash pivot is the tell. One idea per sentence, said straight, no reframe clauses hanging off dashes.
   - Rule-of-three lists ("identity, guardrails, and distribution") - triads read as generated.
   - Editorializing adjectives ("quietly governs", "unglamorous decision", "one deliberate choice") - don't tell the reader something is clever or ironic; let them find it.
+  - Considered-sounding intensifiers ("genuinely", "quietly", "simply", "truly", "notably") - they dress a plain claim up to sound reflective. Drop the adverb, state the claim.
   - False universals ("everyone knows that", "most companies") - asserting on the room's behalf. Describe your own experience, not the audience's mistakes.
   - Telling the reader what's easy or hard ("easy to say, hard to do") - show the difficulty by naming the actual thing, don't label it.
   - Staccato punchlines ("So we don't.") - reads as style, not speech. Plain declaratives or a real question, the way you'd say it out loud to one person.
