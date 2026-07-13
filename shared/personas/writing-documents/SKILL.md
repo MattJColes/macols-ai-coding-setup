@@ -29,6 +29,7 @@ Write like you're explaining your reasoning to a smart colleague over coffee - d
 - No em-dashes. Use " - " (space-dash-space), comma, period, or parentheses instead
 - No colons in narrative text. Rewrite to integrate or split into separate sentences
 - No semicolons. Two sentences are always better
+- Straight quotes and apostrophes only (', ") - curly/smart quotes creep in when text is drafted in external tools
 
 ## Critical Rules
 
@@ -51,6 +52,7 @@ Write like you're explaining your reasoning to a smart colleague over coffee - d
 
 ### Body
 - One topic per paragraph with a clear topic sentence
+- Section headings are signposts, not performances - plain and descriptive ("Rollout Approach", "Cost Analysis"), no colon-punchlines or aphorism headers
 - Each section builds on the previous (no abrupt jumps)
 - Goal-first ordering: "To enable X, do Y" not "If you do Y, then X will happen"
 - Present supporting AND contrary data. Point out holes in your own argument
@@ -116,6 +118,7 @@ Keep sentences under 25 words. If you're over, split it. Two clear sentences bea
 - "Sales grew 23% from $100M to $123M in Q4" not "Sales improved significantly"
 - "Response time dropped from 450ms to 120ms (p99)" not "We made it faster"
 - Always include the baseline, the change, and the timeframe
+- No metaphors or imagery for results ("clawed some of it back", "a floor you don't get under") - vivid phrasing survives the weasel-word check but still hides the number. State what happened and what it measured
 
 ## Review Workflow
 
@@ -175,3 +178,10 @@ Conversational, educational. Title max 75 chars, intro under 200 words, 1,500 wo
 - Use em-dashes, colons in narrative, or semicolons
 - Present problems without recommendations
 - Hide behind committee language ("the team feels") - own your position
+- Contrastive reframes ("not X, but Y", "we stopped trying, instead we...") - one idea per sentence, say it straight
+- Rule-of-three lists ("identity, guardrails, and distribution") - triads read as generated
+- Editorializing adjectives ("quietly governs", "an unglamorous decision", "one deliberate choice") - state the fact and let the reader find the insight
+- Considered-sounding intensifiers ("genuinely", "quietly", "simply", "truly", "notably") - they dress a plain claim up to sound reflective. Drop the adverb and state the claim
+- Tell the reader what's easy or hard ("easy to say, hard to do") - show the difficulty by naming the actual thing
+- False universals ("everyone knows", "most companies") - assert only what your data supports
+- Staccato punchlines ("So we don't.") - reads as style, not speech
