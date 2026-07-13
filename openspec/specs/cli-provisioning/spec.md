@@ -10,11 +10,12 @@ Installers idempotently provision the agent CLI plus companion tooling
 ## Requirements
 
 ### Requirement: Each tool's CLI installs through its native channel
-`ensure_cli <tool>` SHALL return immediately when the CLI is already on PATH,
-otherwise install: claude via the official curl installer; codex via brew
-cask (macOS) or npm; opencode via brew, npm, or the curl installer; pi (omp)
-via npm `--ignore-scripts` after ensuring the bun runtime, upgrading bun and
-retrying once if omp fails to run.
+`ensure_cli <tool>` SHALL return immediately when the native CLI install is
+already present, otherwise install: claude via the official curl installer;
+codex via the official standalone installer with brew (macOS) or npm as
+fallbacks; opencode via brew, npm, or the curl installer; pi (omp) via npm
+`--ignore-scripts` after ensuring the bun runtime, upgrading bun and retrying
+once if omp fails to run.
 <!-- anchor: cli-provisioning.cli -->
 
 #### Scenario: Re-run with CLI present

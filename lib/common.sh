@@ -304,14 +304,21 @@ ensure_cli() {
             curl -fsSL https://claude.ai/install.sh | bash
             ;;
         codex)
-            command -v codex &> /dev/null && { printf "${GREEN}✓ codex already installed${NC}\n"; return 0; }
+            local codex_standalone="$HOME/.codex/packages/standalone/current/codex"
+            if [ -x "$codex_standalone" ]; then
+                export PATH="$HOME/.codex/packages/standalone/current:$PATH"
+                printf "${GREEN}✓ codex standalone already installed${NC}\n"
+                return 0
+            fi
             printf "${BLUE}Installing Codex CLI...${NC}\n"
-            if [ "$os" = "macos" ] && command -v brew &> /dev/null; then
+            if curl -fsSL https://chatgpt.com/codex/install.sh | sh; then
+                export PATH="$HOME/.codex/packages/standalone/current:$PATH"
+            elif [ "$os" = "macos" ] && command -v brew &> /dev/null; then
                 brew install --cask codex
             elif command -v npm &> /dev/null; then
                 npm install -g @openai/codex
             else
-                printf "${RED}Need Homebrew (macOS) or npm to install codex.${NC}\n"; return 1
+                printf "${RED}Need the Codex standalone installer, Homebrew (macOS), or npm to install codex.${NC}\n"; return 1
             fi
             ;;
         opencode)

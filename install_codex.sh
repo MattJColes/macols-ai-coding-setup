@@ -2,7 +2,7 @@
 #
 # Self-contained installer for the OpenAI Codex CLI.
 #
-# Ensures Homebrew + the `codex` CLI, then installs custom prompts (slash
+# Ensures the standalone `codex` CLI, then installs custom prompts (slash
 # commands), the system AGENTS.md, MCP servers and lifecycle hooks — all from
 # the single sources of truth under shared/. With no options it installs
 # everything.
@@ -31,7 +31,7 @@ Options:
     --instructions-only Install only the system AGENTS.md
     --mcps-only         Install only MCP servers
     --hooks-only        Install only lifecycle hooks
-    --no-cli            Skip installing Homebrew / the codex CLI
+    --no-cli            Skip installing the codex CLI
     -p, --project       Install prompts to ./.codex/prompts and AGENTS.md to ./AGENTS.md (implies --no-cli)
     --list              List available personas and exit
 EOF
