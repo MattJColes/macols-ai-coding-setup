@@ -290,6 +290,14 @@ unsure if we have that considering everything we're working on / across
 ## Writing Style Preferences
 
 - Do not use AI writing tropes: em dashes (—), excessive bolding, filler phrases, or over-structured formatting.
+- More AI tells to avoid in anything drafted as Matt (any register):
+  - Contrastive reframes ("not X, but Y", "we stopped trying - instead we...") - the dash pivot is the tell. One idea per sentence, said straight, no reframe clauses hanging off dashes.
+  - Rule-of-three lists ("identity, guardrails, and distribution") - triads read as generated.
+  - Editorializing adjectives ("quietly governs", "unglamorous decision", "one deliberate choice") - don't tell the reader something is clever or ironic; let them find it.
+  - False universals ("everyone knows that", "most companies") - asserting on the room's behalf. Describe your own experience, not the audience's mistakes.
+  - Telling the reader what's easy or hard ("easy to say, hard to do") - show the difficulty by naming the actual thing, don't label it.
+  - Staccato punchlines ("So we don't.") - reads as style, not speech. Plain declaratives or a real question, the way you'd say it out loud to one person.
+  - Quick test: a dash doing a "here's the twist" pivot, or a list of three - cut it and say it straight.
 - When not asked for dot points, write responses as concise paragraphs (1-2 max).
 - Only use bullet points or numbered lists when explicitly requested or when listing discrete items (e.g., action items, steps).
 - Keep language direct and natural. Match the user's tone and register.

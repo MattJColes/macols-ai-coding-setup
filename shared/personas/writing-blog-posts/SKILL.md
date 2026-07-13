@@ -62,6 +62,18 @@ publishing process. Read it before drafting or editing any post.
   hand", "far too many containers", "out-ranked by our cats"). Vary sentence length, use plain
   words ("marker" not "sentinel", "freeze up" not "go inert", "clear" not "unambiguous"), and
   keep a couple of real personal asides.
+- Contrastive reframes — "not X, but Y", "we stopped trying — instead we…", "a different
+  split". The em-dash pivot is the tell: a clause hanging off a dash to deliver a twist.
+  One idea per sentence, no reframe clauses hanging off dashes; say the second idea straight
+  in its own sentence. The quick test: if a sentence has an em-dash doing a "here's the
+  twist" pivot, or a list of three, cut it and say it plainly.
+- Editorializing adjectives — "quietly governs", "an unglamorous decision", "one deliberate
+  choice". Don't tell the reader something is clever or ironic; give the fact and let them
+  find it. Same family: telling them what's easy or hard ("easy to say, hard to do") — show
+  the difficulty by naming the actual thing, don't label it.
+- False universals — "everyone knows", "most companies", "we've all been there". That's
+  asserting on the reader's behalf, and with a mixed audience it also judges them. Stay
+  neutral toward the audience: describe your own experience, not their mistakes.
 - Considered-sounding intensifiers and smooth-cadence padding — a strong, specific AI tell.
   Adverbs like "genuinely," "quietly," "subtly," "notably," "simply," "truly," and emphatic
   phrases like "exactly when" dress up a plain claim to sound reflective. Examples from a
@@ -87,6 +99,15 @@ publishing process. Read it before drafting or editing any post.
   "Picking the database", "Verifying JWTs in FastAPI").
 - Bolted-on self-referential links: he cut a "see the projects page" closing paragraph and
   a back-link to his own intro post. Cross-link only where it genuinely helps the reader.
+
+## Teasers, talk synopses & other short-form copy
+The tells in Avoid get short-form copy (a talk synopsis, a teaser, a social blurb) rejected
+fastest, because there's nothing else to carry it. Two extra rules for these:
+- Plain declaratives or a real question — say the thing the way you'd say it out loud to one
+  person. No staccato punchlines ("So we don't.") — that reads as style, not speech.
+- Mystery = withhold the answer, not dress up the question. Name the problem and that you
+  solved it; don't name the solution. ("We spent a while finding out" withholds; "the center
+  holds a few controls" gives it away.)
 
 ## The meta / ironic angle (Matt likes this — use it)
 - The blog is called "coles.codes", but these days he specs and prompts a lot of it up for

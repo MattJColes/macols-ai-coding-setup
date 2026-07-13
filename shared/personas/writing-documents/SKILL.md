@@ -175,3 +175,9 @@ Conversational, educational. Title max 75 chars, intro under 200 words, 1,500 wo
 - Use em-dashes, colons in narrative, or semicolons
 - Present problems without recommendations
 - Hide behind committee language ("the team feels") - own your position
+- Contrastive reframes ("not X, but Y", "we stopped trying, instead we...") - one idea per sentence, say it straight
+- Rule-of-three lists ("identity, guardrails, and distribution") - triads read as generated
+- Editorializing adjectives ("quietly governs", "an unglamorous decision", "one deliberate choice") - state the fact and let the reader find the insight
+- Tell the reader what's easy or hard ("easy to say, hard to do") - show the difficulty by naming the actual thing
+- False universals ("everyone knows", "most companies") - assert only what your data supports
+- Staccato punchlines ("So we don't.") - reads as style, not speech
