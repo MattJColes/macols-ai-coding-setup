@@ -189,3 +189,5 @@ Conversational, educational. Title max 75 chars, intro under 200 words, 1,500 wo
 - Anthropomorphising quips ("glue code whose only job is to apologise for the model") - humour comes from the actual situation, not from giving software feelings
 - Uniform paragraph rhythm (every paragraph running setup, elaboration, landing) - some paragraphs should just convey information and stop
 - Unspecific anecdotes ("I've lost that afternoon more than once") - name something real (the project, roughly when) or cut it
+- Technobabble - jargon-stacked sentences that sound technical but carry no mechanism ("leverages a scalable event-driven architecture to seamlessly orchestrate workloads"). Say what the thing actually does in plain words; name a technology only when the reader needs it to act
+- Waffle - circling a point without landing it: long wind-ups, restating the question, hedging in both directions, three sentences doing one sentence's work. State the point, give the reason, stop

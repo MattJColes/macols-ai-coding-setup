@@ -111,6 +111,16 @@ publishing process. Read it before drafting or editing any post.
   with zero detail is a generated sentence. Every personal anecdote names something real
   (the project, the field, roughly when) or gets cut. If Matt hasn't supplied the detail,
   ask him for it rather than writing around it.
+- Technobabble — jargon-stacked sentences that sound technical but never explain the mechanism
+  ("leverages a scalable event-driven architecture to seamlessly orchestrate workloads").
+  Buzzword density signals a pitch, not an engineer. Say what the thing actually does in plain
+  words ("a Lambda picks each job off the queue"), and name a technology only when the reader
+  needs it to follow along or act.
+- Waffling — circling a point without landing it: long wind-ups before the claim, restating
+  the question, hedging in both directions ("it depends", "on the other hand"), a qualifier on
+  every sentence, three sentences doing one sentence's work. Matt states an opinion and gives
+  the reason; a post that hedges everything has no reason to exist. State the point, give the
+  reason, stop.
 - "Honest/honestly" as a verbal crutch (once per post at most), and confession-trope
   headers like "The honest part nobody writes about" — just state the claim as the header.
 - Attention-seeking section headings — snappy, matter-of-fact, or clickbaity. No
