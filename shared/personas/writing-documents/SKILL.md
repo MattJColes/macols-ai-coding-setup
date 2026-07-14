@@ -185,3 +185,7 @@ Conversational, educational. Title max 75 chars, intro under 200 words, 1,500 wo
 - Tell the reader what's easy or hard ("easy to say, hard to do") - show the difficulty by naming the actual thing
 - False universals ("everyone knows", "most companies") - assert only what your data supports
 - Staccato punchlines ("So we don't.") - reads as style, not speech
+- Close every section on a polished punchline - one per document at most; end the rest on a plain sentence
+- Anthropomorphising quips ("glue code whose only job is to apologise for the model") - humour comes from the actual situation, not from giving software feelings
+- Uniform paragraph rhythm (every paragraph running setup, elaboration, landing) - some paragraphs should just convey information and stop
+- Unspecific anecdotes ("I've lost that afternoon more than once") - name something real (the project, roughly when) or cut it
