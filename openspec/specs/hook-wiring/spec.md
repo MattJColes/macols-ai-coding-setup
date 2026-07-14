@@ -23,22 +23,28 @@ followed by the advisory lgtmaybe review. It SHALL also deny reads of
 - **WHEN** settings.json already has user keys
 - **THEN** only `hooks` and the deny additions change; other keys survive
 
-### Requirement: Codex hooks carry timeouts and skip lgtmaybe
-`write_codex_hooks <hooks_json>` SHALL write the same Pre/Post/Stop events
-with timeouts (30/120/300 seconds) and SHALL NOT wire the lgtmaybe hook —
-that review is Claude-only.
+### Requirement: Codex hooks mirror Claude's, with timeouts
+`write_codex_hooks <hooks_json>` SHALL write the same Pre/Post/Stop events as
+Claude with timeouts (30/120/300/300 seconds): the PreToolUse(Bash) pre-deploy
+guard, the PostToolUse post-code check, and a Stop sequence of the
+deterministic post-task battery followed by the advisory lgtmaybe review.
 <!-- anchor: hook-wiring.codex -->
 
 #### Scenario: Codex hooks file
 
 - **WHEN** `write_codex_hooks` runs
-- **THEN** hooks.json has PreToolUse/PostToolUse/Stop entries, each with a timeout, none referencing lgtmaybe
+- **THEN** hooks.json has PreToolUse/PostToolUse/Stop entries, each hook with a timeout, and Stop runs post-task then lgtmaybe
 
 ### Requirement: The OpenCode plugin is installed with substituted hook paths
 `install_opencode_plugin <plugins_dir>` SHALL render
 `shared/hooks/opencode_post_code_plugin.mjs` into the plugins dir with the
-`__HOOK_SCRIPT_PATH__`/`__TASK_HOOK_SCRIPT_PATH__` placeholders replaced by
-the absolute shared-hook paths, removing any previously installed copy first.
+`__HOOK_SCRIPT_PATH__`/`__TASK_HOOK_SCRIPT_PATH__`/`__LGTMAYBE_HOOK_PATH__`/
+`__PRE_DEPLOY_CHECK_PATH__` placeholders replaced by the absolute shared-hook
+paths, removing any previously installed copy first. The plugin runs the
+post-code check on write tools, the post-task battery plus the advisory
+lgtmaybe review on `session.idle`, and gates cdk deploy/destroy commands via
+`tool.execute.before` (first attempt blocks with the confirmation reason; an
+identical retry — the user having confirmed — passes).
 <!-- anchor: hook-wiring.opencode-plugin -->
 
 #### Scenario: Plugin references shared hooks in place
@@ -49,11 +55,25 @@ the absolute shared-hook paths, removing any previously installed copy first.
 ### Requirement: The Pi extension bakes in the hooks directory
 `install_pi_extension <extensions_dir>` SHALL render
 `shared/hooks/pi-checks.ts` with `__PI_HOOKS_DIR__` replaced by the absolute
-shared hooks dir, wiring `tool_result` to the post-code check and `agent_end`
-to the post-task battery, advisory via `pi.sendMessage`.
+shared hooks dir, wiring `tool_call` (bash) to the cdk pre-deploy guard
+(`ctx.ui.confirm`, blocking only on explicit decline; advisory warning when
+headless), `tool_result` to the post-code check, and `agent_end` to the
+post-task battery followed by the advisory lgtmaybe review, surfaced via
+`pi.sendMessage`.
 <!-- anchor: hook-wiring.pi-extension -->
 
 #### Scenario: Extension installed
 
 - **WHEN** `install_pi.sh` completes
 - **THEN** `extensions/pi-checks.ts` exists and contains no `__PI_HOOKS_DIR__` placeholder
+
+### Requirement: The pre-deploy matcher is single-sourced
+The cdk deploy/destroy pattern and confirmation reason SHALL live only in
+`shared/hooks/pre_deploy_check.sh` (prints the reason on match, nothing
+otherwise, always exit 0); `pre_deploy_hook.sh`, the OpenCode plugin and the
+Pi extension SHALL all delegate to it rather than duplicating the regex.
+
+#### Scenario: cdk diff passes everywhere
+
+- **WHEN** any tool runs `cdk diff` or `cdk synth`
+- **THEN** `pre_deploy_check.sh` prints nothing and no wiring gates the command

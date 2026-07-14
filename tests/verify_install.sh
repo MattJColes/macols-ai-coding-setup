@@ -60,11 +60,16 @@ verify_codex() {
     local d="$HOME/.codex"
     soft "codex --version" "command -v codex >/dev/null && codex --version >/dev/null 2>&1"
     pass "prompts in ~/.codex/prompts/*.md"       "count_gt0 '$d/prompts' '*.md' 1"
+    pass "skills in ~/.codex/skills/*/SKILL.md"   "count_gt0 '$d/skills' 'SKILL.md' 3"
+    pass "agents in ~/.codex/agents/*.toml"       "count_gt0 '$d/agents' '*.toml' 1"
+    pass "agent toml has developer_instructions"  "grep -q 'developer_instructions' '$d/agents/code-reviewer.toml'"
     pass "~/.codex/AGENTS.md is System-Level Codex" "grep -q 'System-Level Codex' '$d/AGENTS.md'"
     pass "~/.codex/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
     if has_jq; then
         pass "hooks.json has PostToolUse hook"     "jq -e '.PostToolUse[0].hooks[0].command' '$d/hooks.json' >/dev/null"
+        pass "hooks.json Stop runs lgtmaybe after post-task" "jq -e '.Stop[0].hooks[1].command | test(\"lgtmaybe\")' '$d/hooks.json' >/dev/null"
     fi
+    soft "lgtmaybe CLI installed" "command -v lgtmaybe >/dev/null && { lgtmaybe --version >/dev/null 2>&1 || lgtmaybe --help >/dev/null 2>&1; }"
     soft "codex mcp list shows filesystem" "command -v codex >/dev/null && codex mcp list 2>/dev/null | grep -q filesystem"
 }
 
@@ -76,9 +81,12 @@ verify_opencode() {
     pass "~/.config/opencode/AGENTS.md is System-Level OpenCode" "grep -q 'System-Level OpenCode' '$d/AGENTS.md'"
     pass "~/.config/opencode/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
     pass "plugins/post_code_hook_plugin.mjs exists" "[ -f '$d/plugins/post_code_hook_plugin.mjs' ]"
+    pass "plugin placeholders substituted" "! grep -q '__.*_PATH__' '$d/plugins/post_code_hook_plugin.mjs'"
+    pass "plugin wires lgtmaybe + pre-deploy check" "grep -q 'lgtmaybe_review_hook.sh' '$d/plugins/post_code_hook_plugin.mjs' && grep -q 'pre_deploy_check.sh' '$d/plugins/post_code_hook_plugin.mjs'"
     if has_jq; then
         pass "opencode.json has filesystem MCP under .mcp" "jq -e '.mcp.filesystem' '$d/opencode.json' >/dev/null"
     fi
+    soft "lgtmaybe CLI installed" "command -v lgtmaybe >/dev/null && { lgtmaybe --version >/dev/null 2>&1 || lgtmaybe --help >/dev/null 2>&1; }"
 }
 
 verify_pi() {
@@ -89,6 +97,9 @@ verify_pi() {
     pass "~/.omp/agent/AGENTS.md is System-Level Pi" "grep -q 'System-Level Pi' '$d/AGENTS.md'"
     pass "~/.omp/agent/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
     pass "extensions/pi-checks.ts exists" "[ -f '$d/extensions/pi-checks.ts' ]"
+    pass "extension hooks dir substituted" "! grep -q '__PI_HOOKS_DIR__' '$d/extensions/pi-checks.ts'"
+    pass "extension wires lgtmaybe + pre-deploy check" "grep -q 'lgtmaybe_review_hook.sh' '$d/extensions/pi-checks.ts' && grep -q 'pre_deploy_check.sh' '$d/extensions/pi-checks.ts'"
+    soft "lgtmaybe CLI installed" "command -v lgtmaybe >/dev/null && { lgtmaybe --version >/dev/null 2>&1 || lgtmaybe --help >/dev/null 2>&1; }"
 }
 
 printf '\n=== Verifying %s ===\n' "$TOOL"
