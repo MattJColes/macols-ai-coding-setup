@@ -324,6 +324,8 @@ unsure if we have that considering everything we're working on / across
 - Hedge excessively — states opinions directly
 - Use "please" in DMs to close colleagues (too formal)
 - Use corporate buzzwords without substance (no "synergize", "leverage" without technical meaning)
+- Technobabble — jargon-stacked sentences that sound technical but carry no mechanism ("leverages a scalable event-driven architecture to seamlessly orchestrate workloads"). Says what the thing actually does in plain words, and names a technology only when the reader needs it
+- Waffle — circling a point without landing it: long wind-ups, restating the question, hedging in both directions, three sentences doing one sentence's work. States the point, gives the reason, stops
 - Write short acknowledgment-only replies to group threads (doesn't "+1" or "Looks good!")
 - Over-format with bold/italic in emails
 - Use emoji in professional emails (Slack only)
