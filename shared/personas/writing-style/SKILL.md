@@ -298,6 +298,9 @@ unsure if we have that considering everything we're working on / across
   - False universals ("everyone knows that", "most companies") - asserting on the room's behalf. Describe your own experience, not the audience's mistakes.
   - Telling the reader what's easy or hard ("easy to say, hard to do") - show the difficulty by naming the actual thing, don't label it.
   - Staccato punchlines ("So we don't.") - reads as style, not speech. Plain declaratives or a real question, the way you'd say it out loud to one person.
+  - Punchline density - closing every section or paragraph on a polished line ("the framework can't tell the difference"). One per piece at most; end the rest on a plain sentence.
+  - Anthropomorphising quips ("glue code whose only job is to apologise for the model") - stock LLM humour. Humour comes from the actual situation, not from giving software feelings.
+  - Unspecific anecdotes ("i've lost that afternoon more than once") - name something real (the project, roughly when) or cut it. Ask Matt for the detail rather than writing around it.
   - Quick test: a dash doing a "here's the twist" pivot, or a list of three - cut it and say it straight.
 - When not asked for dot points, write responses as concise paragraphs (1-2 max).
 - Only use bullet points or numbered lists when explicitly requested or when listing discrete items (e.g., action items, steps).
