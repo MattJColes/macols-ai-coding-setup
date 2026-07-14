@@ -93,7 +93,34 @@ publishing process. Read it before drafting or editing any post.
   and what the numbers showed. The same goes for visual describers in everyday prose, not
   just claims: don't reach for verbs that paint a picture ("peeling off microservices" —
   say "breaking out microservices"). At most one piece of imagery per post, and only where
-  it adds something a plain sentence can't.
+  it adds something a plain sentence can't. Same family: anthropomorphising whimsy —
+  "glue code whose only job is to apologise for the model", "goes red on a Tuesday for
+  reasons nobody can reconstruct" (both from the Pydantic Evals post). Vivid, but it's
+  stock LLM humour. Humour must come from the actual situation, not from giving software
+  feelings.
+- Section-ending zinger cadence — the tell that got the Pydantic Evals post called out as
+  AI-written on r/LocalLLaMA: nearly every section closed on a polished punchline ("You
+  ask for a shape and that's what you get", "the framework can't tell the difference",
+  "The boilerplate doesn't shrink, it stops existing"). Each line passes the aphorism rule
+  on its own; the density is the tell. At most one section-ending punchline per post —
+  every other section ends mid-register on a plain sentence.
+- Uniform paragraph rhythm — every paragraph running setup, elaboration, landing. Real
+  prose has flat paragraphs that just convey information and stop. Some paragraphs should
+  end without landing anything.
+- Unspecific anecdotes — "I've lost that afternoon more than once" (Pydantic Evals post)
+  with zero detail is a generated sentence. Every personal anecdote names something real
+  (the project, the field, roughly when) or gets cut. If Matt hasn't supplied the detail,
+  ask him for it rather than writing around it.
+- Technobabble — jargon-stacked sentences that sound technical but never explain the mechanism
+  ("leverages a scalable event-driven architecture to seamlessly orchestrate workloads").
+  Buzzword density signals a pitch, not an engineer. Say what the thing actually does in plain
+  words ("a Lambda picks each job off the queue"), and name a technology only when the reader
+  needs it to follow along or act.
+- Waffling — circling a point without landing it: long wind-ups before the claim, restating
+  the question, hedging in both directions ("it depends", "on the other hand"), a qualifier on
+  every sentence, three sentences doing one sentence's work. Matt states an opinion and gives
+  the reason; a post that hedges everything has no reason to exist. State the point, give the
+  reason, stop.
 - "Honest/honestly" as a verbal crutch (once per post at most), and confession-trope
   headers like "The honest part nobody writes about" — just state the claim as the header.
 - Attention-seeking section headings — snappy, matter-of-fact, or clickbaity. No
@@ -209,6 +236,20 @@ decent draft becomes publishable, and where most of the work in a session lands.
 - Don't end on an administrative pointer ("a follow-up is coming") — move it up and land the
   final line on the thesis, ideally bookending the opening stakes. The last line is what a
   reader, or an LLM, quotes.
+
+**Final AI-tell audit (required, run after the condensing pass):**
+The Avoid rules need enforcement, not just statement — rule-of-three and aphorisms were
+already banned when the Pydantic Evals post shipped with both. So this pass COUNTS
+violations, it doesn't vibe-check. Go through the draft and tally:
+1. Section-ending punchlines — count sections that close on a polished line. Max 1.
+2. Rule-of-three constructions — count them. Target 0.
+3. Anthropomorphising quips (software given feelings or motives) — count them. Target 0.
+4. Adverb intensifiers from the Avoid list ("genuinely", "quietly", "subtly", "notably",
+   "simply", "truly") — count occurrences.
+5. Personal anecdotes lacking a specific (project, field, roughly when) — count them.
+   Target 0; ask Matt for the missing detail, don't invent it or write around it.
+Report the counts to Matt before presenting the draft, fix anything over target, and
+re-count after fixing.
 
 ## Hands-on tutorial / how-to mode (the build-along voice)
 Matt has a back catalogue of hands-on AWS tutorials, originally on "Devs in the
