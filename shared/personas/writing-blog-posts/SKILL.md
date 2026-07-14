@@ -93,34 +93,7 @@ publishing process. Read it before drafting or editing any post.
   and what the numbers showed. The same goes for visual describers in everyday prose, not
   just claims: don't reach for verbs that paint a picture ("peeling off microservices" —
   say "breaking out microservices"). At most one piece of imagery per post, and only where
-  it adds something a plain sentence can't. Same family: anthropomorphising whimsy —
-  "glue code whose only job is to apologise for the model", "goes red on a Tuesday for
-  reasons nobody can reconstruct" (both from the Pydantic Evals post). Vivid, but it's
-  stock LLM humour. Humour must come from the actual situation, not from giving software
-  feelings.
-- Section-ending zinger cadence — the tell that got the Pydantic Evals post called out as
-  AI-written on r/LocalLLaMA: nearly every section closed on a polished punchline ("You
-  ask for a shape and that's what you get", "the framework can't tell the difference",
-  "The boilerplate doesn't shrink, it stops existing"). Each line passes the aphorism rule
-  on its own; the density is the tell. At most one section-ending punchline per post —
-  every other section ends mid-register on a plain sentence.
-- Uniform paragraph rhythm — every paragraph running setup, elaboration, landing. Real
-  prose has flat paragraphs that just convey information and stop. Some paragraphs should
-  end without landing anything.
-- Unspecific anecdotes — "I've lost that afternoon more than once" (Pydantic Evals post)
-  with zero detail is a generated sentence. Every personal anecdote names something real
-  (the project, the field, roughly when) or gets cut. If Matt hasn't supplied the detail,
-  ask him for it rather than writing around it.
-- Technobabble — jargon-stacked sentences that sound technical but never explain the mechanism
-  ("leverages a scalable event-driven architecture to seamlessly orchestrate workloads").
-  Buzzword density signals a pitch, not an engineer. Say what the thing actually does in plain
-  words ("a Lambda picks each job off the queue"), and name a technology only when the reader
-  needs it to follow along or act.
-- Waffling — circling a point without landing it: long wind-ups before the claim, restating
-  the question, hedging in both directions ("it depends", "on the other hand"), a qualifier on
-  every sentence, three sentences doing one sentence's work. Matt states an opinion and gives
-  the reason; a post that hedges everything has no reason to exist. State the point, give the
-  reason, stop.
+  it adds something a plain sentence can't.
 - "Honest/honestly" as a verbal crutch (once per post at most), and confession-trope
   headers like "The honest part nobody writes about" — just state the claim as the header.
 - Attention-seeking section headings — snappy, matter-of-fact, or clickbaity. No
@@ -147,12 +120,32 @@ fastest, because there's nothing else to carry it. Two extra rules for these:
   confident humour: it's a deliberate principal-engineer workflow choice (spec well,
   delegate, review), not laziness. Useful as a recurring wink, especially in meta/intro posts.
 
-## Before drafting: get Matt's notes first (required)
-Never draft from a topic alone. Before writing anything, ask Matt for rough manual
-notes — the war story, the numbers, the opinion — and treat those as the spine of the
-post. The draft's job is to shape his material, not to generate material for him. If a
-section needs a specific (an anecdote's project or timeframe, a figure) that the notes
-don't supply, ask for it rather than writing around it.
+## Drafting workflow (keeping the voice his)
+The July 2026 engagement data settled a question about AI-drafted prose: the least
+polished post on the site (herdr) held readers longest (62-72s engagement, highest on
+the site) because it reads like Matt talking, while the most heavily edited post
+(ast-grep) bounced skimmers. Voice carries more than polish. Rules that follow:
+- For essays and opinion posts, Matt drafts the argument and the opinions raw where
+  possible; Claude structures and tightens. Don't invert this (AI draft, human
+  hardening) - the judgement and the asides are the product. Build-along tutorials can
+  be drafted from a spec; opinion can't.
+- When reviewing a draft, default to critic mode: name the weakest paragraphs and say
+  why, flag AI tells, question the structure. Rewrite only when asked. A rewrite
+  improves the post and teaches nothing.
+- When tightening, preserve his sentences where they work. Tightening means cutting,
+  not re-voicing. If an edit pass makes the prose sound smoother but less like him,
+  back it out.
+- One post, one job - as a general rule, not just for tutorials. The ast-grep post ran
+  taxonomy, a convention, a workflow loop, a CI gate and a retro in one 12-minute read,
+  and skimmers bounced at ~11s. Split sprawling drafts. The 4-minute skills-or-mcp
+  shape is also the practice vehicle: a short post forces an opening, one idea and a
+  landing with a fast feedback cycle, so keep them coming between the big posts.
+
+**Pre-publish proof pass (mechanical, non-negotiable).** Loose voice is fine; loose
+mechanics aren't. The herdr post shipped with lowercase "i" in published prose, "soo",
+and a broken link (`[CMUX] (url)` rendering literally on the page). Before publish,
+check: capital I and apostrophes throughout, spelling, every link renders and resolves,
+images have captions and alt text. This pass never touches voice.
 
 ## Editing passes (structure, evidence & polish)
 Matt asks for tightening/condensing passes once a draft exists — this is where a
@@ -216,20 +209,6 @@ decent draft becomes publishable, and where most of the work in a session lands.
 - Don't end on an administrative pointer ("a follow-up is coming") — move it up and land the
   final line on the thesis, ideally bookending the opening stakes. The last line is what a
   reader, or an LLM, quotes.
-
-**Final AI-tell audit (required, run after the condensing pass):**
-The Avoid rules need enforcement, not just statement — rule-of-three and aphorisms were
-already banned when the Pydantic Evals post shipped with both. So this pass COUNTS
-violations, it doesn't vibe-check. Go through the draft and tally:
-1. Section-ending punchlines — count sections that close on a polished line. Max 1.
-2. Rule-of-three constructions — count them. Target 0.
-3. Anthropomorphising quips (software given feelings or motives) — count them. Target 0.
-4. Adverb intensifiers from the Avoid list ("genuinely", "quietly", "subtly", "notably",
-   "simply", "truly") — count occurrences.
-5. Personal anecdotes lacking a specific (project, field, roughly when) — count them.
-   Target 0; ask Matt for the missing detail, don't invent it or write around it.
-Report the counts to Matt before presenting the draft, fix anything over target, and
-re-count after fixing.
 
 ## Hands-on tutorial / how-to mode (the build-along voice)
 Matt has a back catalogue of hands-on AWS tutorials, originally on "Devs in the
@@ -309,6 +288,23 @@ Two things the traffic data made concrete. Build both into every post.
 - Never link a post that isn't live yet. A future-dated or draft target 404s, and a pinned related slug that isn't published drops with a build warning. Link a published alternative and swap the precise target in once it ships.
 
 **Lead with the payoff on the first screen.** The ast-grep post pulled clicks but readers bounced at ~11s, because the opening ran three paragraphs of problem-framing and the thing that makes the idea click (the survive/break table and a worked example) sat 40 lines down. Show the core idea working inside the first screen, roughly the first 200 words: demonstrate the term on a concrete example right after the cold open, and move the most scannable artifact (a small table, a before/after) up near the top. Trim any downstream restatement so nothing is said twice. This is the "cold open a claim, teach by demonstration" rule measured against the bounce: if a skimmer can't see why the post is worth reading on the first screen, they leave.
+
+**Measure one variable per post.** GA4 engagement time is the editor. When trying
+something new (opening shape, shorter length, more code and less prose), change one
+thing per post and read the number against comparable posts. The ast-grep bounce was
+debugged this way; make it the habit, not a one-off.
+
+**Mine the comment threads.** When a post does numbers on Reddit or HN, the thread
+quotes back the sentences that landed. Those quoted lines are free line-level feedback
+on what Matt's strongest writing looks like - collect them, and write more sentences
+shaped like them.
+
+**Calibration references.** When judging whether a draft is at the standard, the
+comparison set is: Dan Luu (evidence-dense long form), Julia Evans (teaching by
+demonstration), Simon Willison (cadence, dated survey posts - the model for the "local
+models, late 2026" follow-up strategy). For prose mechanics, Zinsser's On Writing Well
+and Williams' Style: Lessons in Clarity and Grace - the latter is the rigorous version
+of the Avoid list above.
 
 **Cadence beats one-off brilliance for retention.** The single best result was a dated survey of a topic with ongoing search volume ("local models in mid-2026"). Write those as repeatable: a "local models, late 2026" follow-up compounds in search and gives returning readers a reason to come back, which a run of unrelated one-off posts never does.
 
