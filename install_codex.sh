@@ -118,9 +118,6 @@ fi
 if [ "$DO_MCPS" = true ] && [ "$PROJECT_INSTALL" = false ]; then register_mcps_codex || printf "${YELLOW}⚠ MCP registration skipped/failed${NC}\n"; echo ""; fi
 if [ "$DO_HOOKS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     write_codex_hooks "$HOOKS_JSON"
-    # The Stop hook consumes lgtmaybe (advisory-only, same as Claude Code);
-    # install the CLI and ask (interactively) which provider/model to use.
-    { ensure_lgtmaybe && configure_lgtmaybe; } || printf "${YELLOW}⚠ lgtmaybe install/config skipped — advisory review disabled until installed${NC}\n"
     echo ""
 fi
 

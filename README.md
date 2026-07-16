@@ -48,8 +48,7 @@ in the matching `install_<tool>.sh`.
 
 Each `install_<tool>.sh` is self-contained — it ensures Homebrew (macOS), the
 CLI binary and the OpenSpec CLI, then installs that tool's
-agents/skills/prompts, steering, MCPs and hooks (every installer also installs
-and configures lgtmaybe for its advisory review hook). Run one, several, or all:
+agents/skills/prompts, steering, MCPs and hooks. Run one, several, or all:
 
 ```bash
 ./install.sh                  # all four tools (binaries + configs)
@@ -206,7 +205,7 @@ advisory (never blocking) checks:
 - **post-code** (per edit, all tools) — fast, file-scoped lint/type-check
 - **post-task** (turn end, all tools) — full test/security battery (linters, audits, semgrep), only when code changed
 - **pre-deploy** (all tools) — confirms `cdk diff` before `cdk deploy`/`destroy`. The matcher is single-sourced in `pre_deploy_check.sh`: Claude/Codex gate through the PreToolUse "ask" protocol, OpenCode blocks the first attempt via `tool.execute.before` (an identical retry after user confirmation passes), and omp asks via the extension's `ctx.ui.confirm`.
-- **lgtmaybe** (turn end, all tools) — advisory LLM review of uncommitted changes via [lgtmaybe](https://github.com/MattJColes/lgtmaybe); runs after post-task when code changed (Claude/Codex Stop hook, OpenCode `session.idle`, omp `agent_end`). The CLI is installed automatically by every installer, which also prompts for provider/model and persists them as a `LGTMAYBE_CONFIG` block (`LGTMAYBE_PROVIDER` / `LGTMAYBE_MODEL`) in your shell rc — `anthropic` needs `ANTHROPIC_API_KEY`, `bedrock` needs ambient AWS creds with `bedrock:InvokeModel*`. The code-reviewer persona reads the same variables for its automated review pass. Disable the hook with `LGTMAYBE_HOOK_ENABLED=false`.
+- **lgtmaybe** (turn end, all tools) — advisory LLM review of uncommitted changes via [lgtmaybe](https://github.com/MattJColes/lgtmaybe); runs after post-task when code changed (Claude/Codex Stop hook, OpenCode `session.idle`, omp `agent_end`). The installers do not install the CLI — the hook exits silently unless you opt in with `uv tool install 'lgtmaybe[bedrock]'` and export `LGTMAYBE_PROVIDER` / `LGTMAYBE_MODEL` yourself (`anthropic` needs `ANTHROPIC_API_KEY`, `bedrock` needs ambient AWS creds with `bedrock:InvokeModel*`). Disable the hook with `LGTMAYBE_HOOK_ENABLED=false`.
 
 ## Testing
 
@@ -226,7 +225,7 @@ matrix.
 aws configure                                   # AWS credentials for aws-* MCPs
 podman machine init && podman machine start     # containers (macOS)
 claude --version && codex --version             # sanity check
-omp --version && lgtmaybe --version             # oh-my-pi + lgtmaybe (auto-installed)
+omp --version                                   # oh-my-pi
 openspec --version                              # spec-driven dev CLI (auto-installed)
 openspec init                                   # opt a project into OpenSpec (per repo)
 ast-grep --version                              # structural search CLI (auto-installed)

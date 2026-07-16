@@ -16,21 +16,19 @@
 #
 # Knobs (env):
 #   LGTMAYBE_HOOK_ENABLED       "false" to disable entirely (default: true)
-#   LGTMAYBE_PROVIDER           anthropic | bedrock (default: bedrock). Written
-#                               by the installers' LGTMAYBE_CONFIG rc block;
-#                               shared with the code-reviewer persona.
-#   LGTMAYBE_MODEL              model id for the provider (shared knob, same
-#                               rc block)
+#   LGTMAYBE_PROVIDER           anthropic | bedrock (default: bedrock). Set it
+#                               in your shell rc yourself.
+#   LGTMAYBE_MODEL              model id for the provider (same knob)
 #   LGTMAYBE_HOOK_MODEL         hook-specific model override; wins over
 #                               LGTMAYBE_MODEL (default when both unset:
 #                               bedrock/us.anthropic.claude-opus-4-6;
 #                               swap us. → eu./apac. for your AWS region)
 #   LGTMAYBE_HOOK_MIN_SEVERITY  severity floor (default: medium)
 #
-# The CLI is installed automatically by every installer (ensure_lgtmaybe);
-# manual fallback: `uv tool install 'lgtmaybe[bedrock]'` (or pipx). Bedrock
-# needs ambient AWS creds with bedrock:InvokeModel* on the model; anthropic
-# needs ANTHROPIC_API_KEY.
+# The installers do NOT install the CLI — the hook exits silently when it is
+# absent. Opt in manually: `uv tool install 'lgtmaybe[bedrock]'` (or pipx).
+# Bedrock needs ambient AWS creds with bedrock:InvokeModel* on the model;
+# anthropic needs ANTHROPIC_API_KEY.
 #
 # Referenced in place from the repo; the shared library sits one directory up.
 # Override with MACOLS_SHARED_DIR.

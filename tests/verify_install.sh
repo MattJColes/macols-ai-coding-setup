@@ -48,11 +48,9 @@ verify_claudecode() {
     pass "ponytail plugin installed or declared" \
         "grep -qs 'ponytail@ponytail' '$d/plugins/installed_plugins.json' || grep -qs 'ponytail@ponytail' '$d/settings.json'"
     soft "git worktree available" "git worktree list >/dev/null 2>&1 || git worktree --help >/dev/null 2>&1"
-    soft "lgtmaybe CLI installed" "command -v lgtmaybe >/dev/null && { lgtmaybe --version >/dev/null 2>&1 || lgtmaybe --help >/dev/null 2>&1; }"
     soft "openspec CLI installed" "command -v openspec >/dev/null && openspec --version >/dev/null 2>&1"
     soft "ast-grep CLI installed" "command -v ast-grep >/dev/null && ast-grep --version >/dev/null 2>&1"
     soft "yq CLI installed" "command -v yq >/dev/null 2>&1"
-    soft "code-reviewer skill has lgtmaybe pass" "grep -q 'lgtmaybe' '$d/skills/code-reviewer/SKILL.md' 2>/dev/null"
     soft "claude mcp list shows filesystem" "command -v claude >/dev/null && claude mcp list 2>/dev/null | grep -q filesystem"
 }
 
@@ -69,7 +67,6 @@ verify_codex() {
         pass "hooks.json has PostToolUse hook"     "jq -e '.PostToolUse[0].hooks[0].command' '$d/hooks.json' >/dev/null"
         pass "hooks.json Stop runs lgtmaybe after post-task" "jq -e '.Stop[0].hooks[1].command | test(\"lgtmaybe\")' '$d/hooks.json' >/dev/null"
     fi
-    soft "lgtmaybe CLI installed" "command -v lgtmaybe >/dev/null && { lgtmaybe --version >/dev/null 2>&1 || lgtmaybe --help >/dev/null 2>&1; }"
     soft "codex mcp list shows filesystem" "command -v codex >/dev/null && codex mcp list 2>/dev/null | grep -q filesystem"
 }
 
@@ -86,7 +83,6 @@ verify_opencode() {
     if has_jq; then
         pass "opencode.json has filesystem MCP under .mcp" "jq -e '.mcp.filesystem' '$d/opencode.json' >/dev/null"
     fi
-    soft "lgtmaybe CLI installed" "command -v lgtmaybe >/dev/null && { lgtmaybe --version >/dev/null 2>&1 || lgtmaybe --help >/dev/null 2>&1; }"
 }
 
 verify_pi() {
@@ -99,7 +95,6 @@ verify_pi() {
     pass "extensions/pi-checks.ts exists" "[ -f '$d/extensions/pi-checks.ts' ]"
     pass "extension hooks dir substituted" "! grep -q '__PI_HOOKS_DIR__' '$d/extensions/pi-checks.ts'"
     pass "extension wires lgtmaybe + pre-deploy check" "grep -q 'lgtmaybe_review_hook.sh' '$d/extensions/pi-checks.ts' && grep -q 'pre_deploy_check.sh' '$d/extensions/pi-checks.ts'"
-    soft "lgtmaybe CLI installed" "command -v lgtmaybe >/dev/null && { lgtmaybe --version >/dev/null 2>&1 || lgtmaybe --help >/dev/null 2>&1; }"
 }
 
 printf '\n=== Verifying %s ===\n' "$TOOL"

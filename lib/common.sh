@@ -113,37 +113,6 @@ persist_local_bin_path() {
     done
 }
 
-# ensure_lgtmaybe — install the lgtmaybe review CLI consumed by the advisory
-# Stop hook (shared/hooks/lgtmaybe_review_hook.sh) and the code-reviewer
-# persona. Idempotent: returns immediately when the CLI is already on PATH.
-# Prefers `uv tool install` (bootstrapping uv with the same official script
-# ensure_mcp_prereqs uses), falling back to pipx. Verification is offline-only
-# (--version/--help) — never runs a billed review at install time.
-ensure_lgtmaybe() {
-    if command -v lgtmaybe &> /dev/null; then
-        printf "${GREEN}✓ lgtmaybe already installed${NC}\n"
-        return 0
-    fi
-    printf "${BLUE}Installing lgtmaybe (advisory review CLI)...${NC}\n"
-    if ! command -v uv &> /dev/null && ! command -v pipx &> /dev/null; then
-        printf "${YELLOW}Neither uv nor pipx found. Installing uv...${NC}\n"
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
-    fi
-    if command -v uv &> /dev/null; then
-        uv tool install 'lgtmaybe[bedrock]' || true
-    elif command -v pipx &> /dev/null; then
-        pipx install 'lgtmaybe[bedrock]' || true
-    fi
-    persist_local_bin_path
-    if lgtmaybe --version &> /dev/null || lgtmaybe --help &> /dev/null; then
-        printf "${GREEN}✓ lgtmaybe installed: %s${NC}\n" "$(command -v lgtmaybe)"
-        return 0
-    fi
-    printf "${RED}lgtmaybe install failed — the advisory review stays disabled until it is installed (uv tool install 'lgtmaybe[bedrock]').${NC}\n"
-    return 1
-}
-
 # ensure_openspec — install the OpenSpec CLI (github.com/Fission-AI/openspec)
 # used for spec-driven development across every agent. Idempotent: returns
 # immediately when the CLI is on PATH. Global npm install (needs Node 20.19+;
@@ -216,65 +185,6 @@ ensure_yq() {
         printf "${RED}yq install failed — the spec-anchor drift gate needs it.${NC}\n"
         return 1
     fi
-}
-
-# configure_lgtmaybe — interactive provider/model setup for lgtmaybe.
-#
-# Asks which provider lgtmaybe should use (Anthropic API vs AWS Bedrock) and
-# which model, then persists the answers as a marker-delimited LGTMAYBE_CONFIG
-# block in ~/.bashrc and ~/.zshrc. The turn-end review hooks (all four tools)
-# and the code-reviewer persona read LGTMAYBE_PROVIDER / LGTMAYBE_MODEL from
-# the environment, so this one block drives every lgtmaybe consumer. Strip-then-re-add keeps re-runs
-# idempotent and lets you change answers by re-running the installer.
-# Non-interactive runs (CI, piped stdin) skip the prompts entirely and leave
-# the built-in defaults (anthropic / claude-sonnet-4-6) in place.
-configure_lgtmaybe() {
-    if [ ! -t 0 ]; then
-        printf "${YELLOW}Non-interactive shell — skipping lgtmaybe config prompts (defaults: anthropic / claude-sonnet-4-6)${NC}\n"
-        return 0
-    fi
-
-    local provider model default_model api_key=""
-    printf "${BLUE}lgtmaybe configuration${NC}\n"
-    printf "  Provider: [1] anthropic (needs ANTHROPIC_API_KEY)  [2] bedrock (ambient AWS creds)\n"
-    read -r -p "  Choose provider [1]: " provider
-    case "$provider" in
-        2|bedrock) provider="bedrock";   default_model="us.anthropic.claude-sonnet-4-6" ;;
-        *)         provider="anthropic"; default_model="claude-sonnet-4-6" ;;
-    esac
-    read -r -p "  Model [$default_model]: " model
-    model="${model:-$default_model}"
-
-    if [ "$provider" = "anthropic" ] && [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-        # Never echoed; blank skips (export it yourself later if preferred).
-        read -r -s -p "  ANTHROPIC_API_KEY (blank to skip): " api_key
-        echo ""
-    fi
-
-    local rc
-    for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
-        [ -f "$rc" ] || continue
-        if grep -qF 'LGTMAYBE_CONFIG' "$rc"; then
-            # Strip-then-re-add (same idempotent pattern as HERDR_AUTOLAUNCH);
-            # avoid `sed -i` — GNU and BSD sed disagree on its argument.
-            sed '/# LGTMAYBE_CONFIG start/,/# LGTMAYBE_CONFIG end/d' "$rc" > "$rc.tmp" && mv "$rc.tmp" "$rc"
-        fi
-        {
-            echo ""
-            echo "# LGTMAYBE_CONFIG start (managed by macols-configs — re-run any install_<tool>.sh to change)"
-            echo "export LGTMAYBE_PROVIDER=\"$provider\""
-            echo "export LGTMAYBE_MODEL=\"$model\""
-            if [ -n "$api_key" ]; then
-                echo "export ANTHROPIC_API_KEY=\"$api_key\""
-            fi
-            echo "# LGTMAYBE_CONFIG end"
-        } >> "$rc"
-    done
-    export LGTMAYBE_PROVIDER="$provider" LGTMAYBE_MODEL="$model"
-    if [ -n "$api_key" ]; then
-        export ANTHROPIC_API_KEY="$api_key"
-    fi
-    printf "${GREEN}✓ lgtmaybe configured: provider=%s model=%s (persisted to ~/.bashrc + ~/.zshrc)${NC}\n" "$provider" "$model"
 }
 
 # ensure_node_on_noninteractive_path — ponytail's hooks (and our JSON config
