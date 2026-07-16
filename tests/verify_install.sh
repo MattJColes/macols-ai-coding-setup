@@ -65,7 +65,7 @@ verify_codex() {
     pass "~/.codex/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
     if has_jq; then
         pass "hooks.json has PostToolUse hook"     "jq -e '.PostToolUse[0].hooks[0].command' '$d/hooks.json' >/dev/null"
-        pass "hooks.json Stop runs lgtmaybe after post-task" "jq -e '.Stop[0].hooks[1].command | test(\"lgtmaybe\")' '$d/hooks.json' >/dev/null"
+        pass "hooks.json Stop runs post-task battery" "jq -e '.Stop[0].hooks[0].command | test(\"post_task\")' '$d/hooks.json' >/dev/null"
     fi
     soft "codex mcp list shows filesystem" "command -v codex >/dev/null && codex mcp list 2>/dev/null | grep -q filesystem"
 }
@@ -79,7 +79,7 @@ verify_opencode() {
     pass "~/.config/opencode/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
     pass "plugins/post_code_hook_plugin.mjs exists" "[ -f '$d/plugins/post_code_hook_plugin.mjs' ]"
     pass "plugin placeholders substituted" "! grep -q '__.*_PATH__' '$d/plugins/post_code_hook_plugin.mjs'"
-    pass "plugin wires lgtmaybe + pre-deploy check" "grep -q 'lgtmaybe_review_hook.sh' '$d/plugins/post_code_hook_plugin.mjs' && grep -q 'pre_deploy_check.sh' '$d/plugins/post_code_hook_plugin.mjs'"
+    pass "plugin wires pre-deploy check" "grep -q 'pre_deploy_check.sh' '$d/plugins/post_code_hook_plugin.mjs'"
     if has_jq; then
         pass "opencode.json has filesystem MCP under .mcp" "jq -e '.mcp.filesystem' '$d/opencode.json' >/dev/null"
     fi
@@ -94,7 +94,7 @@ verify_pi() {
     pass "~/.omp/agent/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
     pass "extensions/pi-checks.ts exists" "[ -f '$d/extensions/pi-checks.ts' ]"
     pass "extension hooks dir substituted" "! grep -q '__PI_HOOKS_DIR__' '$d/extensions/pi-checks.ts'"
-    pass "extension wires lgtmaybe + pre-deploy check" "grep -q 'lgtmaybe_review_hook.sh' '$d/extensions/pi-checks.ts' && grep -q 'pre_deploy_check.sh' '$d/extensions/pi-checks.ts'"
+    pass "extension wires pre-deploy check" "grep -q 'pre_deploy_check.sh' '$d/extensions/pi-checks.ts'"
 }
 
 printf '\n=== Verifying %s ===\n' "$TOOL"

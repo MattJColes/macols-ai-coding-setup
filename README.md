@@ -30,7 +30,7 @@ macols-configs/
 │   ├── personas/<name>/SKILL.md   # specialist personas (agents/skills/prompts)
 │   ├── steering/base.md + tools/  # system steering, tokenised per tool
 │   ├── mcp-config.json            # MCP server definitions
-│   ├── hooks/                     # post-code / post-task / pre-deploy / lgtmaybe + plugins
+│   ├── hooks/                     # post-code / post-task / pre-deploy + plugins
 │   ├── checks_common.sh          # shared check helpers (discovery, gate, timeout)
 │   ├── post_code_checks.sh        # per-edit lint/type-check battery
 │   ├── post_task_checks.sh        # turn-end battery (runs checks in parallel)
@@ -205,7 +205,6 @@ advisory (never blocking) checks:
 - **post-code** (per edit, all tools) — fast, file-scoped lint/type-check
 - **post-task** (turn end, all tools) — full test/security battery (linters, audits, semgrep), only when code changed
 - **pre-deploy** (all tools) — confirms `cdk diff` before `cdk deploy`/`destroy`. The matcher is single-sourced in `pre_deploy_check.sh`: Claude/Codex gate through the PreToolUse "ask" protocol, OpenCode blocks the first attempt via `tool.execute.before` (an identical retry after user confirmation passes), and omp asks via the extension's `ctx.ui.confirm`.
-- **lgtmaybe** (turn end, all tools) — advisory LLM review of uncommitted changes via [lgtmaybe](https://github.com/MattJColes/lgtmaybe); runs after post-task when code changed (Claude/Codex Stop hook, OpenCode `session.idle`, omp `agent_end`). The installers do not install the CLI — the hook exits silently unless you opt in with `uv tool install 'lgtmaybe[bedrock]'` and export `LGTMAYBE_PROVIDER` / `LGTMAYBE_MODEL` yourself (`anthropic` needs `ANTHROPIC_API_KEY`, `bedrock` needs ambient AWS creds with `bedrock:InvokeModel*`). Disable the hook with `LGTMAYBE_HOOK_ENABLED=false`.
 
 ## Testing
 

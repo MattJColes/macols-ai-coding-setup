@@ -612,7 +612,6 @@ CODE_HOOK="$HOOKS_DIR/post_code_hook.sh"
 TASK_HOOK="$HOOKS_DIR/post_task_hook.sh"
 PRE_DEPLOY_HOOK="$HOOKS_DIR/pre_deploy_hook.sh"
 PRE_DEPLOY_CHECK="$HOOKS_DIR/pre_deploy_check.sh"
-LGTMAYBE_HOOK="$HOOKS_DIR/lgtmaybe_review_hook.sh"
 
 check_hook_sources() {
     local f
@@ -625,19 +624,17 @@ check_hook_sources() {
 # write_claude_hooks <settings_file>
 write_claude_hooks() {
     require_node || return 1
-    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_HOOK" "$LGTMAYBE_HOOK" || return 1
+    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_HOOK" || return 1
     mkdir -p "$(dirname "$1")"
-    SETTINGS_FILE="$1" HOOK_SCRIPT="$CODE_HOOK" TASK_HOOK_SCRIPT="$TASK_HOOK" PRE_DEPLOY_HOOK_SCRIPT="$PRE_DEPLOY_HOOK" LGTMAYBE_HOOK_SCRIPT="$LGTMAYBE_HOOK" node -e '
+    SETTINGS_FILE="$1" HOOK_SCRIPT="$CODE_HOOK" TASK_HOOK_SCRIPT="$TASK_HOOK" PRE_DEPLOY_HOOK_SCRIPT="$PRE_DEPLOY_HOOK" node -e '
 const fs = require("fs"), env = process.env;
 let existing = {};
 if (fs.existsSync(env.SETTINGS_FILE)) { try { existing = JSON.parse(fs.readFileSync(env.SETTINGS_FILE, "utf8")); } catch (e) {} }
 existing.hooks = {
     PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT }] }],
     PostToolUse: [{ matcher: "Edit|Write|NotebookEdit", hooks: [{ type: "command", command: env.HOOK_SCRIPT }] }],
-    // Stop runs the fast deterministic battery, then an advisory lgtmaybe LLM review.
     Stop: [{ hooks: [
-        { type: "command", command: env.TASK_HOOK_SCRIPT },
-        { type: "command", command: env.LGTMAYBE_HOOK_SCRIPT }
+        { type: "command", command: env.TASK_HOOK_SCRIPT }
     ] }]
 };
 // Hard safety the model cannot talk itself out of: deny reads of AWS
@@ -666,17 +663,16 @@ install_claude_launcher() {
 # write_codex_hooks <hooks_json>
 write_codex_hooks() {
     require_node || return 1
-    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_HOOK" "$LGTMAYBE_HOOK" || return 1
+    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_HOOK" || return 1
     mkdir -p "$(dirname "$1")"
-    HOOKS_JSON="$1" HOOK_SCRIPT="$CODE_HOOK" TASK_HOOK_SCRIPT="$TASK_HOOK" PRE_DEPLOY_HOOK_SCRIPT="$PRE_DEPLOY_HOOK" LGTMAYBE_HOOK_SCRIPT="$LGTMAYBE_HOOK" node -e '
+    HOOKS_JSON="$1" HOOK_SCRIPT="$CODE_HOOK" TASK_HOOK_SCRIPT="$TASK_HOOK" PRE_DEPLOY_HOOK_SCRIPT="$PRE_DEPLOY_HOOK" node -e '
 const fs = require("fs"), env = process.env;
 const config = {
     PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT, timeout: 30 }] }],
     PostToolUse: [{ matcher: "Edit|Write|NotebookEdit", hooks: [{ type: "command", command: env.HOOK_SCRIPT, timeout: 120 }] }],
-    // Stop mirrors Claude: deterministic battery, then the advisory lgtmaybe review.
+    // Stop mirrors Claude: the deterministic post-task battery.
     Stop: [{ hooks: [
-        { type: "command", command: env.TASK_HOOK_SCRIPT, timeout: 300 },
-        { type: "command", command: env.LGTMAYBE_HOOK_SCRIPT, timeout: 300 }
+        { type: "command", command: env.TASK_HOOK_SCRIPT, timeout: 300 }
     ] }]
 };
 fs.writeFileSync(env.HOOKS_JSON, JSON.stringify(config, null, 2) + "\n");
@@ -686,12 +682,11 @@ fs.writeFileSync(env.HOOKS_JSON, JSON.stringify(config, null, 2) + "\n");
 
 # install_opencode_plugin <plugins_dir>
 install_opencode_plugin() {
-    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$LGTMAYBE_HOOK" "$PRE_DEPLOY_CHECK" "$HOOKS_DIR/opencode_post_code_plugin.mjs" || return 1
+    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_CHECK" "$HOOKS_DIR/opencode_post_code_plugin.mjs" || return 1
     mkdir -p "$1"
     rm -f "$1/post_code_hook_plugin.mjs" "$1/post_code_hook_env.mjs"
     sed -e "s|__HOOK_SCRIPT_PATH__|${CODE_HOOK}|g" \
         -e "s|__TASK_HOOK_SCRIPT_PATH__|${TASK_HOOK}|g" \
-        -e "s|__LGTMAYBE_HOOK_PATH__|${LGTMAYBE_HOOK}|g" \
         -e "s|__PRE_DEPLOY_CHECK_PATH__|${PRE_DEPLOY_CHECK}|g" \
         "$HOOKS_DIR/opencode_post_code_plugin.mjs" > "$1/post_code_hook_plugin.mjs"
     printf "${GREEN}✓ Plugin installed to %s${NC}\n" "$1/post_code_hook_plugin.mjs"
@@ -699,7 +694,7 @@ install_opencode_plugin() {
 
 # install_pi_extension <extensions_dir> — bake the repo hooks dir into pi-checks.ts.
 install_pi_extension() {
-    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$LGTMAYBE_HOOK" "$PRE_DEPLOY_CHECK" "$HOOKS_DIR/pi-checks.ts" || return 1
+    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_CHECK" "$HOOKS_DIR/pi-checks.ts" || return 1
     mkdir -p "$1"
     sed "s#__PI_HOOKS_DIR__#$HOOKS_DIR#g" "$HOOKS_DIR/pi-checks.ts" > "$1/pi-checks.ts"
     printf "${GREEN}✓ Extension installed to %s${NC}\n" "$1/pi-checks.ts"
