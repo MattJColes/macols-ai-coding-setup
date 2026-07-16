@@ -179,7 +179,7 @@ cdk-expert-ts, cdk-expert-python, data-scientist ·
 **Architecture/Design:** architecture-expert, ui-ux-designer ·
 **Security:** security-specialist ·
 **Management:** documentation-engineer, product-manager, project-coordinator, engineering-manager ·
-**Writing:** writing-blog-posts, writing-documents, writing-style ·
+**Writing:** interrogate-me (pre-draft interview that produces a brief), writing-blog-posts, writing-documents, writing-style ·
 **Workflow:** commit (run checks, create a conventional commit and push the branch), ponytail (minimal/YAGNI mode)
 
 ## MCP servers
