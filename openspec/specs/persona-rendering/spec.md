@@ -4,8 +4,8 @@
 
 Personas are authored exactly once as `shared/personas/<name>/SKILL.md` and
 rendered into each tool's native persona format at install time. The rendered
-output (`~/.claude/agents/*`, `~/.claude/skills/*`, Codex prompts, OpenCode
-agents/skills, Pi skills) is generated, never hand-edited.
+output (`~/.claude/agents/*`, `~/.claude/skills/*`, Codex prompts/skills/agents,
+OpenCode agents/skills, Pi skills) is generated, never hand-edited.
 
 ## Requirements
 
@@ -23,14 +23,19 @@ model (default `sonnet`), and `allowed-tools` lists the tool allowlist
 - **THEN** the same body renders as an agent and as a skill (e.g. code-reviewer)
 
 ### Requirement: Generation emits each tool's native format from the same body
-`generate_personas <tool> <skill|agent> <target_dir>` SHALL render every
-persona through the embedded Node generator and set `PERSONA_COUNT` to the
-number generated. Skill mode SHALL emit Codex flat prompts (`<name>.md` with
-`description` + `argument-hint`), OpenCode skills (`compatibility: opencode`),
-and Claude/Pi Agent Skills (`allowed-tools` list, plus `user-invocable` for
-Claude only). Agent mode SHALL emit only personas with `agent: true`: Claude
-agents get a `tools:` CSV and `model:`; OpenCode agents get a mapped
-`anthropic/...` model id and a boolean tool map.
+`generate_personas <tool> <skill|prompt|agent> <target_dir>` SHALL render
+every persona through the embedded Node generator and set `PERSONA_COUNT` to
+the number generated. Prompt mode SHALL emit Codex flat prompts (`<name>.md`
+with `description` + `argument-hint`). Skill mode SHALL emit OpenCode skills
+(`compatibility: opencode`), Codex Agent Skills (`name` + `description`
+frontmatter only), and Claude/Pi Agent Skills (`allowed-tools` list, plus
+`user-invocable` for Claude only). Agent mode SHALL emit only personas with
+`agent: true`: Claude agents get a `tools:` CSV and `model:`; OpenCode agents
+get a mapped `anthropic/...` model id and a boolean tool map; Codex agents
+get a `<name>.toml` with `name`, `description` and `developer_instructions`
+(TOML literal block, escaped-string fallback) and no `model` — Codex model
+ids do not map from the persona's opus/sonnet hint, so agents inherit the
+parent session's model.
 <!-- anchor: persona-rendering.generator -->
 
 #### Scenario: Skill-only persona in agent mode
@@ -42,7 +47,7 @@ agents get a `tools:` CSV and `model:`; OpenCode agents get a mapped
 `list_personas <tool>` SHALL print each persona with its tool-native
 invocation (`/<name>` for Codex, `/skill:<name>` for Pi) and description, and
 SHALL mark `agent: true` personas with an `+agent` marker for agent-capable
-tools.
+tools (Claude Code, OpenCode, Codex).
 <!-- anchor: persona-rendering.list -->
 
 #### Scenario: Agent-capable persona listed for Claude Code

@@ -13,8 +13,8 @@ only checked-in `.claude/` content is OpenSpec's opsx commands/skills —
 Edit the single source, never the rendered output:
 
 - **Personas** — `shared/personas/<name>/SKILL.md`. Frontmatter drives
-  rendering: `agent: true` also emits a Claude/OpenCode agent;
-  `user-invocable: true` a Claude skill. One persona file can therefore be
+  rendering: `agent: true` also emits a Claude/OpenCode agent and a Codex
+  agent TOML; `user-invocable: true` a Claude skill. One persona file can therefore be
   both the "agent" and the "skill" (e.g. code-reviewer).
 - **Steering** — `shared/steering/base.md`, tokenised per tool via
   `shared/steering/tools/<tool>.json`. The `{{EXTRA_SECTION}}` token sits

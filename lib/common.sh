@@ -222,9 +222,9 @@ ensure_yq() {
 #
 # Asks which provider lgtmaybe should use (Anthropic API vs AWS Bedrock) and
 # which model, then persists the answers as a marker-delimited LGTMAYBE_CONFIG
-# block in ~/.bashrc and ~/.zshrc. The Stop hook and the code-reviewer persona
-# both read LGTMAYBE_PROVIDER / LGTMAYBE_MODEL from the environment, so this
-# one block drives every lgtmaybe consumer. Strip-then-re-add keeps re-runs
+# block in ~/.bashrc and ~/.zshrc. The turn-end review hooks (all four tools)
+# and the code-reviewer persona read LGTMAYBE_PROVIDER / LGTMAYBE_MODEL from
+# the environment, so this one block drives every lgtmaybe consumer. Strip-then-re-add keeps re-runs
 # idempotent and lets you change answers by re-running the installer.
 # Non-interactive runs (CI, piped stdin) skip the prompts entirely and leave
 # the built-in defaults (anthropic / claude-sonnet-4-6) in place.
@@ -261,7 +261,7 @@ configure_lgtmaybe() {
         fi
         {
             echo ""
-            echo "# LGTMAYBE_CONFIG start (managed by macols-configs — re-run install_claudecode.sh to change)"
+            echo "# LGTMAYBE_CONFIG start (managed by macols-configs — re-run any install_<tool>.sh to change)"
             echo "export LGTMAYBE_PROVIDER=\"$provider\""
             echo "export LGTMAYBE_MODEL=\"$model\""
             if [ -n "$api_key" ]; then
@@ -373,8 +373,10 @@ handle_common_install_flag() {
 # ── Persona generation (single source: shared/personas/<name>/SKILL.md) ───────
 #
 # One generator emits each tool's native format from the SAME persona body:
-#   • skill mode  → Claude/OpenCode/Pi skill (<name>/SKILL.md) or Codex prompt (<name>.md)
-#   • agent mode  → Claude/OpenCode agent (<name>.md), only when frontmatter has agent: true
+#   • skill mode  → Claude/OpenCode/Pi/Codex Agent Skill (<name>/SKILL.md)
+#   • prompt mode → Codex custom prompt / slash command (<name>.md)
+#   • agent mode  → Claude/OpenCode agent (<name>.md) or Codex agent (<name>.toml),
+#                   only when frontmatter has agent: true
 read -r -d '' PERSONA_GEN_JS <<'PERSONA_EOF' || true
 const fs = require("fs"), path = require("path");
 const mode = process.env.MODE, tool = process.env.TOOL;
@@ -421,15 +423,24 @@ for (const name of fs.readdirSync(pdir).sort()) {
   const pname = data.name || name;
   let label = name;
 
-  if (mode === "skill") {
+  if (mode === "prompt") {
+    // Codex custom prompt (slash command): description + argument-hint, no name.
+    let fm = "---\n";
+    if (data.description) fm += "description: " + data.description + "\n";
+    fm += "argument-hint: \"[task or context]\"\n";
+    fm += "---\n";
+    fs.writeFileSync(path.join(tdir, name + ".md"), fm + body);
+    console.log("  ✓ /" + name);
+    count++;
+  } else if (mode === "skill") {
     let fm = "---\n";
     if (tool === "codex") {
-      // Codex custom prompt (slash command): description + argument-hint, no name.
+      // Codex Agent Skill (~/.codex/skills/<name>/SKILL.md): name + description
+      // only — Codex ignores Claude-specific keys like allowed-tools.
+      fm += "name: " + pname + "\n";
       if (data.description) fm += "description: " + data.description + "\n";
-      fm += "argument-hint: \"[task or context]\"\n";
       fm += "---\n";
-      fs.writeFileSync(path.join(tdir, name + ".md"), fm + body);
-      label = "/" + name;
+      writeDir(tdir, name, fm + body);
     } else if (tool === "opencode") {
       if (data.name) fm += "name: " + data.name + "\n";
       if (data.description) fm += "description: " + data.description + "\n";
@@ -450,7 +461,20 @@ for (const name of fs.readdirSync(pdir).sort()) {
   } else if (mode === "agent") {
     if (data.agent !== true) continue;
     let fm = "---\n";
-    if (tool === "opencode") {
+    if (tool === "codex") {
+      // Codex custom agent (~/.codex/agents/<name>.toml). Required fields:
+      // name, description, developer_instructions. model is omitted so the
+      // agent inherits the parent session's (Codex model ids are OpenAI's —
+      // the persona's opus/sonnet hint does not map). Instructions use a TOML
+      // literal block (no escape processing); fall back to an escaped basic
+      // string if the body ever contains the ''' delimiter.
+      const b = body.endsWith("\n") ? body : body + "\n";
+      let doc = "name = " + JSON.stringify(pname) + "\n";
+      doc += "description = " + JSON.stringify(data.description || "") + "\n";
+      if (b.includes("'''")) doc += "developer_instructions = " + JSON.stringify(b) + "\n";
+      else doc += "developer_instructions = '''\n" + b + "'''\n";
+      fs.writeFileSync(path.join(tdir, pname + ".toml"), doc);
+    } else if (tool === "opencode") {
       const model = OC_MODEL[data.model] || OC_MODEL.sonnet;
       fm += "description: " + (data.description || "") + "\n";
       fm += "model: " + model + "\ntools:\n";
@@ -473,7 +497,7 @@ for (const name of fs.readdirSync(pdir).sort()) {
 console.log("__COUNT__" + count);
 PERSONA_EOF
 
-# generate_personas <tool> <skill|agent> <target_dir>
+# generate_personas <tool> <skill|prompt|agent> <target_dir>
 # Prints a per-item checklist; sets PERSONA_COUNT to the number generated.
 generate_personas() {
     require_node || return 1
@@ -495,7 +519,9 @@ list_personas() {
         [ -f "$persona_dir/SKILL.md" ] || continue
         description=$(grep -m1 "^description:" "$persona_dir/SKILL.md" | sed 's/^description: //')
         case "$tool" in
-            codex) printf "  ${GREEN}/%-24s${NC} %s\n" "$persona_name" "$description" ;;
+            codex)
+                if grep -q "^agent:[[:space:]]*true" "$persona_dir/SKILL.md"; then marker="${CYAN}+agent${NC}"; else marker="      "; fi
+                printf "  ${GREEN}/%-24s${NC} %b  %s\n" "$persona_name" "$marker" "$description" ;;
             pi)    printf "  ${GREEN}/skill:%-18s${NC} %s\n" "$persona_name" "$description" ;;
             *)
                 if grep -q "^agent:[[:space:]]*true" "$persona_dir/SKILL.md"; then marker="${CYAN}+agent${NC}"; else marker="      "; fi
@@ -675,6 +701,7 @@ fs.writeFileSync(dest, JSON.stringify(cfg, null, 2) + "\n");
 CODE_HOOK="$HOOKS_DIR/post_code_hook.sh"
 TASK_HOOK="$HOOKS_DIR/post_task_hook.sh"
 PRE_DEPLOY_HOOK="$HOOKS_DIR/pre_deploy_hook.sh"
+PRE_DEPLOY_CHECK="$HOOKS_DIR/pre_deploy_check.sh"
 LGTMAYBE_HOOK="$HOOKS_DIR/lgtmaybe_review_hook.sh"
 
 check_hook_sources() {
@@ -729,14 +756,18 @@ install_claude_launcher() {
 # write_codex_hooks <hooks_json>
 write_codex_hooks() {
     require_node || return 1
-    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_HOOK" || return 1
+    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_HOOK" "$LGTMAYBE_HOOK" || return 1
     mkdir -p "$(dirname "$1")"
-    HOOKS_JSON="$1" HOOK_SCRIPT="$CODE_HOOK" TASK_HOOK_SCRIPT="$TASK_HOOK" PRE_DEPLOY_HOOK_SCRIPT="$PRE_DEPLOY_HOOK" node -e '
+    HOOKS_JSON="$1" HOOK_SCRIPT="$CODE_HOOK" TASK_HOOK_SCRIPT="$TASK_HOOK" PRE_DEPLOY_HOOK_SCRIPT="$PRE_DEPLOY_HOOK" LGTMAYBE_HOOK_SCRIPT="$LGTMAYBE_HOOK" node -e '
 const fs = require("fs"), env = process.env;
 const config = {
     PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT, timeout: 30 }] }],
     PostToolUse: [{ matcher: "Edit|Write|NotebookEdit", hooks: [{ type: "command", command: env.HOOK_SCRIPT, timeout: 120 }] }],
-    Stop: [{ hooks: [{ type: "command", command: env.TASK_HOOK_SCRIPT, timeout: 300 }] }]
+    // Stop mirrors Claude: deterministic battery, then the advisory lgtmaybe review.
+    Stop: [{ hooks: [
+        { type: "command", command: env.TASK_HOOK_SCRIPT, timeout: 300 },
+        { type: "command", command: env.LGTMAYBE_HOOK_SCRIPT, timeout: 300 }
+    ] }]
 };
 fs.writeFileSync(env.HOOKS_JSON, JSON.stringify(config, null, 2) + "\n");
 '
@@ -745,18 +776,20 @@ fs.writeFileSync(env.HOOKS_JSON, JSON.stringify(config, null, 2) + "\n");
 
 # install_opencode_plugin <plugins_dir>
 install_opencode_plugin() {
-    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$HOOKS_DIR/opencode_post_code_plugin.mjs" || return 1
+    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$LGTMAYBE_HOOK" "$PRE_DEPLOY_CHECK" "$HOOKS_DIR/opencode_post_code_plugin.mjs" || return 1
     mkdir -p "$1"
     rm -f "$1/post_code_hook_plugin.mjs" "$1/post_code_hook_env.mjs"
     sed -e "s|__HOOK_SCRIPT_PATH__|${CODE_HOOK}|g" \
         -e "s|__TASK_HOOK_SCRIPT_PATH__|${TASK_HOOK}|g" \
+        -e "s|__LGTMAYBE_HOOK_PATH__|${LGTMAYBE_HOOK}|g" \
+        -e "s|__PRE_DEPLOY_CHECK_PATH__|${PRE_DEPLOY_CHECK}|g" \
         "$HOOKS_DIR/opencode_post_code_plugin.mjs" > "$1/post_code_hook_plugin.mjs"
     printf "${GREEN}✓ Plugin installed to %s${NC}\n" "$1/post_code_hook_plugin.mjs"
 }
 
 # install_pi_extension <extensions_dir> — bake the repo hooks dir into pi-checks.ts.
 install_pi_extension() {
-    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$HOOKS_DIR/pi-checks.ts" || return 1
+    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$LGTMAYBE_HOOK" "$PRE_DEPLOY_CHECK" "$HOOKS_DIR/pi-checks.ts" || return 1
     mkdir -p "$1"
     sed "s#__PI_HOOKS_DIR__#$HOOKS_DIR#g" "$HOOKS_DIR/pi-checks.ts" > "$1/pi-checks.ts"
     printf "${GREEN}✓ Extension installed to %s${NC}\n" "$1/pi-checks.ts"

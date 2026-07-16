@@ -1,6 +1,8 @@
 #!/bin/bash
 #
 # Shared pre-deploy hook (PreToolUse on Bash) — used by Claude Code and Codex.
+# (OpenCode and omp wire the same guard through their plugin/extension, all
+# via the shared matcher in pre_deploy_check.sh.)
 #
 # Guards `cdk deploy` / `cdk destroy`. The biggest CDK-specific danger is a
 # Construct ID rename that looks like a harmless refactor but forces resource
@@ -37,10 +39,11 @@ if [ "$TOOL_NAME" != "Bash" ]; then
     exit 0
 fi
 
-# Match `cdk deploy` / `cdk destroy`, including `npx cdk deploy`, `cdk deploy --all`,
-# `cdk destroy '*'`, etc. Allow `cdk diff`/`cdk synth` through untouched.
-if echo "$COMMAND" | grep -Eq '(^|[^[:alnum:]_-])cdk[[:space:]]+(deploy|destroy)([[:space:]]|$)'; then
-    REASON="cdk deploy/destroy detected. Renaming a Construct ID forces resource REPLACEMENT/DESTRUCTION — confirm you reviewed 'cdk diff' for replacements (look for 'requires replacement' and resources marked for removal) before approving."
+# Delegate matching to the shared, protocol-neutral core (single source for
+# the cdk regex + reason across all four tools' wirings).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REASON="$(bash "$SCRIPT_DIR/pre_deploy_check.sh" "$COMMAND")"
+if [ -n "$REASON" ]; then
     if command -v jq &> /dev/null; then
         jq -n --arg reason "$REASON" '{
             hookSpecificOutput: {

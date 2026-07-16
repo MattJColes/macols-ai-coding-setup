@@ -136,12 +136,19 @@ if [ "$DO_CONTEXT" = true ]; then
         assemble_steering pi "$AGENTS_FILE"; append_ponytail_ruleset "$AGENTS_FILE"
     fi; echo ""
 fi
-if [ "$DO_HOOKS" = true ] && [ "$PROJECT_INSTALL" = false ]; then install_pi_extension "$EXTENSIONS_DIR"; echo ""; fi
+if [ "$DO_HOOKS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
+    install_pi_extension "$EXTENSIONS_DIR"
+    # The extension's agent_end runs the advisory lgtmaybe review; install the
+    # CLI and ask (interactively) which provider/model to use. Never blocking.
+    { ensure_lgtmaybe && configure_lgtmaybe; } || printf "${YELLOW}⚠ lgtmaybe install/config skipped — advisory review disabled until installed${NC}\n"
+    echo ""
+fi
 
 done_banner
 echo "Next steps:"
 echo "  • Run 'omp' to start the agent (or '/reload' inside omp to pick up the extension)"
 echo "  • Skills are available as /skill:<name> (e.g. /skill:python-backend)"
-echo "  • The pi-checks extension runs tests/lint/security advisories after edits and turns"
+echo "  • The pi-checks extension runs tests/lint/security advisories after edits and turns,"
+echo "    an advisory lgtmaybe review at turn end, and a cdk deploy/destroy confirmation guard"
 echo "  • omp has no MCP — expose external capabilities as CLI tools + skills + packages"
 echo ""

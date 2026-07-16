@@ -1,6 +1,8 @@
 #!/bin/bash
 #
-# lgtmaybe review hook (Claude Code Stop / turn-end) — ADVISORY.
+# lgtmaybe review hook (turn-end) — ADVISORY. Wired for every tool: Claude
+# Code and Codex run it as the second Stop hook, OpenCode from the plugin's
+# session.idle, omp from the pi-checks extension's agent_end.
 #
 # Runs the lgtmaybe PR reviewer over the uncommitted changes the agent just made,
 # using Bedrock Claude Opus 4.6 with ambient AWS credentials (nothing secret to
@@ -15,8 +17,8 @@
 # Knobs (env):
 #   LGTMAYBE_HOOK_ENABLED       "false" to disable entirely (default: true)
 #   LGTMAYBE_PROVIDER           anthropic | bedrock (default: bedrock). Written
-#                               by install_claudecode.sh's LGTMAYBE_CONFIG rc
-#                               block; shared with the code-reviewer persona.
+#                               by the installers' LGTMAYBE_CONFIG rc block;
+#                               shared with the code-reviewer persona.
 #   LGTMAYBE_MODEL              model id for the provider (shared knob, same
 #                               rc block)
 #   LGTMAYBE_HOOK_MODEL         hook-specific model override; wins over
@@ -25,7 +27,7 @@
 #                               swap us. → eu./apac. for your AWS region)
 #   LGTMAYBE_HOOK_MIN_SEVERITY  severity floor (default: medium)
 #
-# The CLI is installed automatically by install_claudecode.sh (ensure_lgtmaybe);
+# The CLI is installed automatically by every installer (ensure_lgtmaybe);
 # manual fallback: `uv tool install 'lgtmaybe[bedrock]'` (or pipx). Bedrock
 # needs ambient AWS creds with bedrock:InvokeModel* on the model; anthropic
 # needs ANTHROPIC_API_KEY.

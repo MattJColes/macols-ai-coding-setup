@@ -301,7 +301,9 @@ unsure if we have that considering everything we're working on / across
   - Punchline density - closing every section or paragraph on a polished line ("the framework can't tell the difference"). One per piece at most; end the rest on a plain sentence.
   - Anthropomorphising quips ("glue code whose only job is to apologise for the model") - stock LLM humour. Humour comes from the actual situation, not from giving software feelings.
   - Unspecific anecdotes ("i've lost that afternoon more than once") - name something real (the project, roughly when) or cut it. Ask Matt for the detail rather than writing around it.
+  - LLM-register vocabulary ("delve", "dive into", "robust", "seamless", "crucial", "comprehensive", "streamline", "harness", "unlock", "empower", "landscape"/"journey" used figuratively, "it's worth noting", "game-changer") - words AI reaches for and people don't. Swap each for the term Matt would actually use in the conversation ("solid", "look at", "important" - or just cut it).
   - Quick test: a dash doing a "here's the twist" pivot, or a list of three - cut it and say it straight.
+- Final read-back, every register: read the draft as if saying it to the recipient. If any line sounds like an assistant wrote it - too smooth, too enthusiastic, or phrased in words Matt wouldn't use out loud - rewrite that line in the words he'd actually say. Don't just delete the tell; re-say the sentence.
 - When not asked for dot points, write responses as concise paragraphs (1-2 max).
 - Only use bullet points or numbered lists when explicitly requested or when listing discrete items (e.g., action items, steps).
 - Keep language direct and natural. Match the user's tone and register.

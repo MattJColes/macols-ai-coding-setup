@@ -48,8 +48,8 @@ in the matching `install_<tool>.sh`.
 
 Each `install_<tool>.sh` is self-contained — it ensures Homebrew (macOS), the
 CLI binary and the OpenSpec CLI, then installs that tool's
-agents/skills/prompts, steering, MCPs and hooks (the Claude Code installer also
-installs and configures lgtmaybe). Run one, several, or all:
+agents/skills/prompts, steering, MCPs and hooks (every installer also installs
+and configures lgtmaybe for its advisory review hook). Run one, several, or all:
 
 ```bash
 ./install.sh                  # all four tools (binaries + configs)
@@ -107,7 +107,7 @@ user is preferred.
 | Tool | Personas as | Steering | MCP | Hooks |
 |------|-------------|----------|-----|-------|
 | Claude Code | agents `~/.claude/agents/`, skills `~/.claude/skills/` | `~/.claude/CLAUDE.md` | `claude mcp add-json` → `~/.claude.json` | `~/.claude/settings.json` |
-| Codex | prompts `~/.codex/prompts/` | `~/.codex/AGENTS.md` | `codex mcp add` → `~/.codex/config.toml` | `~/.codex/hooks.json` |
+| Codex | prompts `~/.codex/prompts/`, skills `~/.codex/skills/`, agents `~/.codex/agents/*.toml` | `~/.codex/AGENTS.md` | `codex mcp add` → `~/.codex/config.toml` | `~/.codex/hooks.json` |
 | OpenCode | agents `~/.config/opencode/agents/`, skills `…/skills/` | `~/.config/opencode/AGENTS.md` | `mcp` key in `~/.config/opencode/opencode.json` | plugin in `…/plugins/` |
 | Oh My Pi | Agent Skills `~/.omp/agent/skills/` (`/skill:<name>`) | `~/.omp/agent/AGENTS.md` | none by design | `pi-checks` extension |
 
@@ -202,10 +202,10 @@ config: **filesystem**, **puppeteer**, **playwright**, **context7**, **dart**,
 Thin wrappers in `shared/hooks/` source the shared check libraries and run
 advisory (never blocking) checks:
 
-- **post-code** (per edit) — fast, file-scoped lint/type-check
-- **post-task** (turn end) — full test/security battery (linters, audits, semgrep), only when code changed
-- **pre-deploy** (Claude/Codex) — confirms `cdk diff` before `cdk deploy`/`destroy`
-- **lgtmaybe** (Claude Code Stop only) — advisory LLM review of uncommitted changes via [lgtmaybe](https://github.com/MattJColes/lgtmaybe); runs after post-task when code changed. The CLI is installed automatically by `install_claudecode.sh`, which also prompts for provider/model and persists them as a `LGTMAYBE_CONFIG` block (`LGTMAYBE_PROVIDER` / `LGTMAYBE_MODEL`) in your shell rc — `anthropic` needs `ANTHROPIC_API_KEY`, `bedrock` needs ambient AWS creds with `bedrock:InvokeModel*`. The code-reviewer persona reads the same variables for its automated review pass. Disable the hook with `LGTMAYBE_HOOK_ENABLED=false`.
+- **post-code** (per edit, all tools) — fast, file-scoped lint/type-check
+- **post-task** (turn end, all tools) — full test/security battery (linters, audits, semgrep), only when code changed
+- **pre-deploy** (all tools) — confirms `cdk diff` before `cdk deploy`/`destroy`. The matcher is single-sourced in `pre_deploy_check.sh`: Claude/Codex gate through the PreToolUse "ask" protocol, OpenCode blocks the first attempt via `tool.execute.before` (an identical retry after user confirmation passes), and omp asks via the extension's `ctx.ui.confirm`.
+- **lgtmaybe** (turn end, all tools) — advisory LLM review of uncommitted changes via [lgtmaybe](https://github.com/MattJColes/lgtmaybe); runs after post-task when code changed (Claude/Codex Stop hook, OpenCode `session.idle`, omp `agent_end`). The CLI is installed automatically by every installer, which also prompts for provider/model and persists them as a `LGTMAYBE_CONFIG` block (`LGTMAYBE_PROVIDER` / `LGTMAYBE_MODEL`) in your shell rc — `anthropic` needs `ANTHROPIC_API_KEY`, `bedrock` needs ambient AWS creds with `bedrock:InvokeModel*`. The code-reviewer persona reads the same variables for its automated review pass. Disable the hook with `LGTMAYBE_HOOK_ENABLED=false`.
 
 ## Testing
 
