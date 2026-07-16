@@ -5,7 +5,6 @@
  *   tool.execute.before -> pre_deploy_check.sh   (cdk deploy/destroy guard)
  *   tool.execute.after  -> post_code_hook.sh     (fast file-scoped lint/type-check)
  *   session.idle        -> post_task_hook.sh     (end-of-session battery)
- *                          lgtmaybe_review_hook.sh (advisory LLM review — never blocks)
  *
  * OpenCode has no "ask" permission verb for plugins (permission.ask is not
  * fired for first-encounter commands), so the pre-deploy guard approximates
@@ -28,7 +27,6 @@ const IDLE_DEBOUNCE_MS = 60000; // 1 minute between idle checks
 // Hook script paths (replaced by install_opencode.sh via sed)
 const HOOK_SCRIPT = "__HOOK_SCRIPT_PATH__";
 const TASK_HOOK_SCRIPT = "__TASK_HOOK_SCRIPT_PATH__";
-const LGTMAYBE_HOOK_SCRIPT = "__LGTMAYBE_HOOK_PATH__";
 const PRE_DEPLOY_CHECK_SCRIPT = "__PRE_DEPLOY_CHECK_PATH__";
 
 // Tools that modify files and should trigger the hook
@@ -122,14 +120,6 @@ export const PostCodeHookPlugin = async ({ $, directory, worktree }) => {
         console.error(
           `[post-task-hook] Session validation found issues: ${err.message}`
         );
-      }
-
-      // Advisory lgtmaybe review — degrades silently when the CLI is absent
-      // and must never disrupt the session.
-      try {
-        await $`bash ${LGTMAYBE_HOOK_SCRIPT}`.cwd(cwd);
-      } catch (err) {
-        console.error(`[lgtmaybe-hook] Advisory review skipped: ${err.message}`);
       }
     },
   };

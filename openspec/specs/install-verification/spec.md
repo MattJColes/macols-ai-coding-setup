@@ -15,7 +15,7 @@ four tools.
 The verifier SHALL exit non-zero when any hard check fails (rendered
 agents/skills present, steering title rendered, hooks wired, exactly one
 ponytail block for AGENTS.md tools) and SHALL exit zero when only soft checks
-fail (CLI versions, openspec/ast-grep/yq/lgtmaybe presence, MCP listing).
+fail (CLI versions, openspec/ast-grep/yq presence, MCP listing).
 
 #### Scenario: Offline verification
 

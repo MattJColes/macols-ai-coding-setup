@@ -94,9 +94,6 @@ fi
 if [ "$DO_MCPS" = true ] && [ "$PROJECT_INSTALL" = false ]; then register_mcps_opencode || printf "${YELLOW}⚠ MCP write skipped/failed${NC}\n"; echo ""; fi
 if [ "$DO_HOOKS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     install_opencode_plugin "$PLUGINS_DIR"
-    # The plugin's session.idle runs the advisory lgtmaybe review; install the
-    # CLI and ask (interactively) which provider/model to use. Never blocking.
-    { ensure_lgtmaybe && configure_lgtmaybe; } || printf "${YELLOW}⚠ lgtmaybe install/config skipped — advisory review disabled until installed${NC}\n"
     echo ""
 fi
 

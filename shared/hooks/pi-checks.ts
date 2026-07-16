@@ -8,8 +8,7 @@
 //                                       (cdk deploy/destroy guard; asks via
 //                                        ctx.ui.confirm, blocks on decline)
 //   tool_result  (write/edit tools)  -> hooks/post_code_hook.sh <file>
-//   agent_end    (turn finished)     -> hooks/post_task_hook.sh, then the
-//                                       advisory hooks/lgtmaybe_review_hook.sh
+//   agent_end    (turn finished)     -> hooks/post_task_hook.sh
 //
 // The check scripts are advisory: they print findings, never block. Findings
 // are surfaced back into the session via pi.sendMessage. Only the pre-deploy
@@ -30,8 +29,7 @@ export default function (pi: ExtensionAPI) {
         signal,
         timeout: 300_000,
       });
-      // lgtmaybe prints its findings to stderr; the deterministic batteries
-      // print to stdout — surface both.
+      // Surface both streams — some checks print findings to stderr.
       const out = `${res.stdout || ""}\n${res.stderr || ""}`.trim();
       if (out) {
         pi.sendMessage({
@@ -84,7 +82,5 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("agent_end", async (_event: any, ctx: any) => {
     await run("post_task_hook.sh", [], ctx?.signal);
-    // Advisory LLM review — degrades silently when lgtmaybe is not installed.
-    await run("lgtmaybe_review_hook.sh", [], ctx?.signal);
   });
 }

@@ -22,7 +22,7 @@ Edit the single source, never the rendered output:
 - **MCP servers** — `shared/mcp-config.json` (filesystem, puppeteer,
   playwright, context7, dart, aws-mcp, aws-iac). Registered for Claude Code,
   Codex and OpenCode; Oh My Pi has no MCP by design.
-- **Hooks** — `shared/hooks/*` (post-code, post-task, pre-deploy, lgtmaybe),
+- **Hooks** — `shared/hooks/*` (post-code, post-task, pre-deploy),
   referenced in place, wired by `write_*_hooks` in `lib/common.sh`.
 - **Dev environment** — `Terminal/` (macOS + Ubuntu 24/26). The herdr script
   also installs the herdr-plus/herdr-reviewr plugins and their
@@ -39,7 +39,7 @@ Edit the single source, never the rendered output:
 - **Idempotent, always**: `command -v` guards before installs; grep-guarded
   appends for rc/config lines; marker-delimited blocks that are stripped then
   re-added for anything that may change (`PONYTAIL_MARKER_*`,
-  `HERDR_AUTOLAUNCH`, `LGTMAYBE_CONFIG`). Re-running any installer must never
+  `HERDR_AUTOLAUNCH`). Re-running any installer must never
   duplicate config.
 - **Merge, don't overwrite, user-owned config** (e.g. `~/.config/herdr/config.toml`);
   files this repo fully owns (rendered personas, plugin layouts, yazi configs)
@@ -50,9 +50,6 @@ Edit the single source, never the rendered output:
   Avoid `sed -i` (GNU vs BSD) — filter to a temp file and `mv` back.
 - **Version control workflow is plain git + git worktrees.** Jujutsu (jj) was
   removed deliberately — do not reintroduce it in installers, steering or docs.
-- **lgtmaybe is advisory-only** — it must never block a hook, review or
-  install. Provider/model come from `LGTMAYBE_PROVIDER` / `LGTMAYBE_MODEL`
-  (written to shell rc by `configure_lgtmaybe`).
 - **OpenSpec is per-repo opt-in** — the installers provision the CLI only;
   never run `openspec init` for the user. (This repo itself *has* opted in.)
 - **Spec anchors are per-repo opt-in** — the installers provision the

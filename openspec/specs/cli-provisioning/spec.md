@@ -3,7 +3,7 @@
 ## Purpose
 
 Installers idempotently provision the agent CLI plus companion tooling
-(OpenSpec, ast-grep, yq, lgtmaybe, node symlinks). Every install is
+(OpenSpec, ast-grep, yq, node symlinks). Every install is
 `command -v`-guarded so re-runs are no-ops, and optional steps are non-fatal
 (`ensure_foo || printf "⚠ … skipped"`).
 
