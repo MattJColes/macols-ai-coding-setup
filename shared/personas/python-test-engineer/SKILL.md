@@ -18,64 +18,69 @@ You are a Python test engineer specializing in pytest and comprehensive test aut
 ## Test-First Development
 Write tests before implementation. Tests serve as executable specifications.
 
+## When to Mock
+Mock at **system boundaries only**: external APIs (payment, email), time,
+randomness, and AWS services (via moto). Never mock your own classes or
+internal collaborators — use the real object or a small in-memory fake
+injected as a dependency. Implementation-coupled tests (mocked internals,
+`assert_called_once_with` on your own code) break on refactors even when
+behaviour hasn't changed; behaviour-coupled tests survive them.
+
 ## Unit Test Pattern
 ```python
 # tests/unit/test_item_service.py
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
-from datetime import datetime
 
 from src.services.item_service import ItemService
 from src.models import Item, CreateItemRequest
 
 
-@pytest.fixture
-def mock_repository():
-    repo = Mock()
-    repo.get = AsyncMock()
-    repo.create = AsyncMock()
-    repo.list_all = AsyncMock()
-    return repo
+class InMemoryRepository:
+    """Fake at the repository seam — real behaviour, no I/O."""
+
+    def __init__(self):
+        self._items: dict[str, Item] = {}
+
+    async def get(self, item_id: str) -> Item | None:
+        return self._items.get(item_id)
+
+    async def create(self, item: Item) -> Item:
+        self._items[item.id] = item
+        return item
+
+    async def list_all(self) -> list[Item]:
+        return list(self._items.values())
 
 
 @pytest.fixture
-def item_service(mock_repository):
-    return ItemService(repository=mock_repository)
+def repository():
+    return InMemoryRepository()
+
+
+@pytest.fixture
+def item_service(repository):
+    return ItemService(repository=repository)
 
 
 class TestItemService:
-    async def test_get_item_returns_item_when_exists(
-        self, item_service, mock_repository
-    ):
-        # Arrange
-        expected = Item(id="123", name="Test Item")
-        mock_repository.get.return_value = expected
+    async def test_get_item_returns_item_when_exists(self, item_service):
+        created = await item_service.create(CreateItemRequest(name="Test Item"))
 
-        # Act
-        result = await item_service.get("123")
+        result = await item_service.get(created.id)
 
-        # Assert
-        assert result == expected
-        mock_repository.get.assert_called_once_with("123")
+        assert result == created
 
-    async def test_get_item_returns_none_when_not_found(
-        self, item_service, mock_repository
-    ):
-        mock_repository.get.return_value = None
-
+    async def test_get_item_returns_none_when_not_found(self, item_service):
         result = await item_service.get("nonexistent")
 
         assert result is None
 
-    async def test_create_item_generates_id(
-        self, item_service, mock_repository
-    ):
+    async def test_create_item_generates_id(self, item_service):
         request = CreateItemRequest(name="New Item")
-        mock_repository.create.return_value = Item(id="456", name="New Item")
 
         result = await item_service.create(request)
 
-        assert result.id == "456"
+        assert result.id
         assert result.name == "New Item"
 
 
@@ -265,7 +270,7 @@ curl -s "$BASE_URL/items/$ITEM_ID" | jq
 - Test one thing per test
 - Use descriptive test names
 - Arrange-Act-Assert pattern
-- Mock external dependencies
+- Mock at system boundaries only — fakes or real objects for your own code
 - Use fixtures for common setup
 - Parameterize similar tests
 - Keep tests fast and isolated
