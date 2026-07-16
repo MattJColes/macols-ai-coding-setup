@@ -248,8 +248,26 @@ violations, it doesn't vibe-check. Go through the draft and tally:
    "simply", "truly") — count occurrences.
 5. Personal anecdotes lacking a specific (project, field, roughly when) — count them.
    Target 0; ask Matt for the missing detail, don't invent it or write around it.
+6. LLM-register vocabulary — words nobody uses in a real blog or conversation but LLMs
+   reach for constantly: "delve", "dive into", "robust", "seamless(ly)", "crucial",
+   "pivotal", "comprehensive", "streamline", "harness", "unlock", "empower", "elevate",
+   "foster", "boasts", "myriad", "plethora", "tapestry", "landscape" (figurative),
+   "journey" (figurative), "underscores", "game-changer", "supercharge", "in today's
+   world", "at its core", "it's worth noting", "not only X but also Y". Count
+   occurrences. Target 0 — swap each for the term Matt would actually use ("solid" or
+   "reliable" for "robust", "look at" for "delve into", "important" or just cut for
+   "crucial").
 Report the counts to Matt before presenting the draft, fix anything over target, and
 re-count after fixing.
+
+**Sounds-human pass (last thing before presenting, after the counts are clean):**
+Read the draft back sentence by sentence and ask of each: would Matt say this to a
+colleague across the desk, or write it in a blog he actually reads? A sentence can pass
+every count above and still ring AI — too smooth, generically enthusiastic, or using a
+word no engineer says out loud. Don't just delete the offending word; rewrite the
+sentence the way he'd say it in conversation, using the real names of the tools and
+techniques involved. If a sentence can't be said aloud without sounding like a press
+release, it gets rewritten, not trimmed.
 
 ## Hands-on tutorial / how-to mode (the build-along voice)
 Matt has a back catalogue of hands-on AWS tutorials, originally on "Devs in the

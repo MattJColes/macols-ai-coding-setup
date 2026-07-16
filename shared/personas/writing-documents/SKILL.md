@@ -101,6 +101,20 @@ I'd go with Option B. The 3-sprint investment pays for itself by Q3 when we're t
 | due to the fact that | because |
 | at this point in time | now |
 | going forward | (delete - everything is going forward) |
+| delve into, dive into | look at, dig into |
+| robust | reliable, solid (or the specific property) |
+| seamless(ly) | (say what actually happens at the join) |
+| crucial, pivotal | important (or just state the consequence) |
+| comprehensive | complete, full (or list what it covers) |
+| streamline | simplify, cut steps |
+| harness, unlock, empower | use, enable |
+| landscape, journey (figurative) | (name the actual market, process, or timeline) |
+| it's worth noting that | (delete - just note it) |
+| game-changer, supercharge | (state the measured improvement) |
+
+The bottom rows are LLM-register words - vocabulary that shows up constantly in
+AI-generated text and almost never in real conversation. They make a document read
+machine-written even when the reasoning is sound.
 
 ### Modal verbs
 | Use | For |
@@ -131,6 +145,11 @@ When reviewing a document, work section-by-section:
 4. **Recommendations** - are they present? Do they state what to do and why?
 5. **Service names** - first mention uses full name with short form: "Amazon Simple Storage Service (Amazon S3)"
 6. **Links** - blogs link inline to service pages; narratives use footnotes
+7. **Sounds human** - read each sentence as if saying it to a colleague. Flag anything
+   using LLM-register vocabulary (the bottom rows of the words-to-kill table) or any
+   sentence that reads machine-written - too smooth, generically enthusiastic, or
+   built from stock phrasing. The fix is a rewrite in the words you'd say out loud
+   with the real terms of the domain, not just deleting the offending word
 
 **Present findings as:**
 ```
