@@ -1,14 +1,14 @@
 ---
 agent: true
 model: opus
-name: writing-blog-posts
-description: Write blog posts for Matt Coles in his voice for coles.codes. Use when drafting, editing, or outlining posts for the blog.
+name: writing-short-articles
+description: Write short articles / posts for Matt Coles in his voice. Use when drafting, editing, or outlining posts for the blog.
 ---
 
 # Writing Blog Posts for Matt Coles
 
 Matt Coles blogs at coles.codes. This skill captures his voice, positioning, and
-publishing process. Read it before drafting or editing any post.
+publishing process. Read it before helping draft or editing any post.
 
 ## Who Matt is (positioning)
 - Principal Engineer at AWS, based in Melbourne. Posts should read like a principal
@@ -167,6 +167,27 @@ the site) because it reads like Matt talking, while the most heavily edited post
   and skimmers bounced at ~11s. Split sprawling drafts. The 4-minute skills-or-mcp
   shape is also the practice vehicle: a short post forces an opening, one idea and a
   landing with a fast feedback cycle, so keep them coming between the big posts.
+
+**Gap interview (run before drafting, and again after the condensing pass).** A post
+below expert quality is usually missing substance no edit pass can supply: the number,
+the failure, the reason a choice won. Don't invent it and don't write around it — ask
+Matt. Sweep the brief or draft against this list and turn every hit into a question:
+1. Claims without evidence — a result, comparison, or performance claim with no number,
+   repo, or run behind it. Ask for the figure or the source.
+2. Decisions without a why — a tool or architecture choice stated but not reasoned.
+   Ask what the alternatives were and why they lost.
+3. Anecdotes without specifics — project, field, roughly when (same rule as audit
+   item 5, applied earlier when it's cheaper to fix).
+4. Missing failure material — a build post where nothing went wrong. Ask what broke
+   first; that's usually the strongest section.
+5. Reader-facing steps Matt hasn't run — commands, code, config the audience will
+   copy-paste. Ask whether they've been executed as written.
+6. Unanswered expert objections — the "yeah but what about X" a senior reader would
+   raise. Ask how Matt answers it rather than guessing his position.
+Batch the questions — five max, most important first — and put them to Matt before
+writing the sections that depend on them. Anything still open gets a visible
+`TODO(matt): …` marker in the draft, never a plausible-sounding filler sentence. If
+Matt says he doesn't have it, cut the claim rather than soften it.
 
 **Pre-publish proof pass (mechanical, non-negotiable).** Loose voice is fine; loose
 mechanics aren't. The herdr post shipped with lowercase "i" in published prose, "soo",

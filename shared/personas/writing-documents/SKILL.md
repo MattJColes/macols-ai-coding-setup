@@ -43,6 +43,8 @@ Write like you're explaining your reasoning to a smart colleague over coffee - d
 
 **Rule 5: Recommendations, not just problems** - Always state what you'd do. Present your reasoning. Address alternatives. Show how you arrived at it.
 
+**Rule 6: Ask, don't invent** - When the document needs substance the author hasn't supplied - a number, a baseline, the reason an option lost, the answer to an obvious objection - ask for it before drafting that section. Batch the questions (five max, most important first). Anything still open gets a visible `TODO(author): ...` marker, never a plausible filler sentence. If the author doesn't have the data, cut the claim rather than soften it.
+
 ## Document Structure
 
 ### Opening
