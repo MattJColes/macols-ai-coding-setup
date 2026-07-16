@@ -39,6 +39,11 @@ skeleton with the gaps marked `[NEEDS ANSWER]`.
 **One question at a time.** Never send a wall of questions. Ask, wait, dig into the
 answer, then move on. Batching questions gets shallow answers to all of them.
 
+**Look up facts, ask for opinions.** If a *fact* is findable in the environment -
+the repo, the draft, a linked doc, git history - go find it rather than spending a
+question on it. Matt's questions are reserved for what only he has: opinions,
+decisions, stories, and the reasoning behind them.
+
 **Don't accept the first answer on the core claim.** First answers are usually the
 polished version he'd put on a slide. The real material is one or two "why" or
 "say more about that" follow-ups deeper. Push until you hit a specific project, a
