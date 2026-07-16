@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Top-level orchestrator for macols-configs.
+# Top-level orchestrator for macols-ai-coding-setup.
 #
 # Installs the agentic CLIs and their configuration. By default it configures
 # all four tools (Claude Code, Codex, OpenCode, Oh My Pi — tool keyword `pi`);
@@ -46,7 +46,7 @@ while [ $# -gt 0 ]; do
 done
 [ ${#TOOLS[@]} -eq 0 ] && TOOLS=(claudecode codex opencode pi)
 
-banner "macols-configs Installer"
+banner "macols-ai-coding-setup Installer"
 
 if [ "$RUN_ENV" = true ]; then
     case "$(detect_os)" in

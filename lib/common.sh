@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Shared install library for the macols-configs agentic-CLI installers.
+# Shared install library for the macols-ai-coding-setup agentic-CLI installers.
 #
 # Sourced by install_claudecode.sh / install_codex.sh / install_opencode.sh /
 # install_pi.sh. Holds everything those installers have in common: colours,

@@ -1,22 +1,47 @@
-# macols-configs
+# macols-ai-coding-setup
 
-One source of truth for four agentic coding CLIs — **Claude Code**, **Codex**,
-**OpenCode** and **Oh My Pi** (`omp`, tool keyword `pi`) — plus the
-terminal/dev-environment setup. Personas, steering, MCP servers and check hooks
-are authored once under `shared/` and each tool's installer renders them into
-that tool's native format, so nothing drifts.
+One setup for four AI coding CLIs — **Claude Code**, **Codex**, **OpenCode** and
+**Oh My Pi** (`omp`, selected as `pi`) — plus an optional macOS or Ubuntu
+development environment.
+
+This repository is a generator, not a dump of files from `~/.config`.
+Personas, agent instructions, MCP servers and quality hooks are authored once
+under `shared/`; the installers render those sources into each tool's native
+format. Change the shared source once, then reinstall whichever tools you use.
 
 The steering teaches a plain-git workflow — one branch per change, git
 worktrees for parallel work — and each installer installs the
 [ponytail](https://github.com/DietrichGebert/ponytail) minimal-mode ruleset for
 every agent via that agent's native mechanism, plus the
 [OpenSpec](https://github.com/Fission-AI/openspec) CLI for spec-driven
-development in repos that opt in.
+development in repositories that opt in.
+
+## Quick start
+
+Clone the repository, then install one tool or all four:
+
+```bash
+git clone git@github.com:MattJColes/macols-ai-coding-setup.git
+cd macols-ai-coding-setup
+
+./install.sh codex             # one tool
+./install.sh claudecode pi     # several tools
+./install.sh                   # all four tools
+```
+
+The installers add or update configuration in your home directory and install
+missing CLI dependencies. Review the scripts first if you do not want them to
+manage Homebrew, npm packages or user-level configuration. To render config
+without installing the CLI itself, run the relevant per-tool installer with
+`--no-cli` (or `--no-pi` for Oh My Pi).
+
+Supported platforms are macOS and Linux for the tool installers. The optional
+full development-environment setup targets macOS and Ubuntu 24.04/26.04.
 
 ## Structure
 
 ```
-macols-configs/
+macols-ai-coding-setup/
 ├── install.sh              # orchestrator: env (optional) + all four tools
 ├── install_claudecode.sh   # self-contained per-tool installers
 ├── install_codex.sh        #   (ensure brew + CLI, then install configs)
@@ -44,7 +69,7 @@ There are no per-tool directories: every difference between the tools lives in a
 small per-tool file under `shared/` (e.g. `shared/steering/tools/codex.json`) and
 in the matching `install_<tool>.sh`.
 
-## Install
+## Install options
 
 Each `install_<tool>.sh` is self-contained — it ensures Homebrew (macOS), the
 CLI binary and the OpenSpec CLI, then installs that tool's
@@ -57,11 +82,13 @@ agents/skills/prompts, steering, MCPs and hooks. Run one, several, or all:
 ./install_codex.sh            # one tool directly
 ```
 
-Useful flags (per installer; run `--help` for the full list):
+Useful flags (availability varies by tool; run the installer with `--help` for
+the exact list):
 
-- `--agents-only` / `--skills-only` / `--prompts-only` / `--mcps-only` / `--hooks-only`
+- `--agents-only`, `--skills-only`, `--prompts-only`, `--mcps-only`, `--hooks-only`
 - `--no-cli` — skip the Homebrew/CLI bootstrap, install configs only
-- `-p`, `--project` — install into the current project instead of user scope
+- `-p`, `--project` — install supported files into the current project instead
+  of user scope
 - `--list` — preview the available personas
 
 ### Dev environment
@@ -74,11 +101,12 @@ cd Terminal && ./install_ubuntu26.sh     # Ubuntu 24/26 / WSL2
 ```
 
 See **[Terminal/README.md](Terminal/README.md)** for the full toolchain
-(Python 3.x + uv, Node 22 + TypeScript/CDK, Podman, AWS CLI, LazyVim, etc.).
-The Terminal setup also installs **herdr** with the **herdr-plus** and
-**herdr-reviewr** plugins: `prefix+p` opens the project picker, `cmd+r` toggles
-reviewr, and a wildcard worktree layout opens Claude Code + yazi in every new
-worktree (see
+(Python 3.14 + uv, Node.js + TypeScript/CDK, Podman, AWS CLI, LazyVim, etc.).
+The Ubuntu setup also installs **herdr** with the **herdr-plus** and
+**herdr-reviewr** plugins; on macOS, run
+`Terminal/install_brew_herdr_yazi_lazygit_nvim.sh` separately. `prefix+p`
+opens the project picker, `cmd+r` toggles reviewr, and a wildcard worktree
+layout opens Claude Code + yazi in every new worktree (see
 [Terminal/GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md](Terminal/GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md)).
 
 ### Running with `--dangerously-skip-permissions`
@@ -173,14 +201,18 @@ Add or edit a persona once and every tool picks it up on the next install.
 
 **Development:** python-backend, frontend-engineer-ts, dart-app-developer,
 cdk-expert-ts, cdk-expert-python, data-scientist ·
-**Testing:** test-coordinator, python-test-engineer, typescript-test-engineer ·
-**DevOps/Reliability:** devops-engineer, sre-reliability, linux-specialist, code-reviewer ·
-**Architecture/Design:** architecture-expert, ui-ux-designer ·
-**Security:** security-specialist ·
-**Management:** documentation-engineer, product-manager, project-coordinator, engineering-manager ·
-**Research/Advisory:** deep-research-scientist (long-running cited research with a resumable log), ideation (diverge/converge brainstorming), legal-advisor (licence audits, privacy, clause spotting — not a lawyer) ·
-**Writing:** interrogate-me (pre-draft interview that produces a brief), writing-blog-posts, writing-documents, writing-style ·
-**Workflow:** commit (run checks, create a conventional commit and push the branch), ponytail (minimal/YAGNI mode)
+**Testing and diagnosis:** diagnosing-bugs, test-coordinator,
+python-test-engineer, typescript-test-engineer ·
+**DevOps and reliability:** devops-engineer, sre-reliability, linux-specialist,
+code-reviewer ·
+**Architecture and design:** architecture-expert, ui-ux-designer,
+security-specialist ·
+**Management:** documentation-engineer, product-manager, project-coordinator,
+engineering-manager ·
+**Research and advisory:** deep-research-scientist, ideation, legal-advisor ·
+**Writing:** interrogate-me, writing-chat-messages, writing-documents,
+writing-short-articles ·
+**Workflow:** commit, mental-model, ponytail-senior-engineer, spec-anchors
 
 ## MCP servers
 
@@ -217,6 +249,18 @@ matrix.
 ```bash
 ./tests/verify_install.sh claudecode
 ```
+
+For repository changes, run the checks that match what you touched:
+
+```bash
+bash -n install.sh install_*.sh Terminal/*.sh
+./scripts/spec_drift_gate.sh --check
+./tests/test_spec_drift_gate.sh
+```
+
+The root [AGENTS.md](AGENTS.md) is the maintainer and AI-agent guide. It maps
+each kind of change to its source-of-truth file and records the idempotency,
+portability, OpenSpec and spec-anchor rules used in this repository.
 
 ## Post-installation
 

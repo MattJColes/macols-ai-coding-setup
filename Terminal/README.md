@@ -1,422 +1,153 @@
-# Terminal Development Environment Setup
+# Optional development environment
 
-Automated scripts to set up a complete development environment for macOS and Ubuntu 26 with AI coding assistants and modern tooling.
+The scripts in this directory build the workstation layer used alongside
+`macols-ai-coding-setup`. They install language runtimes, cloud and container
+tools, editors and the four AI coding CLIs configured by the repository root.
 
-## 📦 What Gets Installed
+Use the per-tool installers in the [top-level README](../README.md) if you only
+want the AI coding setup. The scripts here make broader system changes, install
+many packages and prompt for Git and AWS configuration.
 
-### Core Development Tools
+## Supported systems
 
-#### **Python Ecosystem**
-- Python 3.12 (latest stable)
-- `uv` - Fast Python package manager (Astral)
-- `pip` - Python package installer
+- macOS with Xcode Command Line Tools
+- Ubuntu 24.04 or 26.04 with `sudo` access
 
-#### **Node.js Ecosystem**
-- Node.js 22 (LTS)
-- TypeScript (global)
-- AWS CDK (global)
+The Ubuntu entry point keeps its historical filename,
+`install_ubuntu26.sh`, but supports both Ubuntu releases.
 
-#### **AWS Tools**
-- AWS CLI v2
-- AWS CDK for infrastructure as code
+## Quick start
 
-#### **Container Tools**
-- **Podman** - Rootless, daemonless container engine (Docker alternative)
-  - More secure (runs without root)
-  - No daemon required
-  - Docker-compatible
-
-#### **System Utilities**
-- `htop` - Interactive process viewer
-- `curl`, `wget` - Download utilities
-- `git` - Version control
-- `ripgrep` - Fast grep alternative
-- `fd` - Fast find alternative
-- `ast-grep` - Structural (AST-based) code search and rewrite
-- `jq` - JSON query and transform
-- `dasel` - Query/convert JSON, YAML, TOML, XML and CSV
-- `commitizen` - Conventional Commits prompts and versioning (`cz`)
-
-### AI Coding Assistants
-
-#### **Claude Code**
-- Official Anthropic CLI for Claude
-- Specialized agents for different development tasks
-- MCP (Model Context Protocol) server support
-
-#### **Codex CLI**
-- OpenAI's terminal coding agent
-- macOS via Homebrew cask (`brew install --cask codex`); Linux via npm (`@openai/codex`)
-- Custom prompts, MCP servers and hooks — run [`../install_codex.sh`](../install_codex.sh) (see the top-level [README](../README.md))
-
-### Editor Setup
-
-#### **LazyVim (Neovim Distribution)**
-- Modern Neovim configuration
-- LSP support out of the box
-- Pre-configured with sensible defaults
-- Plugin management with lazy.nvim
-
-## 🚀 Installation Scripts
-
-### macOS Installation
+From the repository root:
 
 ```bash
-./install_macos.sh
+./install.sh --env
 ```
 
-**What it does:**
-1. Installs/updates Homebrew
-2. Installs all core development tools
-3. Installs Node.js 22 and Python 3.12
-4. Installs Podman for containers
-5. Installs Claude Code and Codex CLI
-6. Sets up LazyVim (backs up existing config)
+Or run the platform setup directly:
 
-**Requirements:**
-- macOS 10.15 (Catalina) or later
-- Internet connection
-
-**Post-install:**
 ```bash
-# Start new terminal session
-# Complete LazyVim setup
-nvim
-
-# Configure AWS
-aws configure
-
-# Initialize Podman (if using containers)
-podman machine init
-podman machine start
+cd Terminal
+./install_macos.sh       # macOS
+./install_ubuntu26.sh    # Ubuntu 24.04 or 26.04
 ```
 
----
+Review the relevant script before running it. Both platform installers require
+an internet connection, install packages, update shell configuration, prompt
+for Git identity and run `aws configure`. Existing Neovim data is moved to
+timestamped backup directories before LazyVim is installed.
 
-### Ubuntu 26 Installation
+## What gets installed
+
+Both platform installers provide:
+
+- Python 3.14, uv, pytest, ruff, mypy, pip-audit, semgrep and Commitizen
+- Node.js through NVM, TypeScript and AWS CDK
+- AWS CLI, GitHub CLI, Podman and common command-line tools
+- Neovim/LazyVim, ripgrep, fd and lazygit
+- Claude Code, Codex, OpenCode and Oh My Pi, including this repository's
+  generated personas, instructions, MCP registration and hooks
+
+Platform-specific additions:
+
+| Platform | Additional setup |
+|---|---|
+| macOS | Homebrew, Flutter, Xcode tooling and a Podman machine-ready install |
+| Ubuntu | Docker, QEMU/binfmt, Ollama, zsh/Powerlevel10k, tmux, Homebrew, yazi, herdr and its project/review plugins |
+
+To install the herdr/yazi workflow separately on either platform, run:
 
 ```bash
-./install_ubuntu26.sh
+./install_brew_herdr_yazi_lazygit_nvim.sh
 ```
 
-**What it does:**
-1. Updates apt repositories
-2. Installs Python 3.12, Node.js 22, AWS CLI
-3. Installs Podman for containers
-4. Installs Neovim (latest stable)
-5. Installs Claude Code and Codex CLI
-6. Sets up LazyVim with backups
+That helper merges herdr keybindings into the existing user config and adds an
+idempotent SSH auto-launch block. See
+[GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md](GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md)
+for the project picker, review mode and worktree layout.
 
-**Requirements:**
-- Ubuntu 26 LTS
-- sudo privileges
-- Internet connection
+## Other optional scripts
 
-**Post-install:**
+| Script | Purpose |
+|---|---|
+| `install_ohmyzsh_p10k.sh` | Install zsh, Oh My Zsh and Powerlevel10k |
+| `install_ghostty_config.sh` | Install the repository's Ghostty configuration |
+| `install_iterm_colors.sh` | Install the Ayu Dark iTerm2 colour scheme |
+| `install_lazyvim_config.sh` | Install the repository's LazyVim configuration |
+| `configure_lmstudio.sh` | Configure OpenCode for a local LM Studio model |
+| `host_ollama_model.sh` | Expose an Ollama model from a host machine |
+| `expand_disk.sh` | Assist with expanding an Ubuntu disk |
+
+The focused remote-development guides cover
+[VS Code over Tailscale](vscode-over-tailscale.md) and
+[Mosh from iPad to Ubuntu](ubuntu-mosh-ipad.md).
+
+## After installation
+
+Start a new terminal session, then verify the pieces you intend to use:
+
 ```bash
-# Reload shell configuration
-source ~/.bashrc
-
-# Complete LazyVim setup
-nvim
-
-# Configure AWS
-aws configure
-
-# Verify installations
-python3 --version
+python --version
+uv --version
 node --version
 aws --version
+podman --version
+nvim --version
+
 claude --version
+codex --version
+opencode --version
+omp --version
 ```
 
----
-
-### Oh My Zsh + Powerlevel10k
+On macOS, initialise Podman once:
 
 ```bash
-./install_ohmyzsh_p10k.sh
-```
-
-**What it does:**
-1. Installs zsh (if not present)
-2. Installs Oh My Zsh framework
-3. Installs Powerlevel10k theme
-4. Installs useful plugins:
-   - `zsh-autosuggestions` - Command suggestions
-   - `zsh-syntax-highlighting` - Syntax highlighting
-5. Sets zsh as default shell
-
-**Features:**
-- Beautiful, informative prompt
-- Git status integration
-- Command execution time
-- Python virtualenv detection
-- Fast and responsive
-
-**Post-install:**
-```bash
-# Log out and log back in for zsh to take effect
-# Or start new terminal session
-
-# Configure Powerlevel10k
-p10k configure
-```
-
----
-
-### iTerm2 Color Scheme (macOS only)
-
-```bash
-./install_iterm_colors.sh
-```
-
-**What it does:**
-1. Installs Ayu Dark color scheme for iTerm2
-2. Configures iTerm2 preferences
-
-**Ayu Dark Features:**
-- Clean, dark background (`#0A0E14`) with warm amber cursor
-- Carefully balanced syntax colors for readability
-- Consistent with Ghostty and LazyVim theme
-- Easy on the eyes for long sessions
-
-**Manual import (if script doesn't work):**
-1. Open iTerm2 → Preferences → Profiles → Colors
-2. Click "Color Presets" → Import
-3. Select `ayu_dark.itermcolors`
-4. Select "Ayu Dark" from presets
-
-## 🛠️ Installed Tools Overview
-
-### Development
-
-| Tool | Purpose | Version |
-|------|---------|---------|
-| Python | Backend development | 3.12 |
-| Node.js | Frontend/full-stack | 22 LTS |
-| TypeScript | Type-safe JavaScript | Latest |
-| AWS CDK | Infrastructure as code | Latest |
-| uv | Python package manager | Latest |
-
-### Containers
-
-| Tool | Purpose | Why Podman? |
-|------|---------|-------------|
-| Podman | Container runtime | Rootless, secure, Docker-compatible |
-
-**Podman Benefits:**
-- ✅ Runs without root (more secure)
-- ✅ No daemon required (simpler)
-- ✅ Docker-compatible (same commands)
-- ✅ OCI standard compliance
-
-### AI Assistants
-
-| Tool | Best For |
-|------|----------|
-| Claude Code | General development, specialized agents |
-| Codex CLI | OpenAI terminal coding agent, custom prompts |
-
-### Editor
-
-| Tool | Description |
-|------|-------------|
-| LazyVim | Modern Neovim distro with LSP, treesitter, fuzzy finding |
-
-## 📁 File Descriptions
-
-### Installation Scripts
-
-- **`install_macos.sh`** - Complete macOS development environment
-- **`install_ubuntu26.sh`** - Complete Ubuntu 26 development environment
-- **`install_ohmyzsh_p10k.sh`** - Oh My Zsh + Powerlevel10k theme
-- **`install_iterm_colors.sh`** - iTerm2 Ayu Dark color scheme
-
-### Configuration Files
-
-- **`monokai_pro.itermcolors`** - Monokai Pro theme for iTerm2 (legacy)
-- **`ayu_dark.itermcolors`** - Ayu Dark theme for iTerm2
-
-## 🔧 Configuration Locations
-
-After installation, configuration files are located at:
-
-```
-~/.bashrc                    # Bash configuration (Ubuntu)
-~/.zshrc                     # Zsh configuration (if installed)
-~/.config/nvim/              # Neovim/LazyVim configuration
-~/.aws/                      # AWS CLI configuration
-~/.claude/                   # Claude Code configuration
-~/.local/bin/                # Local binaries
-```
-
-## 🚦 Getting Started
-
-### 1. Run Installation
-```bash
-# macOS
-./install_macos.sh
-
-# Ubuntu 26
-./install_ubuntu26.sh
-
-# Optional: Install Oh My Zsh + Powerlevel10k
-./install_ohmyzsh_p10k.sh
-
-# macOS only: Install iTerm2 colors
-./install_iterm_colors.sh
-```
-
-### 2. Configure AWS
-```bash
-aws configure
-```
-Enter your:
-- AWS Access Key ID
-- AWS Secret Access Key
-- Default region (e.g., `us-east-1`)
-- Default output format (e.g., `json`)
-
-### 3. Set Up Claude Code Agents
-```bash
-cd ../ClaudeCode
-./install.sh  # Installs agents, skills, MCPs and hooks
-```
-
-### 4. Initialize Podman (if using containers)
-```bash
-# macOS
-podman machine init
-podman machine start
-
-# Ubuntu - already ready to use
-podman run hello-world
-```
-
-### 5. Start Coding!
-```bash
-# Open LazyVim
-nvim
-
-# Use Claude Code
-claude
-```
-
-## 🔄 Updating Tools
-
-### Update Homebrew packages (macOS)
-```bash
-brew update && brew upgrade
-```
-
-### Update apt packages (Ubuntu)
-```bash
-sudo apt update && sudo apt upgrade
-```
-
-### Update npm global packages
-```bash
-npm update -g
-```
-
-### Update Claude Code
-```bash
-# macOS
-brew upgrade anthropics/claude/claude
-
-# Ubuntu
-sudo apt update && sudo apt upgrade claude
-```
-
-## 🐛 Troubleshooting
-
-### Podman not working on macOS
-```bash
-podman machine rm
 podman machine init
 podman machine start
 ```
 
-### LazyVim not loading
-```bash
-# Remove and reinstall
-rm -rf ~/.config/nvim ~/.local/share/nvim ~/.cache/nvim
-git clone https://github.com/LazyVim/starter ~/.config/nvim
-nvim
+On Ubuntu, log out and back in (or run `newgrp docker`) before using Docker
+without `sudo`. Start Ollama with `ollama serve` if its service is not already
+running.
+
+## Configuration locations
+
+The installers use the standard user locations:
+
+```text
+~/.zshrc and ~/.bashrc          shell setup
+~/.config/nvim/                Neovim/LazyVim
+~/.config/herdr/               herdr configuration and layouts
+~/.aws/                        AWS CLI configuration
+~/.claude/                     Claude Code
+~/.codex/                      Codex
+~/.config/opencode/            OpenCode
+~/.omp/                        Oh My Pi
+~/.local/bin/                  user-level executables
 ```
 
-### Oh My Zsh not default shell
-```bash
-chsh -s $(which zsh)
-# Log out and log back in
-```
+The AI coding configuration is generated from `../shared/`. Do not treat the
+installed files in these home-directory locations as the source of truth.
 
-### PATH not updated
-```bash
-# Reload shell config
-source ~/.bashrc  # or source ~/.zshrc
-```
+## Troubleshooting
 
-## 📚 Additional Resources
-
-- [Claude Code Docs](https://docs.claude.com/en/docs/claude-code)
-- [LazyVim Docs](https://www.lazyvim.org/)
-- [Podman Docs](https://podman.io/)
-- [Powerlevel10k](https://github.com/romkatv/powerlevel10k)
-
-## 🔗 Related
-
-- **[`../install.sh`](../install.sh)** and the per-tool `../install_<tool>.sh` —
-  agents, skills, prompts, steering, MCPs and hooks for Claude Code, Codex,
-  OpenCode and Pi (single sources of truth under `../shared/`).
-
-## ⚡ Quick Reference
-
-### Common Commands
+Reload shell configuration after installation:
 
 ```bash
-# Python
-python3 --version
-uv pip install <package>
-
-# Node.js
-node --version
-npm install -g <package>
-
-# Podman
-podman run hello-world
-podman-compose up
-podman ps
-
-# AWS
-aws s3 ls
-aws dynamodb list-tables
-
-# Claude Code
-claude chat
-claude code
-
-# LazyVim
-nvim                    # Start editor
-:Lazy                  # Plugin manager
-:Mason                 # LSP installer
-:checkhealth          # Health check
+source ~/.zshrc    # zsh
+source ~/.bashrc   # bash
 ```
 
-## 🎨 Customization
+If Podman is not running on macOS:
 
-All scripts back up existing configurations before making changes. You can customize:
+```bash
+podman machine start
+```
 
-1. **LazyVim**: Edit `~/.config/nvim/lua/config/`
-2. **Oh My Zsh**: Edit `~/.zshrc`
-3. **Bash**: Edit `~/.bashrc`
-4. **AWS CLI**: Edit `~/.aws/config`
+If LazyVim needs to be rebuilt, move its directories aside rather than
+deleting them, then rerun the platform installer. Each installer already uses
+timestamped backups when it finds existing Neovim state.
 
-## 📝 Notes
-
-- All scripts are idempotent (safe to re-run)
-- Existing configurations are backed up with timestamps
-- Scripts require internet connection
-- Some installations may require sudo password
-- Podman is preferred over Docker for security and simplicity
+For AI tool configuration and per-tool troubleshooting, return to the
+[top-level README](../README.md#troubleshooting).

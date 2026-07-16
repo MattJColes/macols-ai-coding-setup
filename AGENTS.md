@@ -1,4 +1,4 @@
-# macols-configs — agent notes
+# macols-ai-coding-setup — agent notes
 
 ## What this repo is
 
@@ -9,6 +9,28 @@ the four installers (`install_claudecode.sh`, `install_codex.sh`,
 only checked-in `.claude/` content is OpenSpec's opsx commands/skills —
 `~/.claude/agents/*` and `~/.claude/skills/*` are generated from
 `shared/personas/*/SKILL.md` at install time.
+
+The repository was previously named `macols-configs`. Treat
+`macols-ai-coding-setup` as the current project name; the old name may remain
+only in compatibility-sensitive installed markers or historical references.
+
+## Change routing
+
+Start at the source that owns the requested behaviour:
+
+| Change | Source of truth | Primary verification |
+|---|---|---|
+| Persona, skill or specialist agent | `shared/personas/<name>/SKILL.md` | `./tests/verify_install.sh <tool>` |
+| Shared agent instructions | `shared/steering/base.md` | render/verify the affected tool |
+| Tool-specific steering wording | `shared/steering/tools/<tool>.json` | render/verify that tool |
+| MCP registration | `shared/mcp-config.json`, then `lib/common.sh` when wiring changes | installer verifier + relevant spec anchor |
+| Lifecycle or quality hook | `shared/hooks/`, `shared/post_*_checks.sh` | targeted hook check + installer verifier |
+| Tool installation behaviour | `install_<tool>.sh` and shared helpers in `lib/common.sh` | `bash -n` + installer verifier |
+| Full workstation setup | `Terminal/` | syntax check + platform-specific smoke test |
+
+Do not edit generated files under `~/.claude`, `~/.codex`,
+`~/.config/opencode` or `~/.omp` to change this project. Fix the source here
+and rerun the appropriate installer.
 
 Edit the single source, never the rendered output:
 
