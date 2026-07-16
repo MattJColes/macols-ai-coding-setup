@@ -26,8 +26,10 @@ publishing process. Read it before helping draft or editing any post.
   ("Short sentence. Another point. Close.") and the over-correction — long sentences
   chaining clause after clause with commas. Aim for the middle: mostly medium-length
   sentences, joined with colons or "and"/"so" where the ideas connect, no more than a
-  couple of commas per sentence, and a comma splice only as the rare aside. No semicolons —
-  a colon or two sentences instead. Don't end a
+  couple of commas per sentence, and a comma splice only as the rare aside. Joining ideas:
+  default to a full stop and a new sentence; a semicolon is fine where it genuinely reads
+  better. Dashes get stripped in Matt's own edit passes, so use " - " connectors sparingly
+  too. Don't end a
   paragraph or section on a punchy fragment ("Worth a read.", "And occasionally, a
   maybe."); fold it into the previous sentence.
 - A bit of fun is part of the voice: dry jokes, playful naming ("lgtmaybe" — "the joke I

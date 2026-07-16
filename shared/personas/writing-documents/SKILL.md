@@ -26,9 +26,9 @@ Write like you're explaining your reasoning to a smart colleague over coffee - d
 - **No hedging** - cut "I think", "perhaps", "it seems like". State it or qualify with data
 
 **Punctuation rules:**
-- No em-dashes. Use " - " (space-dash-space), comma, period, or parentheses instead
+- No em-dashes. Default to a period and a new sentence; a comma or parentheses also work. Use " - " (space-dash-space) sparingly - Matt strips most of them out when editing
 - No colons in narrative text. Rewrite to integrate or split into separate sentences
-- No semicolons. Two sentences are always better
+- Semicolons are fine where one genuinely reads better than two sentences; a period and a new sentence is still the default
 - Straight quotes and apostrophes only (', ") - curly/smart quotes creep in when text is drafted in external tools
 
 ## Critical Rules
@@ -196,7 +196,7 @@ Conversational, educational. Title max 75 chars, intro under 200 words, 1,500 wo
 - Use passive voice ("it was decided", "mistakes were made")
 - Include corporate buzzwords without substance
 - Write bullet points in narrative body (appendices only)
-- Use em-dashes, colons in narrative, or semicolons
+- Use em-dashes or colons in narrative, or lean on " - " connectors (a period and a new sentence is the default; semicolons are fine where they read better)
 - Present problems without recommendations
 - Hide behind committee language ("the team feels") - own your position
 - Contrastive reframes ("not X, but Y", "we stopped trying, instead we...") - one idea per sentence, say it straight
