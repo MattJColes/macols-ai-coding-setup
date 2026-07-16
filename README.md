@@ -21,7 +21,7 @@ development in repositories that opt in.
 Clone the repository, then install one tool or all four:
 
 ```bash
-git clone git@github.com:MattJColes/macols-ai-coding-setup.git
+git clone https://github.com/MattJColes/macols-ai-coding-setup.git
 cd macols-ai-coding-setup
 
 ./install.sh codex             # one tool
@@ -37,6 +37,74 @@ without installing the CLI itself, run the relevant per-tool installer with
 
 Supported platforms are macOS and Linux for the tool installers. The optional
 full development-environment setup targets macOS and Ubuntu 24.04/26.04.
+
+## Choose what to install
+
+Start with the row that matches what you want:
+
+| Goal | Command |
+|---|---|
+| Install and configure everything | `./install.sh` |
+| Install one tool and all its configuration | `./install.sh codex` |
+| Install several tools | `./install.sh claudecode opencode` |
+| Keep an existing CLI and install all its configuration | `./install_codex.sh --no-cli` |
+| Install only selected configuration | `./install_codex.sh --skills-only --no-cli` |
+| Preview the personas available to a tool | `./install_codex.sh --list` |
+| Install configuration into one project | Run `install_<tool>.sh --project` from that project's directory |
+| Build the full workstation as well | `./install.sh --env` |
+
+With no component options, a per-tool installer installs the CLI and all of
+that tool's configuration. Component options can be combined: the first
+`--*-only` option turns off the default set, and each option you provide turns
+that component back on.
+
+For example:
+
+```bash
+# Codex skills only; do not install or upgrade the Codex CLI
+./install_codex.sh --skills-only --no-cli
+
+# Claude Code MCPs and hooks only; use the existing Claude CLI
+./install_claudecode.sh --mcps-only --hooks-only --no-cli
+
+# Codex prompts plus shared AGENTS.md instructions
+./install_codex.sh --prompts-only --instructions-only --no-cli
+```
+
+Component flags belong to the per-tool installers, not `install.sh`. Run the
+relevant installer with `--help` to see its exact options. A component is the
+smallest supported selection unit: for example, `--skills-only` installs every
+applicable skill shown by `--list`.
+
+### Project-local configuration
+
+Run a per-tool installer from the project that should receive the files. For
+example, if this setup repository is at `~/code/macols-ai-coding-setup`:
+
+```bash
+cd ~/code/my-project
+~/code/macols-ai-coding-setup/install_codex.sh --project
+```
+
+`--project` implies `--no-cli` and does not change global MCPs, hooks or Oh My
+Pi packages. It writes only the project formats that the selected tool
+supports:
+
+| Tool | Project-local output |
+|---|---|
+| Claude Code | `.claude/agents/`, `.claude/skills/` |
+| Codex | `.codex/prompts/`, `.codex/skills/`, `.codex/agents/`, `AGENTS.md` |
+| OpenCode | `.opencode/agents/`, `.opencode/skills/` |
+| Oh My Pi | `.omp/skills/`, `AGENTS.md` |
+
+You can combine `--project` with component selection, such as
+`install_codex.sh --project --skills-only`.
+
+> [!CAUTION]
+> When an installer writes a generated agents, skills or prompts directory, it
+> replaces that target directory. Move or commit hand-written files there
+> before running the installer. User-owned JSON/TOML settings are merged rather
+> than replaced.
 
 ## Structure
 
@@ -69,7 +137,7 @@ There are no per-tool directories: every difference between the tools lives in a
 small per-tool file under `shared/` (e.g. `shared/steering/tools/codex.json`) and
 in the matching `install_<tool>.sh`.
 
-## Install options
+## Per-tool option reference
 
 Each `install_<tool>.sh` is self-contained — it ensures Homebrew (macOS), the
 CLI binary and the OpenSpec CLI, then installs that tool's
@@ -82,14 +150,16 @@ agents/skills/prompts, steering, MCPs and hooks. Run one, several, or all:
 ./install_codex.sh            # one tool directly
 ```
 
-Useful flags (availability varies by tool; run the installer with `--help` for
-the exact list):
+| Installer | Selectable components | Skip CLI install | Other choices |
+|---|---|---|---|
+| `install_claudecode.sh` | `--agents-only`, `--skills-only`, `--mcps-only`, `--hooks-only` | `--no-cli` | `--project`, `--list` |
+| `install_codex.sh` | `--prompts-only`, `--skills-only`, `--agents-only`, `--instructions-only`, `--mcps-only`, `--hooks-only` | `--no-cli` | `--project`, `--list` |
+| `install_opencode.sh` | `--agents-only`, `--skills-only`, `--mcps-only`, `--hooks-only` | `--no-cli` | `--project`, `--list` |
+| `install_pi.sh` | `--skills-only`, `--context-only`, `--hooks-only`, `--packages-only` | `--no-pi` | `--no-packages`, `--project`, `--list`; no MCP support |
 
-- `--agents-only`, `--skills-only`, `--prompts-only`, `--mcps-only`, `--hooks-only`
-- `--no-cli` — skip the Homebrew/CLI bootstrap, install configs only
-- `-p`, `--project` — install supported files into the current project instead
-  of user scope
-- `--list` — preview the available personas
+`--no-cli` and `--no-pi` skip installing or upgrading the binary; they do not
+remove an existing installation. Operations such as MCP registration still
+expect the relevant CLI to already be available.
 
 ### Dev environment
 

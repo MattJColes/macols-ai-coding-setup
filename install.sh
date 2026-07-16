@@ -20,8 +20,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/lib/common.sh"
 
 usage() {
-    cat << EOF
-Usage: $0 [--env] [TOOL ...]
+    cat << 'EOF'
+Usage: ./install.sh [--env] [TOOL ...]
 
 TOOL is one or more of: claudecode codex opencode pi  (default: all four).
 (`pi` installs Oh My Pi — the `omp` binary.)
@@ -30,6 +30,19 @@ Options:
     -h, --help    Show this help message
     --env         Run the Terminal dev-environment setup first
                   (Homebrew/apt, Python, Node, Podman, etc.) for this OS
+
+Examples:
+    ./install.sh                     Install and configure all four tools
+    ./install.sh codex               Install and configure only Codex
+    ./install.sh claudecode pi       Install Claude Code and Oh My Pi
+    ./install.sh --env               Set up the workstation and all four tools
+
+To install selected components instead of a tool's full setup, call its
+installer directly. For example:
+    ./install_codex.sh --skills-only --no-cli
+    ./install_claudecode.sh --mcps-only --hooks-only --no-cli
+
+Run ./install_<tool>.sh --help for that tool's complete option list.
 EOF
 }
 
