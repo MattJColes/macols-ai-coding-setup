@@ -1,0 +1,31 @@
+{
+  "TOOL_TITLE": "Pi",
+  "ASSISTANT_NOUN": "Pi coding-agent assistant",
+  "PLAN_MODE_CLAUSE": "",
+  "TRACK_CHUNK": "Track each chunk with the plan (`update_plan`).",
+  "DECOMPOSE_LINE": "Break the work into small, independent pieces. Track them with the plan.",
+  "APPROACH_STEP4": "**Match the Right Skill**: Pull in the `/skill:<name>` that fits each chunk",
+  "COLLAB_SECTION": [
+    "## Agent Skills",
+    "",
+    "- Specialist personas are installed as Agent Skills, invoked as `/skill:<name>` (e.g. `/skill:python-backend`, `/skill:code-reviewer`, `/skill:commit`), and can also load automatically from their description.",
+    "- Reach for the skill that matches the work: `/skill:python-backend` for Python services, `/skill:frontend-engineer-ts` for React/TypeScript UI, `/skill:cdk-expert-python` or `/skill:cdk-expert-ts` for infrastructure, `/skill:python-test-engineer` or `/skill:typescript-test-engineer` for tests, `/skill:code-reviewer` before finishing, etc.",
+    "- Give each invocation a clear, self-contained instruction with the context it needs — file paths, requirements, constraints, and expected output.",
+    "- When work splits into independent pieces, sequence them through the plan (use the `pi-subagents` package to delegate to parallel/chained subagents). Do not over-decompose tightly-coupled work — sequential execution is fine."
+  ],
+  "EXTRA_SECTION": [
+    "",
+    "",
+    "## Pi (Oh My Pi): Skills & Tools",
+    "",
+    "- This install ships specialist personas as Agent Skills. Invoke one with",
+    "  `/skill:<name>` (e.g. `/skill:python-backend`, `/skill:code-reviewer`) when a",
+    "  task matches its specialism, and follow the loaded SKILL.md instructions.",
+    "- Pi has no MCP. When you need an external capability, prefer a well-documented",
+    "  CLI tool (with a README the agent can read) or a Skill over reaching for a",
+    "  protocol server, or install a package via `omp install <pkg>`.",
+    "- A `pi-checks` extension runs tests, lint, type-checks and security scans after",
+    "  file edits and at the end of a turn. Its output is advisory — read the",
+    "  findings and fix real issues, but it will not block you."
+  ]
+}

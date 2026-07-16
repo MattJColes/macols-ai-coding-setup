@@ -1,0 +1,175 @@
+# ============================================
+# Security & Credentials
+# ============================================
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+.envrc
+
+# AWS Credentials
+.aws/
+credentials.json
+*credentials*
+aws-credentials*
+
+# SSH Keys
+*.pem
+*.key
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+*.ppk
+
+# API Tokens & Secrets
+*token*
+*secret*
+*.asc
+*.gpg
+*.keystore
+
+# MCP Configurations (may contain tokens)
+.claude/config.json
+.aws/amazonq/mcp-config.json
+
+# ============================================
+# Development Tools
+# ============================================
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/*
+!lib/common.sh
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.npm
+.eslintcache
+.node_repl_history
+*.tgz
+.yarn-integrity
+
+# Package manager locks (optional - comment out if you want to track these)
+# package-lock.json
+# yarn.lock
+
+# ============================================
+# OS & Editor
+# ============================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ============================================
+# Temporary & Backup Files
+# ============================================
+
+*.log
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+*.swp
+*.swo
+
+# ============================================
+# Project Specific
+# ============================================
+
+# Local config overrides
+config.local.*
+*.local.sh
+
+# Test artifacts
+coverage/
+*.cover
+test-results/
+
+# Backup directories
+*.backup.*
+nvim.backup.*
+
+# Memory/cache
+.claude/memory/
+.cache/
+
+# Empty package-manager scaffolding (this is a shell-script repo; no JS project here)
+package.json
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+bunfig.toml
+.npmrc
+.yarnrc
+.yarnrc.yml
+.gitmodules

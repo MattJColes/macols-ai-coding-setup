@@ -1,0 +1,104 @@
+name: Test installers
+
+# Runs each self-contained install_<tool>.sh on a clean Ubuntu runner, then
+# verifies the tool is configured correctly and that files landed in the
+# expected locations. Ubuntu-only: the installers take the Linux (npm/curl)
+# path here; the macOS/Homebrew path is exercised manually.
+#
+# Binary `--version` / live `mcp list` are SOFT checks in verify_install.sh
+# (network/auth dependent). The HARD checks assert file locations and the
+# persisted config (agents/skills/prompts, steering, hooks, MCP wiring).
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "install*.sh"
+      - "lib/**"
+      - "shared/**"
+      - "tests/**"
+      - "scripts/**"
+      - "specs/**"
+      - "openspec/**"
+      - ".github/workflows/test-installers.yml"
+  pull_request:
+    paths:
+      - "install*.sh"
+      - "lib/**"
+      - "shared/**"
+      - "tests/**"
+      - "scripts/**"
+      - "specs/**"
+      - "openspec/**"
+      - ".github/workflows/test-installers.yml"
+  workflow_dispatch:
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run shellcheck
+        run: |
+          sudo apt-get update -y && sudo apt-get install -y shellcheck
+          shellcheck -S warning -x install.sh install_*.sh lib/common.sh tests/*.sh shared/hooks/*.sh bin/*.sh scripts/*.sh
+
+  install:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tool: [claudecode, codex, opencode, pi]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Ensure jq + PATH for CLI installers
+        run: |
+          sudo apt-get update -y && sudo apt-get install -y jq
+          # Common locations the upstream CLI installers drop their binaries.
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.npm-global/bin" >> "$GITHUB_PATH"
+
+      - name: Run install_${{ matrix.tool }}.sh
+        run: |
+          chmod +x install_${{ matrix.tool }}.sh lib/common.sh tests/verify_install.sh
+          ./install_${{ matrix.tool }}.sh
+
+      - name: Verify ${{ matrix.tool }} configuration
+        run: ./tests/verify_install.sh ${{ matrix.tool }}
+
+  # Spec anchors (openspec/specs/* pinned to code via specs/anchors/*.yml).
+  # Hygiene and the gate's self-test are blocking — they are deterministic
+  # and repo-owned. The PR drift pass is advisory by construction: the gate
+  # always exits 0 there and only emits ::warning:: annotations, because a
+  # blocking doc check is a doc check people game.
+  spec-anchors:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # drift mode diffs against the merge-base
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Install gate dependencies (ast-grep; jq/yq ship on the runner)
+        run: |
+          npm install -g @ast-grep/cli
+          command -v jq >/dev/null || { sudo apt-get update -y && sudo apt-get install -y jq; }
+          command -v yq >/dev/null || { sudo apt-get update -y && sudo apt-get install -y yq; }
+
+      - name: Anchor hygiene (every rule resolves exactly once)
+        run: ./scripts/spec_drift_gate.sh --check
+
+      - name: Drift gate self-test
+        run: ./tests/test_spec_drift_gate.sh
+
+      - name: Drift gate vs merge-base (advisory, PR only)
+        if: github.event_name == 'pull_request'
+        run: ./scripts/spec_drift_gate.sh --github --base "origin/${GITHUB_BASE_REF}"

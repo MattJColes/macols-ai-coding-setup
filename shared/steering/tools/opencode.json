@@ -1,0 +1,17 @@
+{
+  "TOOL_TITLE": "OpenCode",
+  "ASSISTANT_NOUN": "OpenCode assistant",
+  "PLAN_MODE_CLAUSE": "",
+  "TRACK_CHUNK": "Track each chunk as you work through it.",
+  "DECOMPOSE_LINE": "Break the work into small, independent pieces and track them as you go.",
+  "APPROACH_STEP4": "**Match the Right Persona**: Pull in the agent or skill that fits each chunk",
+  "COLLAB_SECTION": [
+    "## Agents & Skills",
+    "",
+    "- Specialist personas are installed as skills (loaded on-demand via the skill tool) and, where the persona ships one, as agents (invoked via the Task tool).",
+    "- Reach for the persona that matches the work: `python-backend` for Python services, `frontend-engineer-ts` for React/TypeScript UI, `cdk-expert-python`/`cdk-expert-ts` for infrastructure, `python-test-engineer`/`typescript-test-engineer` for tests, `code-reviewer` before finishing, etc.",
+    "- Give each agent a clear, self-contained prompt with all the context it needs — file paths, requirements, constraints, and expected output. Agents do not share context with each other.",
+    "- When work splits into independent pieces, delegate each to the matching agent. Do not over-decompose tightly-coupled work — sequential execution is fine."
+  ],
+  "EXTRA_SECTION": ""
+}

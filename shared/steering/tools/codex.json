@@ -1,0 +1,17 @@
+{
+  "TOOL_TITLE": "Codex",
+  "ASSISTANT_NOUN": "Codex assistant",
+  "PLAN_MODE_CLAUSE": "",
+  "TRACK_CHUNK": "Track each chunk with the plan (`update_plan`).",
+  "DECOMPOSE_LINE": "Break the work into small, independent pieces. Track them with the plan.",
+  "APPROACH_STEP4": "**Match the Right Prompt**: Pull in the custom prompt that fits each chunk",
+  "COLLAB_SECTION": [
+    "## Custom Prompts (Slash Commands)",
+    "",
+    "- Specialised workflows are installed as custom prompts in `~/.codex/prompts/` and invoked as slash commands (e.g. `/python-backend`, `/code-reviewer`, `/commit`).",
+    "- Reach for the prompt that matches the work: `/python-backend` for Python services, `/frontend-engineer-ts` for React/TypeScript UI, `/cdk-expert-python` or `/cdk-expert-ts` for infrastructure, `/python-test-engineer` or `/typescript-test-engineer` for tests, `/code-reviewer` before finishing, etc.",
+    "- Give each invocation a clear, self-contained instruction with the context it needs — file paths, requirements, constraints, and expected output.",
+    "- When work splits into independent pieces, sequence them through the plan and pull in the matching prompt for each piece. Do not over-decompose tightly-coupled work — sequential execution is fine."
+  ],
+  "EXTRA_SECTION": ""
+}
