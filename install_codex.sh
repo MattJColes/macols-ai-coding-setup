@@ -124,7 +124,7 @@ fi
 done_banner
 echo "Next steps:"
 echo "  • Restart Codex to load the new configuration"
-echo "  • Prompts are available as slash commands (e.g. /python-backend, /code-reviewer)"
+echo "  • Prompts are available as slash commands (e.g. /development-build-python-backends, /quality-review-code)"
 echo "  • Skills load on demand — run /skills or mention one with \$<name>"
 echo "  • Agents live in ~/.codex/agents/*.toml — ask Codex to delegate to one by name"
 echo "  • Run 'codex mcp list' to inspect registered MCP servers"

@@ -9,7 +9,7 @@
     "## Parallel Execution with Agent Teams",
     "",
     "- When multiple chunks are independent of each other, use the Agent tool to run them in parallel. Launch all independent agents in a single message.",
-    "- Match agents to their specialisation: use `python-backend` for Python services, `frontend-engineer-ts` for React/TypeScript UI, `cdk-expert-python`/`cdk-expert-ts` for infrastructure, `python-test-engineer`/`typescript-test-engineer` for tests, etc.",
+    "- Match agents to their specialisation: use `development-build-python-backends` for Python services, `development-build-react-frontends` for React/TypeScript UI, `infrastructure-provision-cdk-python`/`infrastructure-provision-cdk-typescript` for infrastructure, `quality-test-python`/`quality-test-typescript` for tests, etc.",
     "- Give each agent a clear, self-contained prompt with all the context it needs — file paths, requirements, constraints, and expected output. Agents do not share context with each other.",
     "- After parallel agents complete, review their results together to ensure consistency across the changes before moving on.",
     "- Use background agents (`run_in_background: true`) for long-running work (tests, linting, builds) while continuing with other tasks.",

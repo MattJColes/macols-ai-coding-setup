@@ -136,7 +136,7 @@ ensure_openspec() {
 }
 
 # ensure_ast_grep — install the ast-grep structural-search CLI used by the
-# code-reviewer persona and the Spec Anchors steering section. Idempotent:
+# quality-review-code persona and the Spec Anchors steering section. Idempotent:
 # returns immediately when the CLI is on PATH. Global npm install (the
 # @ast-grep/cli package ships both `ast-grep` and `sg` binaries) — npm is the
 # one toolchain every installer already bootstraps, whereas brew is not

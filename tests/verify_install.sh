@@ -60,7 +60,7 @@ verify_codex() {
     pass "prompts in ~/.codex/prompts/*.md"       "count_gt0 '$d/prompts' '*.md' 1"
     pass "skills in ~/.codex/skills/*/SKILL.md"   "count_gt0 '$d/skills' 'SKILL.md' 3"
     pass "agents in ~/.codex/agents/*.toml"       "count_gt0 '$d/agents' '*.toml' 1"
-    pass "agent toml has developer_instructions"  "grep -q 'developer_instructions' '$d/agents/code-reviewer.toml'"
+    pass "agent toml has developer_instructions"  "grep -q 'developer_instructions' '$d/agents/quality-review-code.toml'"
     pass "~/.codex/AGENTS.md is System-Level Codex" "grep -q 'System-Level Codex' '$d/AGENTS.md'"
     pass "~/.codex/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
     if has_jq; then

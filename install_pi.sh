@@ -144,7 +144,7 @@ fi
 done_banner
 echo "Next steps:"
 echo "  • Run 'omp' to start the agent (or '/reload' inside omp to pick up the extension)"
-echo "  • Skills are available as /skill:<name> (e.g. /skill:python-backend)"
+echo "  • Skills are available as /skill:<name> (e.g. /skill:development-build-python-backends)"
 echo "  • The pi-checks extension runs tests/lint/security advisories after edits and turns,"
 echo "    and a cdk deploy/destroy confirmation guard"
 echo "  • omp has no MCP — expose external capabilities as CLI tools + skills + packages"

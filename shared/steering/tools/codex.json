@@ -8,8 +8,8 @@
   "COLLAB_SECTION": [
     "## Custom Prompts (Slash Commands)",
     "",
-    "- Specialised workflows are installed as custom prompts in `~/.codex/prompts/` and invoked as slash commands (e.g. `/python-backend`, `/code-reviewer`, `/commit`).",
-    "- Reach for the prompt that matches the work: `/python-backend` for Python services, `/frontend-engineer-ts` for React/TypeScript UI, `/cdk-expert-python` or `/cdk-expert-ts` for infrastructure, `/python-test-engineer` or `/typescript-test-engineer` for tests, `/code-reviewer` before finishing, etc.",
+    "- Specialised workflows are installed as custom prompts in `~/.codex/prompts/` and invoked as slash commands (e.g. `/development-build-python-backends`, `/quality-review-code`, `/workflow-commit-and-push`).",
+    "- Reach for the prompt that matches the work: `/development-build-python-backends` for Python services, `/development-build-react-frontends` for React/TypeScript UI, `/infrastructure-provision-cdk-python` or `/infrastructure-provision-cdk-typescript` for infrastructure, `/quality-test-python` or `/quality-test-typescript` for tests, `/quality-review-code` before finishing, etc.",
     "- Give each invocation a clear, self-contained instruction with the context it needs — file paths, requirements, constraints, and expected output.",
     "- When work splits into independent pieces, sequence them through the plan and pull in the matching prompt for each piece. Do not over-decompose tightly-coupled work — sequential execution is fine."
   ],
