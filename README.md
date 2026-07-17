@@ -257,6 +257,27 @@ Add or edit a persona once and every tool picks it up on the next install.
 - **Workflow:** workflow-commit-and-push, workflow-explain-code,
   workflow-simplify-code, workflow-maintain-spec-anchors
 
+### Claude Desktop bulk upload
+
+All personas are also packaged as one Claude plugin at
+`bundles/macols-personas-claude-plugin.zip`. In Claude Desktop, open
+**Customize → Plugins → Browse plugins**, then upload that custom plugin file.
+One upload installs every persona as a separate skill under the
+`macols-personas` plugin.
+
+Whenever a persona changes, rebuild and commit the bundle with it:
+
+```bash
+./scripts/package_claude_desktop_personas.sh
+```
+
+CI runs the same generator in check mode and fails if the committed ZIP is
+missing or stale:
+
+```bash
+./scripts/package_claude_desktop_personas.sh --check
+```
+
 ## MCP servers
 
 The MCP list lives in `shared/mcp-config.json`: **filesystem**, **puppeteer**,
@@ -296,6 +317,7 @@ For repository changes, run the checks that match what you touched:
 
 ```bash
 bash -n install.sh install_*.sh machine-setup/*.sh
+./scripts/package_claude_desktop_personas.sh --check
 ./scripts/spec_drift_gate.sh --check
 ./tests/test_spec_drift_gate.sh
 ```

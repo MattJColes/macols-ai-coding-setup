@@ -19,7 +19,7 @@ Start at the source that owns the requested behaviour:
 
 | Change | Source of truth | Primary verification |
 |---|---|---|
-| Persona, skill or specialist agent | `shared/personas/<name>/SKILL.md` | `./tests/verify_install.sh <tool>` |
+| Persona, skill or specialist agent | `shared/personas/<name>/SKILL.md` | Persona bundle check + `./tests/verify_install.sh <tool>` |
 | Shared agent instructions | `shared/steering/base.md` | render/verify the affected tool |
 | Tool-specific steering wording | `shared/steering/tools/<tool>.json` | render/verify that tool |
 | MCP registration | `shared/mcp-config.json`, then `lib/common.sh` when wiring changes | installer verifier + relevant spec anchor |
@@ -36,7 +36,10 @@ Edit the single source, never the rendered output:
 - **Personas:** `shared/personas/<name>/SKILL.md`. Frontmatter drives
   rendering: `agent: true` also emits a Claude/OpenCode agent and a Codex
   agent TOML. `user-invocable: true` also emits a Claude skill, so one file can
-  provide both forms (e.g. quality-review-code).
+  provide both forms (e.g. quality-review-code). After adding, editing,
+  renaming or removing a persona, run
+  `./scripts/package_claude_desktop_personas.sh` and include the regenerated
+  `bundles/macols-personas-claude-plugin.zip` in the same change.
 - **Steering:** `shared/steering/base.md`, tokenised per tool via
   `shared/steering/tools/<tool>.json`. The `{{EXTRA_SECTION}}` token sits
   glued to the last line of the final section. Keep it there when editing.
@@ -100,6 +103,7 @@ path based on `BASH_SOURCE`.
 
 ```bash
 bash -n <script>                 # syntax, every touched script
+./scripts/package_claude_desktop_personas.sh --check
 ./tests/verify_install.sh <claudecode|codex|opencode|pi>
 ./scripts/spec_drift_gate.sh --check   # anchor hygiene (needs ast-grep + yq)
 ```

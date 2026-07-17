@@ -40,8 +40,11 @@ jobs:
       - uses: actions/checkout@v7
       - name: Run shellcheck
         run: |
-          sudo apt-get update -y && sudo apt-get install -y shellcheck
+          sudo apt-get update -y && sudo apt-get install -y shellcheck zip
           shellcheck -S warning -x install.sh install_*.sh lib/common.sh tests/*.sh shared/hooks/*.sh bin/*.sh scripts/*.sh
+
+      - name: Verify Claude Desktop persona bundle
+        run: ./scripts/package_claude_desktop_personas.sh --check
 
   install:
     runs-on: ubuntu-latest

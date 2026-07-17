@@ -1,0 +1,16 @@
+# Spec anchors — claude-desktop-persona-bundle capability
+# (openspec/specs/claude-desktop-persona-bundle/spec.md)
+
+claude-desktop-persona-bundle.package:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^package_personas$' }
+  files: [scripts/package_claude_desktop_personas.sh]
+
+claude-desktop-persona-bundle.check:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^main$' }
+  files: [scripts/package_claude_desktop_personas.sh]
