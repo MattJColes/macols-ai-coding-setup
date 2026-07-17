@@ -2,7 +2,7 @@ schema: spec-driven
 
 # Project context — shown to AI when creating artifacts.
 context: |
-  macols-configs is a config *generator*, not a config dump: personas,
+  macols-ai-coding-setup is a config *generator*, not a config dump: personas,
   steering, MCP servers and hooks are authored once under shared/ and rendered
   into each tool's native format by four installers (install_claudecode.sh,
   install_codex.sh, install_opencode.sh, install_pi.sh) backed by

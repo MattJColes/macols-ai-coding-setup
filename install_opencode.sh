@@ -5,7 +5,7 @@
 # Ensures Homebrew + the `opencode` CLI, then installs agents, skills, the
 # system AGENTS.md, MCP servers (into opencode.json) and the post-code plugin —
 # all from the single sources of truth under shared/. With no options it
-# installs everything. (LM Studio / GLM setup lives in Terminal/configure_lmstudio.sh.)
+# installs everything. (LM Studio / GLM setup lives in machine-setup/configure_lmstudio.sh.)
 #
 set -euo pipefail
 
@@ -102,5 +102,5 @@ echo "Next steps:"
 echo "  • Restart OpenCode to load agents, skills, MCPs and the plugin"
 echo "  • Skills load on-demand via the skill tool; agents via the Task tool"
 [ "$DO_MCPS" = true ] && echo "  • Ensure AWS credentials are configured (~/.aws/credentials)"
-echo "  • Run Terminal/configure_lmstudio.sh to set up a local model via LM Studio"
+echo "  • Run machine-setup/configure_lmstudio.sh to set up a local model via LM Studio"
 echo ""

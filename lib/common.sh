@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Shared install library for the macols-configs agentic-CLI installers.
+# Shared install library for the macols-ai-coding-setup agentic-CLI installers.
 #
 # Sourced by install_claudecode.sh / install_codex.sh / install_opencode.sh /
 # install_pi.sh. Holds everything those installers have in common: colours,
@@ -100,7 +100,7 @@ ensure_mcp_prereqs() {
 }
 
 # persist_local_bin_path — keep ~/.local/bin on PATH now and for future shells
-# (same grep-guarded rc pattern the Terminal scripts use). uv tool shims and
+# (same grep-guarded rc pattern the machine setup scripts use). uv tool shims and
 # other user-level binaries land there.
 persist_local_bin_path() {
     export PATH="$HOME/.local/bin:$PATH"
