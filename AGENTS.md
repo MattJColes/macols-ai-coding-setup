@@ -36,7 +36,7 @@ Edit the single source, never the rendered output:
 - **Personas:** `shared/personas/<name>/SKILL.md`. Frontmatter drives
   rendering: `agent: true` also emits a Claude/OpenCode agent and a Codex
   agent TOML. `user-invocable: true` also emits a Claude skill, so one file can
-  provide both forms (e.g. code-reviewer).
+  provide both forms (e.g. quality-review-code).
 - **Steering:** `shared/steering/base.md`, tokenised per tool via
   `shared/steering/tools/<tool>.json`. The `{{EXTRA_SECTION}}` token sits
   glued to the last line of the final section. Keep it there when editing.
