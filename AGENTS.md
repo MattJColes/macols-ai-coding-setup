@@ -25,7 +25,7 @@ Start at the source that owns the requested behaviour:
 | MCP registration | `shared/mcp-config.json`, then `lib/common.sh` when wiring changes | installer verifier + relevant spec anchor |
 | Lifecycle or quality hook | `shared/hooks/`, `shared/post_*_checks.sh` | targeted hook check + installer verifier |
 | Tool installation behaviour | `install_<tool>.sh` and shared helpers in `lib/common.sh` | `bash -n` + installer verifier |
-| Full workstation setup | `Terminal/` | syntax check + platform-specific smoke test |
+| Full machine setup | `machine-setup/` | syntax check + platform-specific smoke test |
 
 Do not edit generated files under `~/.claude`, `~/.codex`,
 `~/.config/opencode` or `~/.omp`. Change the source here and rerun the
@@ -45,7 +45,7 @@ Edit the single source, never the rendered output:
   Codex and OpenCode. Oh My Pi has no MCP support.
 - **Hooks:** `shared/hooks/*` (post-code, post-task, pre-deploy),
   referenced in place, wired by `write_*_hooks` in `lib/common.sh`.
-- **Dev environment:** `Terminal/` (macOS + Ubuntu 24/26). The herdr script
+- **Machine setup:** `machine-setup/` (macOS + Ubuntu 24/26). The herdr script
   also installs the herdr-plus/herdr-reviewr plugins and their
   Claude+yazi project/worktree layouts.
 - **Specs:** this repo dogfoods OpenSpec and spec anchors. Living specs are in
@@ -65,7 +65,7 @@ Edit the single source, never the rendered output:
   configs) can be written with `cat >`.
 - **Optional steps are non-fatal**: `ensure_foo || printf "${YELLOW}⚠ … skipped${NC}\n"`.
 - **Portability**: macOS + Ubuntu 24/26. Homebrew on both (linuxbrew is
-  bootstrapped by the Terminal setup). `detect_os` branches on `$OSTYPE`.
+  bootstrapped by the machine setup). `detect_os` branches on `$OSTYPE`.
   Avoid `sed -i` because GNU and BSD differ. Filter to a temp file and `mv` it
   back.
 - **Version control workflow is plain git + git worktrees.** Jujutsu (jj) was
@@ -93,7 +93,7 @@ CONFIGS_ROOT="$(dirname "$SCRIPT_DIR")"
 Do **not** re-resolve later with `"$(cd "$(dirname "$0")/.." && pwd)"`. `$0` is
 relative to the *current* cwd, so after an earlier `cd /tmp` it resolves against
 `/tmp`: `dirname` → `/tmp`, `/tmp/..` → `/`, and the path becomes `//install.sh`
-(No such file). This broke `Terminal/install_ubuntu26.sh` before, so keep the
+(No such file). This broke `machine-setup/install_ubuntu26.sh` before, so keep the
 path based on `BASH_SOURCE`.
 
 ## Verifying changes

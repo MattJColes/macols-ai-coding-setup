@@ -11,7 +11,7 @@
 # Examples:
 #   ./install.sh                 # all four tools
 #   ./install.sh claudecode pi   # just Claude Code and Pi
-#   ./install.sh --env           # run the Terminal dev-environment setup first
+#   ./install.sh --env           # run the machine setup first
 #
 set -euo pipefail
 
@@ -28,7 +28,7 @@ TOOL is one or more of: claudecode codex opencode pi  (default: all four).
 
 Options:
     -h, --help    Show this help message
-    --env         Run the Terminal dev-environment setup first
+    --env         Run the machine setup first
                   (Homebrew/apt, Python, Node, Podman, etc.) for this OS
 
 Examples:
@@ -63,9 +63,9 @@ banner "macols-ai-coding-setup Installer"
 
 if [ "$RUN_ENV" = true ]; then
     case "$(detect_os)" in
-        macos) printf "${BLUE}Running Terminal/install_macos.sh...${NC}\n"; "$SCRIPT_DIR/Terminal/install_macos.sh" ;;
-        linux) printf "${BLUE}Running Terminal/install_ubuntu26.sh...${NC}\n"; "$SCRIPT_DIR/Terminal/install_ubuntu26.sh" ;;
-        *) printf "${YELLOW}Unknown OS — skipping Terminal env setup${NC}\n" ;;
+        macos) printf "${BLUE}Running machine-setup/install_macos.sh...${NC}\n"; "$SCRIPT_DIR/machine-setup/install_macos.sh" ;;
+        linux) printf "${BLUE}Running machine-setup/install_ubuntu26.sh...${NC}\n"; "$SCRIPT_DIR/machine-setup/install_ubuntu26.sh" ;;
+        *) printf "${YELLOW}Unknown OS — skipping machine setup${NC}\n" ;;
     esac
     echo ""
 fi

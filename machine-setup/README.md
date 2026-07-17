@@ -27,7 +27,7 @@ From the repository root:
 Or run the platform setup directly:
 
 ```bash
-cd Terminal
+cd machine-setup
 ./install_macos.sh       # macOS
 ./install_ubuntu26.sh    # Ubuntu 24.04 or 26.04
 ```

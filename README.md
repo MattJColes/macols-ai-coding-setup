@@ -116,7 +116,7 @@ macols-ai-coding-setup/
 │   ├── post_code_checks.sh        # per-edit lint/type-check battery
 │   ├── post_task_checks.sh        # turn-end battery (runs checks in parallel)
 │   └── ensure_node.sh
-├── Terminal/               # macOS / Ubuntu dev-environment setup
+├── machine-setup/          # macOS / Ubuntu development-machine setup
 ├── tests/verify_install.sh # post-install location + introspection checks
 └── .github/workflows/      # installer tests, security scanning, dependabot
 ```
@@ -139,23 +139,23 @@ the config this repo provides.
 `--no-cli` and `--no-pi` skip the binary install or upgrade. They don't remove
 anything. MCP registration still needs the tool's CLI on your `PATH`.
 
-### Dev environment
+### Machine setup
 
 ```bash
-./install.sh --env            # picks the right Terminal script for your OS
+./install.sh --env            # picks the right machine setup for your OS
 # or directly:
-cd Terminal && ./install_macos.sh        # macOS
-cd Terminal && ./install_ubuntu26.sh     # Ubuntu 24/26 / WSL2
+cd machine-setup && ./install_macos.sh        # macOS
+cd machine-setup && ./install_ubuntu26.sh     # Ubuntu 24/26 / WSL2
 ```
 
-[Terminal/README.md](Terminal/README.md) lists everything the environment setup
+[machine-setup/README.md](machine-setup/README.md) lists everything the setup
 installs. The Ubuntu script includes herdr and its project/review plugins. On
 macOS, install those separately with
-`Terminal/install_brew_herdr_yazi_lazygit_nvim.sh`.
+`machine-setup/install_brew_herdr_yazi_lazygit_nvim.sh`.
 
 The herdr setup maps `prefix+p` to the project picker and `cmd+r` to reviewr.
 New worktrees open Claude Code beside yazi. The
-[herdr and yazi guide](Terminal/GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md)
+[herdr and yazi guide](machine-setup/GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md)
 covers the workflow.
 
 ### Running with `--dangerously-skip-permissions`
@@ -289,7 +289,7 @@ Ubuntu and runs the verifier.
 For repository changes, run the checks that match what you touched:
 
 ```bash
-bash -n install.sh install_*.sh Terminal/*.sh
+bash -n install.sh install_*.sh machine-setup/*.sh
 ./scripts/spec_drift_gate.sh --check
 ./tests/test_spec_drift_gate.sh
 ```
