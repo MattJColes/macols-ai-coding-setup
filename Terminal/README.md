@@ -1,12 +1,12 @@
 # Optional development environment
 
-The scripts in this directory build the workstation layer used alongside
-`macols-ai-coding-setup`. They install language runtimes, cloud and container
-tools, editors and the four AI coding CLIs configured by the repository root.
+These are the scripts I use to set up my macOS and Ubuntu development machines.
+They install the language runtimes, container tools, editor and four coding
+agents used by this repo.
 
-Use the per-tool installers in the [top-level README](../README.md) if you only
-want the AI coding setup. The scripts here make broader system changes, install
-many packages and prompt for Git and AWS configuration.
+If you only want the agent config, use the per-tool installers in the
+[top-level README](../README.md). The scripts here install system packages and
+prompt for your Git and AWS settings.
 
 ## Supported systems
 
@@ -32,10 +32,10 @@ cd Terminal
 ./install_ubuntu26.sh    # Ubuntu 24.04 or 26.04
 ```
 
-Review the relevant script before running it. Both platform installers require
-an internet connection, install packages, update shell configuration, prompt
-for Git identity and run `aws configure`. Existing Neovim data is moved to
-timestamped backup directories before LazyVim is installed.
+Read the platform script before running it. It needs an internet connection and
+updates your shell config. It also asks for your Git identity and runs
+`aws configure`. Existing Neovim data is moved into timestamped backups before
+LazyVim is installed.
 
 ## What gets installed
 
@@ -61,8 +61,8 @@ To install the herdr/yazi workflow separately on either platform, run:
 ./install_brew_herdr_yazi_lazygit_nvim.sh
 ```
 
-That helper merges herdr keybindings into the existing user config and adds an
-idempotent SSH auto-launch block. See
+The helper merges herdr keybindings into your existing config and adds the SSH
+auto-launch block once. See
 [GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md](GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md)
 for the project picker, review mode and worktree layout.
 
@@ -78,13 +78,13 @@ for the project picker, review mode and worktree layout.
 | `host_ollama_model.sh` | Expose an Ollama model from a host machine |
 | `expand_disk.sh` | Assist with expanding an Ubuntu disk |
 
-The focused remote-development guides cover
+There are also guides for
 [VS Code over Tailscale](vscode-over-tailscale.md) and
 [Mosh from iPad to Ubuntu](ubuntu-mosh-ipad.md).
 
 ## After installation
 
-Start a new terminal session, then verify the pieces you intend to use:
+Start a new terminal and check the tools you plan to use:
 
 ```bash
 python --version
@@ -113,7 +113,7 @@ running.
 
 ## Configuration locations
 
-The installers use the standard user locations:
+The installers write to these user locations:
 
 ```text
 ~/.zshrc and ~/.bashrc          shell setup
@@ -127,8 +127,8 @@ The installers use the standard user locations:
 ~/.local/bin/                  user-level executables
 ```
 
-The AI coding configuration is generated from `../shared/`. Do not treat the
-installed files in these home-directory locations as the source of truth.
+The AI coding config comes from `../shared/`. Make changes there and rerun the
+installer instead of editing the generated copies.
 
 ## Troubleshooting
 
@@ -145,9 +145,9 @@ If Podman is not running on macOS:
 podman machine start
 ```
 
-If LazyVim needs to be rebuilt, move its directories aside rather than
-deleting them, then rerun the platform installer. Each installer already uses
-timestamped backups when it finds existing Neovim state.
+If LazyVim needs rebuilding, move its directories aside and rerun the platform
+installer. The installer makes timestamped backups when it finds existing
+Neovim state.
 
 For AI tool configuration and per-tool troubleshooting, return to the
 [top-level README](../README.md#troubleshooting).

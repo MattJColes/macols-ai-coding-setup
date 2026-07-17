@@ -1,18 +1,17 @@
-# macols-ai-coding-setup — agent notes
+# macols-ai-coding-setup agent notes
 
 ## What this repo is
 
-A *generator*, not a config dump: personas, steering, MCP servers and hooks are
-authored once under `shared/` and rendered into each tool's native format by
-the four installers (`install_claudecode.sh`, `install_codex.sh`,
-`install_opencode.sh`, `install_pi.sh`), all backed by `lib/common.sh`. The
-only checked-in `.claude/` content is OpenSpec's opsx commands/skills —
-`~/.claude/agents/*` and `~/.claude/skills/*` are generated from
-`shared/personas/*/SKILL.md` at install time.
+The source config lives under `shared/`. The four installers render it into the
+formats used by Claude Code, Codex, OpenCode and Oh My Pi. Shared rendering and
+installer functions live in `lib/common.sh`.
 
-The repository was previously named `macols-configs`. Treat
-`macols-ai-coding-setup` as the current project name; the old name may remain
-only in compatibility-sensitive installed markers or historical references.
+The checked-in `.claude/` directory only contains OpenSpec's opsx commands and
+skills. Claude agents and skills are generated from
+`shared/personas/*/SKILL.md` during installation.
+
+This repo used to be called `macols-configs`. Keep the old name only where an
+installed marker needs it for compatibility.
 
 ## Change routing
 
@@ -29,55 +28,54 @@ Start at the source that owns the requested behaviour:
 | Full workstation setup | `Terminal/` | syntax check + platform-specific smoke test |
 
 Do not edit generated files under `~/.claude`, `~/.codex`,
-`~/.config/opencode` or `~/.omp` to change this project. Fix the source here
-and rerun the appropriate installer.
+`~/.config/opencode` or `~/.omp`. Change the source here and rerun the
+installer.
 
 Edit the single source, never the rendered output:
 
-- **Personas** — `shared/personas/<name>/SKILL.md`. Frontmatter drives
+- **Personas:** `shared/personas/<name>/SKILL.md`. Frontmatter drives
   rendering: `agent: true` also emits a Claude/OpenCode agent and a Codex
-  agent TOML; `user-invocable: true` a Claude skill. One persona file can therefore be
-  both the "agent" and the "skill" (e.g. code-reviewer).
-- **Steering** — `shared/steering/base.md`, tokenised per tool via
+  agent TOML. `user-invocable: true` also emits a Claude skill, so one file can
+  provide both forms (e.g. code-reviewer).
+- **Steering:** `shared/steering/base.md`, tokenised per tool via
   `shared/steering/tools/<tool>.json`. The `{{EXTRA_SECTION}}` token sits
-  glued to the last line of the final section — keep it there when editing.
-- **MCP servers** — `shared/mcp-config.json` (filesystem, puppeteer,
+  glued to the last line of the final section. Keep it there when editing.
+- **MCP servers:** `shared/mcp-config.json` (filesystem, puppeteer,
   playwright, context7, dart, aws-mcp, aws-iac). Registered for Claude Code,
-  Codex and OpenCode; Oh My Pi has no MCP by design.
-- **Hooks** — `shared/hooks/*` (post-code, post-task, pre-deploy),
+  Codex and OpenCode. Oh My Pi has no MCP support.
+- **Hooks:** `shared/hooks/*` (post-code, post-task, pre-deploy),
   referenced in place, wired by `write_*_hooks` in `lib/common.sh`.
-- **Dev environment** — `Terminal/` (macOS + Ubuntu 24/26). The herdr script
+- **Dev environment:** `Terminal/` (macOS + Ubuntu 24/26). The herdr script
   also installs the herdr-plus/herdr-reviewr plugins and their
   Claude+yazi project/worktree layouts.
-- **Specs** — this repo dogfoods OpenSpec + spec anchors: living specs in
+- **Specs:** this repo dogfoods OpenSpec and spec anchors. Living specs are in
   `openspec/specs/<capability>/spec.md`, ast-grep anchor rules in
-  `specs/anchors/*.yml`, checked by `scripts/spec_drift_gate.sh`. When you
-  change anchored code (mostly `lib/common.sh` functions), update the spec
-  section in the same change — or say explicitly that behaviour didn't
-  change — and re-point the rule if you renamed the function.
+  `specs/anchors/*.yml` and checked by `scripts/spec_drift_gate.sh`. When
+  anchored behaviour changes, update the matching spec section. If code moved
+  without changing behaviour, re-point the anchor and say so.
 
 ## Conventions (follow these in every installer change)
 
-- **Idempotent, always**: `command -v` guards before installs; grep-guarded
-  appends for rc/config lines; marker-delimited blocks that are stripped then
-  re-added for anything that may change (`PONYTAIL_MARKER_*`,
-  `HERDR_AUTOLAUNCH`). Re-running any installer must never
+- **Idempotency:** guard installs with `command -v` and appends with `grep`.
+  Strip and re-add marker-delimited blocks that may change
+  (`PONYTAIL_MARKER_*`, `HERDR_AUTOLAUNCH`). Re-running an installer must not
   duplicate config.
-- **Merge, don't overwrite, user-owned config** (e.g. `~/.config/herdr/config.toml`);
-  files this repo fully owns (rendered personas, plugin layouts, yazi configs)
-  are written with `cat >`.
+- **User-owned config:** merge files such as `~/.config/herdr/config.toml`.
+  Files fully owned by this repo (rendered personas, plugin layouts, yazi
+  configs) can be written with `cat >`.
 - **Optional steps are non-fatal**: `ensure_foo || printf "${YELLOW}⚠ … skipped${NC}\n"`.
 - **Portability**: macOS + Ubuntu 24/26. Homebrew on both (linuxbrew is
-  bootstrapped by the Terminal setup); `detect_os` branches on `$OSTYPE`.
-  Avoid `sed -i` (GNU vs BSD) — filter to a temp file and `mv` back.
+  bootstrapped by the Terminal setup). `detect_os` branches on `$OSTYPE`.
+  Avoid `sed -i` because GNU and BSD differ. Filter to a temp file and `mv` it
+  back.
 - **Version control workflow is plain git + git worktrees.** Jujutsu (jj) was
-  removed deliberately — do not reintroduce it in installers, steering or docs.
-- **OpenSpec is per-repo opt-in** — the installers provision the CLI only;
-  never run `openspec init` for the user. (This repo itself *has* opted in.)
-- **Spec anchors are per-repo opt-in** — the installers provision the
-  ast-grep and yq CLIs only (`ensure_ast_grep`, `ensure_yq`); the steering
-  workflow gates on `specs/anchors/*.yml` existing in the target repo. (This
-  repo itself has opted in — see the Specs bullet above.)
+  removed. Do not reintroduce it in installers, steering or docs.
+- **OpenSpec is per-repo opt-in.** The installers provision the CLI only.
+  Never run `openspec init` for the user. This repo has opted in.
+- **Spec anchors are per-repo opt-in.** The installers provision the
+  ast-grep and yq CLIs only (`ensure_ast_grep`, `ensure_yq`). The steering
+  workflow checks for `specs/anchors/*.yml` in the target repo. This repo has
+  opted in.
 
 ## Rule: resolve script paths from `${BASH_SOURCE[0]}`, never `$0` after a `cd`
 
@@ -95,8 +93,8 @@ CONFIGS_ROOT="$(dirname "$SCRIPT_DIR")"
 Do **not** re-resolve later with `"$(cd "$(dirname "$0")/.." && pwd)"`. `$0` is
 relative to the *current* cwd, so after an earlier `cd /tmp` it resolves against
 `/tmp`: `dirname` → `/tmp`, `/tmp/..` → `/`, and the path becomes `//install.sh`
-(No such file). This exact regression bit `Terminal/install_ubuntu26.sh` — keep
-it fixed.
+(No such file). This broke `Terminal/install_ubuntu26.sh` before, so keep the
+path based on `BASH_SOURCE`.
 
 ## Verifying changes
 

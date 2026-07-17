@@ -1,24 +1,20 @@
 # macols-ai-coding-setup
 
-One setup for four AI coding CLIs — **Claude Code**, **Codex**, **OpenCode** and
-**Oh My Pi** (`omp`, selected as `pi`) — plus an optional macOS or Ubuntu
-development environment.
+I keep my **Claude Code**, **Codex**, **OpenCode** and **Oh My Pi** setup in this
+repo. The files under `shared/` define the personas, instructions, MCP servers
+and checks. Each installer turns them into the format its tool expects.
 
-This repository is a generator, not a dump of files from `~/.config`.
-Personas, agent instructions, MCP servers and quality hooks are authored once
-under `shared/`; the installers render those sources into each tool's native
-format. Change the shared source once, then reinstall whichever tools you use.
+There is also an optional setup for my macOS and Ubuntu development machines.
+It installs the language runtimes, containers and terminal tools I use.
 
-The steering teaches a plain-git workflow — one branch per change, git
-worktrees for parallel work — and each installer installs the
-[ponytail](https://github.com/DietrichGebert/ponytail) minimal-mode ruleset for
-every agent via that agent's native mechanism, plus the
-[OpenSpec](https://github.com/Fission-AI/openspec) CLI for spec-driven
-development in repositories that opt in.
+The generated instructions use plain git branches and worktrees. The installers
+also add [ponytail](https://github.com/DietrichGebert/ponytail) for the minimal
+mode rules and the [OpenSpec](https://github.com/Fission-AI/openspec) CLI for
+repos that use specs.
 
 ## Quick start
 
-Clone the repository, then install one tool or all four:
+Clone the repo and run the installer for the tools you use:
 
 ```bash
 git clone https://github.com/MattJColes/macols-ai-coding-setup.git
@@ -29,18 +25,16 @@ cd macols-ai-coding-setup
 ./install.sh                   # all four tools
 ```
 
-The installers add or update configuration in your home directory and install
-missing CLI dependencies. Review the scripts first if you do not want them to
-manage Homebrew, npm packages or user-level configuration. To render config
-without installing the CLI itself, run the relevant per-tool installer with
-`--no-cli` (or `--no-pi` for Oh My Pi).
+By default, the scripts install missing CLIs and update configuration in your
+home directory. If you already have the CLI, call its installer with
+`--no-cli`. Oh My Pi uses `--no-pi` for the same job.
 
-Supported platforms are macOS and Linux for the tool installers. The optional
-full development-environment setup targets macOS and Ubuntu 24.04/26.04.
+The tool installers run on macOS and Linux. The optional development-machine
+setup targets macOS and Ubuntu 24.04/26.04.
 
 ## Choose what to install
 
-Start with the row that matches what you want:
+Pick the closest command and change the tool name if needed:
 
 | Goal | Command |
 |---|---|
@@ -53,42 +47,37 @@ Start with the row that matches what you want:
 | Install configuration into one project | Run `install_<tool>.sh --project` from that project's directory |
 | Build the full workstation as well | `./install.sh --env` |
 
-With no component options, a per-tool installer installs the CLI and all of
-that tool's configuration. Component options can be combined: the first
-`--*-only` option turns off the default set, and each option you provide turns
-that component back on.
-
-For example:
+With no component flags, a per-tool installer installs everything for that
+tool. The first `--*-only` flag clears the default set. Add more `--*-only`
+flags to install those components together.
 
 ```bash
-# Codex skills only; do not install or upgrade the Codex CLI
+# Codex skills only. Keep the existing Codex CLI.
 ./install_codex.sh --skills-only --no-cli
 
-# Claude Code MCPs and hooks only; use the existing Claude CLI
+# Claude Code MCPs and hooks only. Keep the existing Claude CLI.
 ./install_claudecode.sh --mcps-only --hooks-only --no-cli
 
 # Codex prompts plus shared AGENTS.md instructions
 ./install_codex.sh --prompts-only --instructions-only --no-cli
 ```
 
-Component flags belong to the per-tool installers, not `install.sh`. Run the
-relevant installer with `--help` to see its exact options. A component is the
-smallest supported selection unit: for example, `--skills-only` installs every
-applicable skill shown by `--list`.
+Component flags only work on the per-tool installers. Run one with `--help` to
+see its options. A component is the smallest selection unit, so
+`--skills-only` installs every applicable skill shown by `--list`.
 
 ### Project-local configuration
 
-Run a per-tool installer from the project that should receive the files. For
-example, if this setup repository is at `~/code/macols-ai-coding-setup`:
+Run the installer from the project that should receive the files. This example
+assumes the setup repo is at `~/code/macols-ai-coding-setup`:
 
 ```bash
 cd ~/code/my-project
 ~/code/macols-ai-coding-setup/install_codex.sh --project
 ```
 
-`--project` implies `--no-cli` and does not change global MCPs, hooks or Oh My
-Pi packages. It writes only the project formats that the selected tool
-supports:
+`--project` implies `--no-cli`. It leaves global MCPs, hooks and Oh My Pi
+packages alone, then writes the project files supported by that tool:
 
 | Tool | Project-local output |
 |---|---|
@@ -101,10 +90,9 @@ You can combine `--project` with component selection, such as
 `install_codex.sh --project --skills-only`.
 
 > [!CAUTION]
-> When an installer writes a generated agents, skills or prompts directory, it
-> replaces that target directory. Move or commit hand-written files there
-> before running the installer. User-owned JSON/TOML settings are merged rather
-> than replaced.
+> The installers delete and rebuild generated agents, skills and prompts
+> directories. Move or commit any hand-written files in those directories
+> first. JSON and TOML settings owned by the user are merged.
 
 ## Structure
 
@@ -133,33 +121,23 @@ macols-ai-coding-setup/
 └── .github/workflows/      # installer tests, security scanning, dependabot
 ```
 
-There are no per-tool directories: every difference between the tools lives in a
-small per-tool file under `shared/` (e.g. `shared/steering/tools/codex.json`) and
-in the matching `install_<tool>.sh`.
+Tool-specific differences live in `shared/steering/tools/` and the matching
+`install_<tool>.sh`. Shared behaviour stays under `shared/`.
 
 ## Per-tool option reference
 
-Each `install_<tool>.sh` is self-contained — it ensures Homebrew (macOS), the
-CLI binary and the OpenSpec CLI, then installs that tool's
-agents/skills/prompts, steering, MCPs and hooks. Run one, several, or all:
-
-```bash
-./install.sh                  # all four tools (binaries + configs)
-./install.sh claudecode pi    # just Claude Code and Oh My Pi
-./install.sh --env            # run the Terminal dev-environment setup first
-./install_codex.sh            # one tool directly
-```
+Each tool has its own installer. With no flags it installs the CLI and all of
+the config this repo provides.
 
 | Installer | Selectable components | Skip CLI install | Other choices |
 |---|---|---|---|
 | `install_claudecode.sh` | `--agents-only`, `--skills-only`, `--mcps-only`, `--hooks-only` | `--no-cli` | `--project`, `--list` |
 | `install_codex.sh` | `--prompts-only`, `--skills-only`, `--agents-only`, `--instructions-only`, `--mcps-only`, `--hooks-only` | `--no-cli` | `--project`, `--list` |
 | `install_opencode.sh` | `--agents-only`, `--skills-only`, `--mcps-only`, `--hooks-only` | `--no-cli` | `--project`, `--list` |
-| `install_pi.sh` | `--skills-only`, `--context-only`, `--hooks-only`, `--packages-only` | `--no-pi` | `--no-packages`, `--project`, `--list`; no MCP support |
+| `install_pi.sh` | `--skills-only`, `--context-only`, `--hooks-only`, `--packages-only` | `--no-pi` | `--no-packages`, `--project`, `--list` (no MCP support) |
 
-`--no-cli` and `--no-pi` skip installing or upgrading the binary; they do not
-remove an existing installation. Operations such as MCP registration still
-expect the relevant CLI to already be available.
+`--no-cli` and `--no-pi` skip the binary install or upgrade. They don't remove
+anything. MCP registration still needs the tool's CLI on your `PATH`.
 
 ### Dev environment
 
@@ -170,34 +148,32 @@ cd Terminal && ./install_macos.sh        # macOS
 cd Terminal && ./install_ubuntu26.sh     # Ubuntu 24/26 / WSL2
 ```
 
-See **[Terminal/README.md](Terminal/README.md)** for the full toolchain
-(Python 3.14 + uv, Node.js + TypeScript/CDK, Podman, AWS CLI, LazyVim, etc.).
-The Ubuntu setup also installs **herdr** with the **herdr-plus** and
-**herdr-reviewr** plugins; on macOS, run
-`Terminal/install_brew_herdr_yazi_lazygit_nvim.sh` separately. `prefix+p`
-opens the project picker, `cmd+r` toggles reviewr, and a wildcard worktree
-layout opens Claude Code + yazi in every new worktree (see
-[Terminal/GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md](Terminal/GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md)).
+[Terminal/README.md](Terminal/README.md) lists everything the environment setup
+installs. The Ubuntu script includes herdr and its project/review plugins. On
+macOS, install those separately with
+`Terminal/install_brew_herdr_yazi_lazygit_nvim.sh`.
+
+The herdr setup maps `prefix+p` to the project picker and `cmd+r` to reviewr.
+New worktrees open Claude Code beside yazi. The
+[herdr and yazi guide](Terminal/GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md)
+covers the workflow.
 
 ### Running with `--dangerously-skip-permissions`
 
-Claude Code refuses bypass-permissions mode under root/sudo (the flag silently
-drops back to the default mode), which bites in containers and install scripts
-that run as root. The Claude Code installer drops a launcher at
-`~/.claude/bin/claude-launch` that handles this the documented way:
+Claude Code ignores bypass-permissions mode under root or sudo. The installer
+adds `~/.claude/bin/claude-launch` to handle that case:
 
 ```bash
 ~/.claude/bin/claude-launch            # or: alias cc=~/.claude/bin/claude-launch
 ```
 
-- **Non-root** → runs `claude --dangerously-skip-permissions` directly.
-- **Root** → drops to a non-root user (`$CLAUDE_USER`, else `$SUDO_USER`, else the
-  owner of `$HOME`) and runs Claude as them. For this to work Claude must be
-  installed for that user (or system-wide), not just for root.
+- As a normal user, it runs `claude --dangerously-skip-permissions` directly.
+- As root, it switches to `$CLAUDE_USER`, `$SUDO_USER` or the owner of `$HOME`.
+  Claude needs to be installed for that user or system-wide.
 
-If you genuinely intend to run as root inside a sandbox, the documented escape
-hatch is `IS_SANDBOX=1 claude --dangerously-skip-permissions` — but a non-root
-user is preferred.
+For a root-owned sandbox, use
+`IS_SANDBOX=1 claude --dangerously-skip-permissions`. Otherwise use the
+launcher.
 
 ## What gets installed, and where
 
@@ -208,60 +184,51 @@ user is preferred.
 | OpenCode | agents `~/.config/opencode/agents/`, skills `…/skills/` | `~/.config/opencode/AGENTS.md` | `mcp` key in `~/.config/opencode/opencode.json` | plugin in `…/plugins/` |
 | Oh My Pi | Agent Skills `~/.omp/agent/skills/` (`/skill:<name>`) | `~/.omp/agent/AGENTS.md` | none by design | `pi-checks` extension |
 
-**Oh My Pi is deliberately different:** it has no MCP — external capabilities
-come from CLI tools, Agent Skills and pluggable packages (`omp install <pkg>`,
-e.g. `pi-agent-web-access`, `pi-subagents`, `pi-ask-user`). It replaces the
-plain `pi` agent (the old install is retired) and its npm bundle runs on Bun,
-which the installer provisions automatically.
+Oh My Pi doesn't support MCP. External capabilities come from CLI tools, Agent
+Skills and packages installed with `omp install <pkg>`. It replaces the old
+plain `pi` agent, and the installer sets up the Bun runtime it needs.
 
 ### Git worktree workflow
 
-The steering teaches agents a plain-git loop: start each change on its own
-branch (`git checkout -b feat/x`), commit in small conventional commits, and
-publish with `git push -u origin <branch>` + a PR. Parallel agents each get
-their own git worktree (`git worktree add ../repo-task -b feat/task`) so they
-never collide in one checkout; review everything in one view with
-`git log --oneline --graph --all`. In herdr, `Ctrl+b` `Shift+g` creates a new
-worktree, and the herdr-plus wildcard worktree layout (installed by the
-Terminal setup) automatically opens Claude Code + yazi in each one.
+The generated instructions use one branch per change and small conventional
+commits. Parallel agents get separate worktrees, created with
+`git worktree add ../repo-task -b feat/task`. Use
+`git log --oneline --graph --all` to see them together.
+
+In herdr, `Ctrl+b` `Shift+g` creates a worktree. The wildcard layout opens
+Claude Code beside yazi.
 
 ### Ponytail
 
-[Ponytail](https://github.com/DietrichGebert/ponytail) (lazy/YAGNI mode) is
-installed for every agent via its native mechanism:
+[Ponytail](https://github.com/DietrichGebert/ponytail) provides the lazy/YAGNI
+rules. Each tool loads it differently:
 
-- **Claude Code** — plugin: `claude plugin marketplace add DietrichGebert/ponytail`
+- **Claude Code:** plugin: `claude plugin marketplace add DietrichGebert/ponytail`
   + `claude plugin install ponytail@ponytail` (falls back to declaring both in
-  `~/.claude/settings.json` when offline; fetched on next launch).
-- **Oh My Pi** — package: `omp install git:github.com/DietrichGebert/ponytail`.
-- **Codex / OpenCode / Oh My Pi AGENTS.md** — ponytail's AGENTS.md ruleset
+  `~/.claude/settings.json` when offline, ready for the next launch).
+- **Oh My Pi:** package: `omp install git:github.com/DietrichGebert/ponytail`.
+- **Codex / OpenCode / Oh My Pi AGENTS.md:** ponytail's AGENTS.md ruleset
   (vendored at `shared/steering/ponytail.AGENTS.md`) is appended inside
-  `<!-- ponytail:ruleset:start/end -->` marker comments; re-runs replace the
-  block instead of duplicating it. Re-vendor the file to pick up upstream changes.
+  `<!-- ponytail:ruleset:start/end -->` marker comments. Re-runs replace the
+  block. Re-vendor the file to pick up upstream changes.
 
-Ponytail's hooks need `node` on the non-interactive PATH; the installers link
-`node`/`npm`/`npx` into `~/.local/bin` to guarantee that.
+Ponytail's hooks need `node` on the non-interactive PATH. The installers link
+`node`/`npm`/`npx` into `~/.local/bin`.
 
 ### OpenSpec
 
-Every installer provisions the [OpenSpec](https://github.com/Fission-AI/openspec)
-CLI (`npm install -g @fission-ai/openspec`, Node ≥ 20.19) for spec-driven
-development. Adoption is per-repo and opt-in: run `openspec init` in a project
-to create its `openspec/` directory and generate the agent slash commands
+The installers add the [OpenSpec](https://github.com/Fission-AI/openspec) CLI
+(`npm install -g @fission-ai/openspec`, Node >= 20.19). Run `openspec init` in
+a project to create its `openspec/` directory and generate the slash commands
 (`/opsx:explore`, `/opsx:propose`, `/opsx:apply`, `/opsx:archive`). The
-steering teaches agents to follow the propose → approve → implement → archive
-loop wherever an `openspec/` directory exists, and never to `openspec init`
-uninvited.
+instructions follow that workflow when the directory exists. The installers
+don't initialise projects for you.
 
 ### ast-grep
 
-Every installer provisions the [ast-grep](https://ast-grep.github.io) CLI
-(`npm install -g @ast-grep/cli`, ships both `ast-grep` and `sg` binaries) for
-structural code search. It backs the code-reviewer persona and the Spec
-Anchors steering section: repos that pin spec sections to code with anchor
-rules under `specs/anchors/*.yml` get the resolve-before-change /
-propose-spec-diff-after workflow. Adoption is per-repo and opt-in — no anchor
-files, no workflow.
+The installers also add [ast-grep](https://ast-grep.github.io) for structural
+code search. The code-reviewer persona uses it, as does the spec-anchor
+workflow. A repo opts in by adding rules under `specs/anchors/*.yml`.
 
 ## Personas
 
@@ -269,52 +236,51 @@ Each persona is one file: `shared/personas/<name>/SKILL.md`. Its frontmatter
 (`agent: true`, `model:`, `allowed-tools:`) drives how each installer renders it.
 Add or edit a persona once and every tool picks it up on the next install.
 
-**Development:** python-backend, frontend-engineer-ts, dart-app-developer,
-cdk-expert-ts, cdk-expert-python, data-scientist ·
-**Testing and diagnosis:** diagnosing-bugs, test-coordinator,
-python-test-engineer, typescript-test-engineer ·
-**DevOps and reliability:** devops-engineer, sre-reliability, linux-specialist,
-code-reviewer ·
-**Architecture and design:** architecture-expert, ui-ux-designer,
-security-specialist ·
-**Management:** documentation-engineer, product-manager, project-coordinator,
-engineering-manager ·
-**Research and advisory:** deep-research-scientist, ideation, legal-advisor ·
-**Writing:** interrogate-me, writing-chat-messages, writing-documents,
-writing-short-articles ·
-**Workflow:** commit, mental-model, ponytail-senior-engineer, spec-anchors
+- **Development:** python-backend, frontend-engineer-ts, dart-app-developer,
+  cdk-expert-ts, cdk-expert-python, data-scientist
+- **Testing and diagnosis:** diagnosing-bugs, test-coordinator,
+  python-test-engineer, typescript-test-engineer
+- **DevOps and reliability:** devops-engineer, sre-reliability,
+  linux-specialist, code-reviewer
+- **Architecture and design:** architecture-expert, ui-ux-designer,
+  security-specialist
+- **Management:** documentation-engineer, product-manager,
+  project-coordinator, engineering-manager
+- **Research and advice:** deep-research-scientist, ideation, legal-advisor
+- **Writing:** interrogate-me, writing-chat-messages, writing-documents,
+  writing-short-articles
+- **Workflow:** commit, mental-model, ponytail-senior-engineer, spec-anchors
 
 ## MCP servers
 
-Defined once in `shared/mcp-config.json` and registered into each tool's native
-config: **filesystem**, **puppeteer**, **playwright**, **context7**, **dart**,
-**aws-mcp**, **aws-iac**. (Oh My Pi excluded by design.)
+The MCP list lives in `shared/mcp-config.json`: **filesystem**, **puppeteer**,
+**playwright**, **context7**, **dart**, **aws-mcp** and **aws-iac**. The Claude
+Code, Codex and OpenCode installers register them in their own config formats.
 
-- **aws-mcp** — the managed [AWS MCP Server](https://aws.amazon.com/blogs/aws/the-aws-mcp-server-is-now-generally-available/)
+- **aws-mcp:** the managed [AWS MCP Server](https://aws.amazon.com/blogs/aws/the-aws-mcp-server-is-now-generally-available/)
   (Agent Toolkit for AWS), reached through the `mcp-proxy-for-aws` package,
   which SigV4-signs requests with your ambient AWS credentials. The endpoint
-  pins the server region (`us-east-1` here); the operations it performs default
-  to your credential chain's region.
-- **aws-iac** — the [AWS IaC MCP Server](https://awslabs.github.io/mcp/servers/aws-iac-mcp-server)
+  is in `us-east-1`. Operations default to your credential chain's region.
+- **aws-iac:** the [AWS IaC MCP Server](https://awslabs.github.io/mcp/servers/aws-iac-mcp-server)
   (`awslabs.aws-iac-mcp-server` via uvx): CloudFormation/CDK validation,
   documentation search and best-practice checks. Uses ambient AWS credentials.
 
 ## Hooks
 
-Thin wrappers in `shared/hooks/` source the shared check libraries and run
-advisory (never blocking) checks:
+The wrappers in `shared/hooks/` run checks without blocking the agent:
 
-- **post-code** (per edit, all tools) — fast, file-scoped lint/type-check
-- **post-task** (turn end, all tools) — full test/security battery (linters, audits, semgrep), only when code changed
-- **pre-deploy** (all tools) — confirms `cdk diff` before `cdk deploy`/`destroy`. The matcher is single-sourced in `pre_deploy_check.sh`: Claude/Codex gate through the PreToolUse "ask" protocol, OpenCode blocks the first attempt via `tool.execute.before` (an identical retry after user confirmation passes), and omp asks via the extension's `ctx.ui.confirm`.
+- **post-code:** fast lint and type checks after an edit
+- **post-task:** the full test and security checks at the end of a turn
+- **pre-deploy:** asks for confirmation before `cdk deploy` or `cdk destroy`
+
+`pre_deploy_check.sh` holds the shared matcher. Each tool wires it into its own
+hook API.
 
 ## Testing
 
-`tests/verify_install.sh <tool>` asserts each tool's files landed in the expected
-locations and that the CLI reports a configured state (non-auth introspection).
-The **Test installers** GitHub Actions workflow runs `shellcheck` and, on Ubuntu,
-installs each tool and runs the verifier across a `claudecode/codex/opencode/pi`
-matrix.
+`tests/verify_install.sh <tool>` checks the generated files and asks the CLI to
+report its config without logging in. CI runs ShellCheck, installs each tool on
+Ubuntu and runs the verifier.
 
 ```bash
 ./tests/verify_install.sh claudecode
@@ -328,9 +294,8 @@ bash -n install.sh install_*.sh Terminal/*.sh
 ./tests/test_spec_drift_gate.sh
 ```
 
-The root [AGENTS.md](AGENTS.md) is the maintainer and AI-agent guide. It maps
-each kind of change to its source-of-truth file and records the idempotency,
-portability, OpenSpec and spec-anchor rules used in this repository.
+The root [AGENTS.md](AGENTS.md) tells maintainers and coding agents which source
+file owns each part of the setup.
 
 ## Post-installation
 
