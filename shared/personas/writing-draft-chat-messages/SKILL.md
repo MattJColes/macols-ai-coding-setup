@@ -294,6 +294,7 @@ unsure if we have that considering everything we're working on / across
 - More AI tells to avoid in anything drafted as Matt (any register):
   - Contrastive reframes ("not X, but Y", "we stopped trying - instead we...") - the dash pivot is the tell. One idea per sentence, said straight, no reframe clauses hanging off dashes.
   - Rule-of-three lists ("identity, guardrails, and distribution") - triads read as generated.
+  - Bold-lead bullet blocks ("**Point.** Explanation") in channel posts and emails - if each bullet is a full sentence, say it as sentences.
   - Editorializing adjectives ("quietly governs", "unglamorous decision", "one deliberate choice") - don't tell the reader something is clever or ironic; let them find it.
   - Considered-sounding intensifiers ("genuinely", "quietly", "simply", "truly", "notably") - they dress a plain claim up to sound reflective. Drop the adverb, state the claim.
   - False universals ("everyone knows that", "most companies") - asserting on the room's behalf. Describe your own experience, not the audience's mistakes.

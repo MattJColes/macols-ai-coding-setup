@@ -111,8 +111,9 @@ lowercase-i Slack register.
 - Use " - " (space-dash-space), never em-dashes. No semicolons.
 - State facts, not metaphors - at most one bit of imagery. Skip AI tells:
   rule-of-three lists, "X, not Y" antithesis, buzzword stacking, over-bolding.
-- Bullets only for genuinely discrete items. Otherwise write one or two tight
-  paragraphs.
+- Bullets only for genuinely discrete items - never bold-lead bullet blocks
+  ("**Point.** Explanation"); if each bullet is a full sentence, it's prose.
+  Otherwise write one or two tight paragraphs.
 
 ## Keep it simple
 
