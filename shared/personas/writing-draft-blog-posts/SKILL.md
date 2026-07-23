@@ -134,6 +134,28 @@ publishing process. Read it before helping draft or editing any post.
 - Bolted-on self-referential links: he cut a "see the projects page" closing paragraph and
   a back-link to his own intro post. Cross-link only where it genuinely helps the reader.
 
+**Document-shape tells (structural — check the rendered post, not sentences).** The list
+above is sentence-level. The reviewing-code post (July 2026, called slop on r/coding)
+passed all of it and still read generated, because the tells were in the document's shape:
+- Bold-lead bullet blocks — `**Correctness.** What happens with an empty input…`. A list
+  earns its place only when the reader will use it as a list: scan it, run it in order,
+  or check things off (commands, config options, a survival matrix). If every bullet is a
+  full sentence and the block reads fine with the markers deleted, it's prose — write it
+  as sentences. Bold lead-ins on bullets are the loudest single tell; it's how models
+  format "key points".
+- Header density — the review post ran five H2s in a 7-minute read, one every ~280 words.
+  Rough ceiling: two or three H2s in a sub-10-minute post, and no header on a section
+  under ~200 words. Instead of a header, merge the section or carry the turn with a plain
+  transition sentence, the way an essay changes subject mid-flow.
+- Section symmetry — "Uniform paragraph rhythm" (above) applied at section level:
+  sections of near-equal length, each running setup/detail/close, each ending on a
+  landing line. Each close can pass "Section-ending zinger cadence" on its own; the
+  symmetry is the tell. Vary section lengths, and let some sections end flat.
+- Every post gets one deliberate rhythm break: at least one long, slightly untidy
+  paragraph that chases the thought further than the structure strictly needs, and at
+  least one paragraph of a line or three that states a fact and stops. A draft with
+  neither was assembled, not written.
+
 ## Teasers, talk synopses & other short-form copy
 The tells in Avoid get short-form copy (a talk synopsis, a teaser, a social blurb) rejected
 fastest, because there's nothing else to carry it. Two extra rules for these:
@@ -280,6 +302,15 @@ violations, it doesn't vibe-check. Go through the draft and tally:
    occurrences. Target 0 — swap each for the term Matt would actually use ("solid" or
    "reliable" for "robust", "look at" for "delve into", "important" or just cut for
    "crucial").
+7. Document shape: H2 count against read time — over the ceiling in "Document-shape
+   tells" (two or three H2s in a sub-10-minute post, none on a section under ~200
+   words) → merge sections.
+8. Bullet blocks where every bullet is a full sentence (bold-lead or not) — count them.
+   Target 0; rewrite as prose.
+9. Sections within ±20% of the same length that all end on a landing line — if that
+   describes the draft, break at least one section's length and let at least one end
+   flat. Also confirm the post has its rhythm break (one long untidy paragraph, one
+   one-to-three-liner).
 Report the counts to Matt before presenting the draft, fix anything over target, and
 re-count after fixing.
 
@@ -376,10 +407,29 @@ something new (opening shape, shorter length, more code and less prose), change 
 thing per post and read the number against comparable posts. The ast-grep bounce was
 debugged this way; make it the habit, not a one-off.
 
+**Where to post.** Comment threads are the payoff, so rank venues by comment quality,
+not views. lobste.rs and HN quote lines back and argue mechanics; r/ExperiencedDevs fits
+the judgement-led career and practice posts. r/coding delivered 7.7K views on the
+reviewing-code post and exactly two comments — a pun and "slop". That's reach with no
+feedback: use it only when raw reach is the goal for a broad-audience post, and check in
+GA4 whether r/coding referrals actually engage. If they bounce like the ast-grep
+skimmers, drop the venue.
+
 **Mine the comment threads.** When a post does numbers on Reddit or HN, the thread
 quotes back the sentences that landed. Those quoted lines are free line-level feedback
 on what Matt's strongest writing looks like - collect them, and write more sentences
 shaped like them.
+
+**Handling slop accusations.** Two posts have now been called AI-written in threads
+(Pydantic Evals on r/LocalLLaMA, reviewing-code on r/coding). The playbook:
+- Don't reply to low-effort accusations. Defending your humanity to a one-word account
+  makes the charge look load-bearing.
+- Do reply to jokes and genuine technical pushback, in the same register. A byline that
+  jokes back is the cheapest anti-slop signal there is.
+- Either way, treat the accusation as structural feedback: run the document-shape
+  checklist in Avoid against the post and record which tell was present (Pydantic Evals:
+  section-ending zinger cadence; reviewing-code: bold-lead bullets and header density).
+  If no listed tell matches, that's a new tell — add it.
 
 **Calibration references.** When judging whether a draft is at the standard, the
 comparison set is: Dan Luu (evidence-dense long form), Julia Evans (teaching by

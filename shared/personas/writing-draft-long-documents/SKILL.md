@@ -209,6 +209,8 @@ Conversational, educational. Title max 75 chars, intro under 200 words, 1,500 wo
 - Close every section on a polished punchline - one per document at most; end the rest on a plain sentence
 - Anthropomorphising quips ("glue code whose only job is to apologise for the model") - humour comes from the actual situation, not from giving software feelings
 - Uniform paragraph rhythm (every paragraph running setup, elaboration, landing) - some paragraphs should just convey information and stop
+- Section symmetry - the same tell one level up: sections of near-equal length, each running setup/detail/close, each ending on a landing line. Vary section lengths and let some sections end flat
+- Bold-lead bullet blocks ("**Point.** Explanation...") anywhere bullets are allowed (appendices, blog posts) - if every bullet is a full sentence and reads fine with the markers deleted, write it as prose
 - Unspecific anecdotes ("I've lost that afternoon more than once") - name something real (the project, roughly when) or cut it
 - Technobabble - jargon-stacked sentences that sound technical but carry no mechanism ("leverages a scalable event-driven architecture to seamlessly orchestrate workloads"). Say what the thing actually does in plain words; name a technology only when the reader needs it to act
 - Waffle - circling a point without landing it: long wind-ups, restating the question, hedging in both directions, three sentences doing one sentence's work. State the point, give the reason, stop
