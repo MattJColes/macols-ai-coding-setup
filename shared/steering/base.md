@@ -182,6 +182,29 @@ parallel work.
 - Ready for a PR: `git push -u origin <branch>`, then open a pull request.
 - Do not push unless explicitly asked, and prefer opening a pull request over
   pushing directly to the default branch.
+- Shipping a chain of related changes? Stack the pull requests instead of
+  growing one branch until it is unreviewable. A stack is an ordered series of
+  PRs where each targets the branch below it and the bottom targets the default
+  branch, so every piece stays small while the dependencies stay explicit.
+  GitHub supports this natively through the `gh stack` extension
+  (`gh extension install github/gh-stack`, needs gh 2.0+):
+  - `gh stack init` on the default branch starts the stack; `gh stack add`
+    puts the next change on top of the one below.
+  - `gh stack submit` pushes every branch and opens or updates its PR with the
+    right base — use it in place of `git push -u origin <branch>` once a branch
+    belongs to a stack.
+  - `gh stack view` shows the chain and each PR's state; `gh stack up` /
+    `gh stack down` / `gh stack checkout` move between branches.
+  - When the base moves or a lower PR merges, `gh stack sync` fetches, cascade
+    rebases and updates the PRs in one command. Do not hand-rebase the branches
+    above it — that is what breaks stacks.
+  - `gh stack merge` lands one or several PRs, always bottom-up: a PR cannot
+    land before the ones it depends on.
+  - Branches already pushed can be joined with `gh stack link`; `gh stack
+    unstack` returns them to plain PRs.
+  Stack only when the pieces genuinely depend on each other and are each worth
+  reviewing on their own. Independent changes belong on separate branches off
+  the default branch — a stack you did not need is just a queue.
 - Write commit messages in Conventional Commits format (`feat:`, `fix:`,
   `chore:`, with `feat!:` or a `BREAKING CHANGE:` footer for breaking changes)
   so they map cleanly onto semantic versioning — `fix` → patch, `feat` → minor,

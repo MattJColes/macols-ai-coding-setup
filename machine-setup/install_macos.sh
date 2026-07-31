@@ -46,6 +46,14 @@ brew install awscli
 echo "Installing GitHub CLI..."
 brew install gh
 
+# Install the stacked-PR extension (gh stack ...) — optional, non-fatal
+echo "Installing gh-stack extension..."
+if gh extension list 2>/dev/null | grep -q 'github/gh-stack'; then
+    echo "gh-stack already installed"
+else
+    gh extension install github/gh-stack || echo "⚠ gh-stack install skipped"
+fi
+
 # Install Podman
 echo "Installing Podman..."
 brew install podman
