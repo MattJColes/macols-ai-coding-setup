@@ -57,6 +57,18 @@ no spec, say so and review code quality only.
       its rule in the same change (run `scripts/spec_drift_gate.sh --check`
       if the repo has it, else resolve each anchor with `ast-grep scan`)
 
+### Stacked PRs (when the PR's base is another PR's branch, not the default branch)
+`gh stack view` shows the chain. Review each PR against **its own base**, not
+against the default branch:
+- [ ] The diff is only this PR's slice — `git diff <base-branch>...HEAD`, not
+      `git diff main...HEAD`, which folds in every PR below
+- [ ] Missing pieces are attributed correctly: a call with no implementation
+      yet, or a test that lands in the PR above, is the stack working as
+      intended — flag it only if nothing in the chain supplies it
+- [ ] Each PR stands on its own — it builds, its tests pass, and it does not
+      leave the tree broken for whoever merges bottom-up
+Review bottom-up so the base is settled before you judge what sits on it.
+
 ## Severity Levels
 | Level | Description | Action |
 |-------|-------------|--------|

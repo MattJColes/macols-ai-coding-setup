@@ -198,6 +198,12 @@ commits. Parallel agents get separate worktrees, created with
 In herdr, `Ctrl+b` `Shift+g` creates a worktree. The wildcard layout opens
 Claude Code beside yazi.
 
+For a chain of related changes the instructions reach for GitHub's stacked
+pull requests instead of one long branch: `gh stack init` / `add` / `submit`
+to build and publish the chain, `gh stack sync` to cascade rebase when the base
+moves, and `gh stack merge` bottom-up. The machine setup installs the
+`github/gh-stack` extension alongside the GitHub CLI.
+
 ### Ponytail
 
 [Ponytail](https://github.com/DietrichGebert/ponytail) provides the lazy/YAGNI

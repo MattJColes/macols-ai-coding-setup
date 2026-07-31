@@ -24,5 +24,16 @@ user-invocable: true
      (`git add -p && git commit -m "<type>: <message>"`) on the current
      branch — if still on the default branch, create `<type>/<name>` first
      with `git checkout -b`.
-   - Push with `git push -u origin <branch>`.
-5. Report the commit id and any warnings
+   - Push with `git push -u origin <branch>` — unless the branch is part of a
+     stacked PR chain (see step 5).
+5. If the branch belongs to a stack (`gh stack view` names it, or the repo has
+   a `.git/stack` entry for it):
+   - Push and open/update every PR with `gh stack submit`, not `git push`. It
+     sets each PR's base to the branch below.
+   - If the base moved or a lower PR merged while you worked, run
+     `gh stack sync` first — it cascade rebases the whole chain. Never rebase
+     the branches above by hand.
+   - Adding the next change in the chain: `gh stack add <type>/<name>` from the
+     top of the stack rather than branching off the default branch.
+6. Report the commit id, the PR (or the stack and each PR's position in it),
+   and any warnings
