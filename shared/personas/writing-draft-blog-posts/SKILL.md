@@ -261,9 +261,14 @@ decent draft becomes publishable, and where most of the work in a session lands.
   newcomer follows without a lookup.
 
 **Diagrams, tables & pictures:**
-- Prefer ASCII / monospace. On the paper-terminal theme they sit in the dark code panel and
-  render identically in light and dark for free; a coloured SVG / D2 / screenshot needs
-  dual-theme handling and reads as bolted-on — and don't add a build dependency for one picture.
+- Prefer mermaid. Diagrams go in a ```mermaid fenced block — the source stays diffable in the
+  markdown, the theme handles light and dark, and there's nothing to redraw when the flow
+  changes. ASCII / monospace is the fallback for the rare shape mermaid can't express (a
+  fixed-width layout, a terminal transcript); a coloured SVG / D2 / screenshot needs dual-theme
+  handling and reads as bolted-on — and don't add a build dependency for one picture.
+- Keep the mermaid minimal: flowchart or sequenceDiagram for a workflow, no custom styling or
+  colour directives, node labels short enough to read on a phone. A diagram that needs a legend
+  is doing too much — split it or cut it.
 - One visual per distinct load: value prop, workflow, decision logic. Two or three is plenty
   for a ~1500-word essay; more tips illustrated into decorated. Place each right after the
   sentence it crystallises, not in a separate diagram dump.
