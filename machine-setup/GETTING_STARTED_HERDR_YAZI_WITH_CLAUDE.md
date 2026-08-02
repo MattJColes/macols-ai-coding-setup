@@ -80,6 +80,11 @@ All Herdr commands start with the prefix key `Ctrl+b`.
 |--------|------|
 | herdr-plus project picker | `Ctrl+b` then `p` |
 | Toggle reviewr | `Cmd+r` |
+| Browser in a right split | `Ctrl+b` then `Shift+b` |
+| Browser overlay | `Ctrl+b` then `Shift+o` |
+
+The browser keys are `Shift`-ed because plain `Ctrl+b` then `b` is herdr's own
+sidebar toggle.
 
 The herdr-plus **worktree layout** (`repo = "*"`) applies to every repo: each
 new worktree opens with Claude Code (`--dangerously-skip-permissions`) on the
@@ -207,7 +212,63 @@ things went wrong.
 
 ---
 
-## 6. Neovim (LazyVim) Quick Reference
+## 6. Browser Panes (herdr-browser)
+
+`herdr-browser` renders a real Chromium view inside a herdr pane, so you can
+watch a dev server or an agent's browser automation without leaving the
+terminal. The setup script installs the plugin, `bun`, Chrome/Chromium, and the
+`[experimental] kitty_graphics = true` flag herdr needs to draw into a pane.
+
+It only works in a terminal with Kitty graphics support: Ghostty, kitty or
+WezTerm. It does not work over plain SSH into a non-graphics terminal, and
+per-frame bandwidth makes remote use impractical.
+
+### Opening a browser
+
+| Action | Keys |
+|--------|------|
+| Browser in a right split | `Ctrl+b` then `Shift+b` |
+| Browser overlay | `Ctrl+b` then `Shift+o` |
+
+Or open one at a specific URL:
+
+```bash
+herdr plugin pane open --plugin official.browser --entrypoint browser \
+  --placement split --direction right \
+  --env HERDR_BROWSER_INITIAL_URL=http://127.0.0.1:3000 --focus
+```
+
+`Ctrl`-click any `localhost`, `127.0.0.1` or `[::1]` URL printed in a terminal
+pane to open it in a browser pane.
+
+### Letting an agent drive it
+
+The plugin ships a CLI (no global binary). Find the checkout, then attach a CDP
+client:
+
+```bash
+herdr plugin list --plugin official.browser --json   # read result.plugins[0].plugin_root
+bun run "<plugin_root>/src/cli.ts" views
+bun run "<plugin_root>/src/cli.ts" connect --view <view_id>
+```
+
+`connect` returns a loopback CDP endpoint. Point Playwright at it with
+`chromium.connectOverCDP(<cdp_http_url>)`, Playwright MCP with
+`--cdp-endpoint=<cdp_http_url>`, or Browser Use with `BU_CDP_URL`. The pane
+stays interactive while a client is attached, so you can take over mid-run.
+Keep the endpoint local — it grants full control of that browser view.
+
+### Tuning
+
+Config lives in `browser.json` under `herdr plugin config-dir official.browser`.
+If a browser pane costs more CPU than you want, drop `captureScale` to `0.75`.
+If Chromium is installed somewhere the plugin cannot find, export
+`HERDR_BROWSER_CHROME=/path/to/chrome` in the environment that starts the herdr
+server and restart herdr.
+
+---
+
+## 7. Neovim (LazyVim) Quick Reference
 
 When you open a file from Yazi, it launches in Neovim with LazyVim.
 
@@ -250,7 +311,7 @@ The which-key popup is your best friend -- press `Space` and pause for 300ms to 
 
 ---
 
-## 7. Putting It All Together
+## 8. Putting It All Together
 
 ```bash
 # Start your workspace

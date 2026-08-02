@@ -53,7 +53,7 @@ Platform-specific additions:
 | Platform | Additional setup |
 |---|---|
 | macOS | Homebrew, Flutter, Xcode tooling and a Podman machine-ready install |
-| Ubuntu | Docker, QEMU/binfmt, Ollama, zsh/Powerlevel10k, tmux, Homebrew, yazi, herdr and its project/review plugins |
+| Ubuntu | Docker, QEMU/binfmt, Ollama, zsh/Powerlevel10k, tmux, Homebrew, yazi, herdr and its project/review/browser plugins |
 
 To install the herdr/yazi workflow separately on either platform, run:
 
@@ -62,9 +62,11 @@ To install the herdr/yazi workflow separately on either platform, run:
 ```
 
 The helper merges herdr keybindings into your existing config and adds the SSH
-auto-launch block once. See
+auto-launch block once. It also installs herdr-browser and its prerequisites
+(bun, Chrome/Chromium) and turns on `[experimental] kitty_graphics`, which
+herdr-browser needs to draw into a pane. See
 [GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md](GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md)
-for the project picker, review mode and worktree layout.
+for the project picker, review mode, browser panes and worktree layout.
 
 ## Other optional scripts
 

@@ -153,7 +153,8 @@ installs. The Ubuntu script includes herdr and its project/review plugins. On
 macOS, install those separately with
 `machine-setup/install_brew_herdr_yazi_lazygit_nvim.sh`.
 
-The herdr setup maps `prefix+p` to the project picker and `cmd+r` to reviewr.
+The herdr setup maps `prefix+p` to the project picker, `cmd+r` to reviewr, and
+`prefix+shift+b` / `prefix+shift+o` to a herdr-browser split / overlay.
 New worktrees open Claude Code beside yazi. The
 [herdr and yazi guide](machine-setup/GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md)
 covers the workflow.

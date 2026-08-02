@@ -49,8 +49,9 @@ Edit the single source, never the rendered output:
 - **Hooks:** `shared/hooks/*` (post-code, post-task, pre-deploy),
   referenced in place, wired by `write_*_hooks` in `lib/common.sh`.
 - **Machine setup:** `machine-setup/` (macOS + Ubuntu 24/26). The herdr script
-  also installs the herdr-plus/herdr-reviewr plugins and their
-  Claude+yazi project/worktree layouts.
+  also installs the herdr-plus/herdr-reviewr/herdr-browser plugins, their
+  Claude+yazi project/worktree layouts, and herdr-browser's prerequisites
+  (bun, Chrome/Chromium, `[experimental] kitty_graphics`).
 - **Specs:** this repo dogfoods OpenSpec and spec anchors. Living specs are in
   `openspec/specs/<capability>/spec.md`, ast-grep anchor rules in
   `specs/anchors/*.yml` and checked by `scripts/spec_drift_gate.sh`. When

@@ -68,6 +68,44 @@ else
     brew install go || echo "  WARNING: go install failed — the herdr-plus build may fail."
 fi
 
+# Bun is the runtime for herdr-browser (plugin itself + its CDP CLI).
+if command -v bun &>/dev/null; then
+    echo "bun already installed."
+else
+    echo "Installing bun (required by herdr-browser)..."
+    brew install oven-sh/bun/bun \
+        || npm install -g bun \
+        || echo "  WARNING: bun install failed — herdr-browser will not run. Install it manually: https://bun.sh"
+fi
+
+# herdr-browser drives a real Chrome/Chromium; it never downloads one itself.
+if command -v chromium &>/dev/null || command -v chromium-browser &>/dev/null \
+    || command -v google-chrome &>/dev/null || command -v google-chrome-stable &>/dev/null \
+    || [[ -x "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" ]] \
+    || [[ -x "/Applications/Chromium.app/Contents/MacOS/Chromium" ]]; then
+    echo "Chrome/Chromium already installed."
+else
+    echo "Installing Chromium (required by herdr-browser)..."
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        brew install --cask chromium \
+            || echo "  WARNING: Chromium install failed — install Chrome or Chromium manually, then set HERDR_BROWSER_CHROME if herdr-browser cannot find it."
+    else
+        sudo apt-get install -y chromium || sudo apt-get install -y chromium-browser \
+            || echo "  WARNING: Chromium install failed — install Chrome or Chromium manually, then set HERDR_BROWSER_CHROME if herdr-browser cannot find it."
+    fi
+fi
+
+# On Ubuntu 24/26 the apt 'chromium' package is a snap shim. Snap confinement
+# blocks writes to hidden directories in $HOME, which is where herdr-browser
+# keeps its per-session Chrome profile.
+if [[ "$OSTYPE" != "darwin"* ]] && command -v snap &>/dev/null \
+    && snap list chromium &>/dev/null; then
+    echo "  NOTE: Chromium is the snap build. If herdr-browser fails to start its"
+    echo "        profile, install the Google Chrome .deb instead, or set"
+    echo "        \"profileRoot\" in browser.json to a non-hidden path such as"
+    echo "        \$HOME/herdr-browser-profiles."
+fi
+
 # Live plugin commands only make sense when herdr itself is present (the brew
 # formula can be missing — see the WARNING above). The configs further down
 # are still written either way and activate once herdr lands on PATH, same
@@ -94,6 +132,17 @@ if command -v herdr &>/dev/null; then
             && echo "  herdr-reviewr installed." \
             || echo "  WARNING: herdr-reviewr not visible in 'herdr plugin list'."
     fi
+
+    # herdr-browser registers itself as official.browser.
+    if herdr_plugin_installed "official.browser"; then
+        echo "  herdr-browser already installed."
+    else
+        herdr plugin install ogulcancelik/herdr-browser --yes \
+            || echo "  WARNING: herdr-browser install failed — retry manually: herdr plugin install ogulcancelik/herdr-browser --yes"
+        herdr_plugin_installed "official.browser" \
+            && echo "  herdr-browser installed." \
+            || echo "  WARNING: herdr-browser not visible in 'herdr plugin list'."
+    fi
 else
     echo "  herdr not on PATH — skipping plugin installs (configs below are still"
     echo "  written and will activate once herdr is installed)."
@@ -107,6 +156,31 @@ touch "$HERDR_CONFIG_DIR/config.toml"
 # Repair a missing trailing newline before appending TOML blocks.
 if [ -s "$HERDR_CONFIG_DIR/config.toml" ] && [ -n "$(tail -c1 "$HERDR_CONFIG_DIR/config.toml")" ]; then
     echo >> "$HERDR_CONFIG_DIR/config.toml"
+fi
+
+# herdr-browser needs herdr's experimental kitty graphics support. Appending a
+# second [experimental] header would be a TOML duplicate-table error, so when
+# the table already exists we insert the key under it instead (awk + mv, since
+# GNU and BSD sed -i differ).
+if grep -qF 'kitty_graphics' "$HERDR_CONFIG_DIR/config.toml"; then
+    echo "  kitty_graphics already set."
+elif grep -q '^\[experimental\][[:space:]]*$' "$HERDR_CONFIG_DIR/config.toml"; then
+    awk '
+        { print }
+        /^\[experimental\][ \t]*$/ && !inserted { print "kitty_graphics = true"; inserted = 1 }
+    ' "$HERDR_CONFIG_DIR/config.toml" > "$HERDR_CONFIG_DIR/config.toml.tmp"
+    mv "$HERDR_CONFIG_DIR/config.toml.tmp" "$HERDR_CONFIG_DIR/config.toml"
+    echo "  Added kitty_graphics = true to the existing [experimental] table."
+elif grep -q '^\[experimental\]' "$HERDR_CONFIG_DIR/config.toml"; then
+    echo "  WARNING: an [experimental] table exists but could not be edited safely."
+    echo "           Add 'kitty_graphics = true' to it by hand or herdr-browser panes stay blank."
+else
+    cat >> "$HERDR_CONFIG_DIR/config.toml" << 'EOF'
+
+[experimental]
+kitty_graphics = true
+EOF
+    echo "  Added [experimental] kitty_graphics = true (required by herdr-browser)."
 fi
 
 if ! grep -qF 'cloudmanic.herdr-plus.projects' "$HERDR_CONFIG_DIR/config.toml"; then
@@ -133,6 +207,37 @@ EOF
     echo "  Added cmd+r -> reviewr toggle keybinding."
 else
     echo "  reviewr keybinding already present."
+fi
+
+# herdr-browser panes. The upstream README suggests prefix+b, but that is
+# herdr's own sidebar toggle, so the split binding moves to prefix+shift+b and
+# the overlay to prefix+shift+o.
+if ! grep -qF 'official.browser --entrypoint browser --placement split' "$HERDR_CONFIG_DIR/config.toml"; then
+    cat >> "$HERDR_CONFIG_DIR/config.toml" << 'EOF'
+
+[[keys.command]]
+key = "prefix+shift+b"
+type = "shell"
+command = '"${HERDR_BIN_PATH}" plugin pane open --plugin official.browser --entrypoint browser --placement split --direction right --focus'
+description = "open browser in right split"
+EOF
+    echo "  Added prefix+shift+b -> herdr-browser right split keybinding."
+else
+    echo "  herdr-browser split keybinding already present."
+fi
+
+if ! grep -qF 'official.browser --entrypoint browser --placement overlay' "$HERDR_CONFIG_DIR/config.toml"; then
+    cat >> "$HERDR_CONFIG_DIR/config.toml" << 'EOF'
+
+[[keys.command]]
+key = "prefix+shift+o"
+type = "shell"
+command = '"${HERDR_BIN_PATH}" plugin pane open --plugin official.browser --entrypoint browser --placement overlay --focus'
+description = "open browser overlay"
+EOF
+    echo "  Added prefix+shift+o -> herdr-browser overlay keybinding."
+else
+    echo "  herdr-browser overlay keybinding already present."
 fi
 
 # herdr-plus layouts (plugin-owned files — full overwrite, same convention as
