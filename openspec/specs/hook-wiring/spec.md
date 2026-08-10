@@ -23,17 +23,28 @@ battery. It SHALL also deny reads of
 - **WHEN** settings.json already has user keys
 - **THEN** only `hooks` and the deny additions change; other keys survive
 
-### Requirement: Codex hooks mirror Claude's, with timeouts
+### Requirement: Codex hooks mirror Claude's, in Codex's own file shape
 `write_codex_hooks <hooks_json>` SHALL write the same Pre/Post/Stop events as
 Claude with timeouts (30/120/300 seconds): the PreToolUse(Bash) pre-deploy
 guard, the PostToolUse post-code check, and a Stop hook running the
 deterministic post-task battery.
+
+Codex parses hooks.json with `deny_unknown_fields` and accepts only
+`description` and `hooks` at the top level, so the event map SHALL be nested
+under `hooks` rather than written flat like Claude's settings. The PostToolUse
+matcher SHALL use `Edit|Write`, which Codex accepts as compatibility aliases
+for its `apply_patch` tool.
 <!-- anchor: hook-wiring.codex -->
 
 #### Scenario: Codex hooks file
 
 - **WHEN** `write_codex_hooks` runs
-- **THEN** hooks.json has PreToolUse/PostToolUse/Stop entries, each hook with a timeout, and Stop runs the post-task battery
+- **THEN** hooks.json has only `description` and `hooks` at the top level, `hooks` holds PreToolUse/PostToolUse/Stop entries, each hook has a timeout, and Stop runs the post-task battery
+
+#### Scenario: Codex loads the file without warnings
+
+- **WHEN** Codex starts with the generated hooks.json
+- **THEN** it does not report `failed to parse hooks config … unknown field`
 
 ### Requirement: The OpenCode plugin is installed with substituted hook paths
 `install_opencode_plugin <plugins_dir>` SHALL render

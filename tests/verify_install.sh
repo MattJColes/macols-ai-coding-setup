@@ -64,8 +64,9 @@ verify_codex() {
     pass "~/.codex/AGENTS.md is System-Level Codex" "grep -q 'System-Level Codex' '$d/AGENTS.md'"
     pass "~/.codex/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
     if has_jq; then
-        pass "hooks.json has PostToolUse hook"     "jq -e '.PostToolUse[0].hooks[0].command' '$d/hooks.json' >/dev/null"
-        pass "hooks.json Stop runs post-task battery" "jq -e '.Stop[0].hooks[0].command | test(\"post_task\")' '$d/hooks.json' >/dev/null"
+        pass "hooks.json top level is Codex's description/hooks" "jq -e '[keys[] | select(. != \"description\" and . != \"hooks\")] | length == 0' '$d/hooks.json' >/dev/null"
+        pass "hooks.json has PostToolUse hook"     "jq -e '.hooks.PostToolUse[0].hooks[0].command' '$d/hooks.json' >/dev/null"
+        pass "hooks.json Stop runs post-task battery" "jq -e '.hooks.Stop[0].hooks[0].command | test(\"post_task\")' '$d/hooks.json' >/dev/null"
     fi
     soft "codex mcp list shows filesystem" "command -v codex >/dev/null && codex mcp list 2>/dev/null | grep -q filesystem"
 }

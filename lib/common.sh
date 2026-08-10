@@ -667,13 +667,21 @@ write_codex_hooks() {
     mkdir -p "$(dirname "$1")"
     HOOKS_JSON="$1" HOOK_SCRIPT="$CODE_HOOK" TASK_HOOK_SCRIPT="$TASK_HOOK" PRE_DEPLOY_HOOK_SCRIPT="$PRE_DEPLOY_HOOK" node -e '
 const fs = require("fs"), env = process.env;
+// Codex deserialises hooks.json into a struct with deny_unknown_fields that
+// accepts only "description" and "hooks". The event map is nested under
+// "hooks" — a Claude-style flat file fails with `unknown field PreToolUse`.
+// Matchers: Codex maps its apply_patch tool onto the Write/Edit aliases, so
+// the Claude-style matcher strings select the same edits.
 const config = {
-    PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT, timeout: 30 }] }],
-    PostToolUse: [{ matcher: "Edit|Write|NotebookEdit", hooks: [{ type: "command", command: env.HOOK_SCRIPT, timeout: 120 }] }],
-    // Stop mirrors Claude: the deterministic post-task battery.
-    Stop: [{ hooks: [
-        { type: "command", command: env.TASK_HOOK_SCRIPT, timeout: 300 }
-    ] }]
+    description: "macols-ai-coding-setup advisory quality and safety hooks",
+    hooks: {
+        PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT, timeout: 30 }] }],
+        PostToolUse: [{ matcher: "Edit|Write", hooks: [{ type: "command", command: env.HOOK_SCRIPT, timeout: 120 }] }],
+        // Stop mirrors Claude: the deterministic post-task battery.
+        Stop: [{ hooks: [
+            { type: "command", command: env.TASK_HOOK_SCRIPT, timeout: 300 }
+        ] }]
+    }
 };
 fs.writeFileSync(env.HOOKS_JSON, JSON.stringify(config, null, 2) + "\n");
 '
