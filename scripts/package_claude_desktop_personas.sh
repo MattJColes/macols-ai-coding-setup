@@ -9,6 +9,7 @@ readonly SCRIPT_DIR
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 readonly REPO_ROOT
 readonly PERSONAS_DIR="$REPO_ROOT/shared/personas"
+readonly RESPONSE_FORMAT_FILE="$REPO_ROOT/shared/steering/response-format.md"
 readonly BUNDLE_PATH="$REPO_ROOT/bundles/macols-personas-claude-plugin.zip"
 readonly PLUGIN_NAME="macols-personas"
 
@@ -29,6 +30,7 @@ die() {
 package_personas() {
     command -v zip >/dev/null || die "zip is required to package Claude personas"
     command -v unzip >/dev/null || die "unzip is required to verify the Claude plugin"
+    [[ -f "$RESPONSE_FORMAT_FILE" ]] || die "missing response format source: $RESPONSE_FORMAT_FILE"
 
     PACKAGE_TEMP_DIR="$(mktemp -d)"
     local plugin_root="$PACKAGE_TEMP_DIR/$PLUGIN_NAME"
@@ -39,6 +41,10 @@ package_personas() {
         [[ -d "$persona_dir" ]] || continue
         [[ -f "$persona_dir/SKILL.md" ]] || die "missing SKILL.md in $persona_dir"
         cp -R "$persona_dir" "$plugin_root/skills/"
+        # Mirror generate_personas: bundled skills carry the shared response
+        # format too, so Claude Desktop matches every other surface.
+        printf '\n' >> "$plugin_root/skills/$(basename "$persona_dir")/SKILL.md"
+        cat "$RESPONSE_FORMAT_FILE" >> "$plugin_root/skills/$(basename "$persona_dir")/SKILL.md"
         ((persona_count += 1))
     done
     ((persona_count > 0)) || die "no personas found in $PERSONAS_DIR"

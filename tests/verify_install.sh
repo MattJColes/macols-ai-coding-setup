@@ -30,12 +30,26 @@ count_gt0() { [ "$(find "$1" -maxdepth "${3:-2}" -name "${2}" 2>/dev/null | wc -
 has_jq() { command -v jq &> /dev/null; }
 has_ponytail_block() { grep -q 'ponytail:ruleset:start' "$1" 2>/dev/null; }
 
+# The shared response-format block lands in the steering doc exactly once...
+rf_once() { [ "$(grep -c '^## Response Format' "$1" 2>/dev/null)" = 1 ]; }
+# ...and in every rendered persona, which carries its own system prompt.
+# rf_every <dir> <find-name-pattern>
+rf_every() {
+    local have total
+    have=$(grep -rl '^## Response Format' "$1" 2>/dev/null | wc -l)
+    total=$(find "$1" -type f -name "$2" 2>/dev/null | wc -l)
+    [ "$total" -gt 0 ] && [ "$have" -eq "$total" ]
+}
+
 verify_claudecode() {
     local d="$HOME/.claude"
     soft "claude --version" "command -v claude >/dev/null && claude --version >/dev/null 2>&1"
     pass "agents in ~/.claude/agents/*.md"        "count_gt0 '$d/agents' '*.md' 1"
     pass "skills in ~/.claude/skills/*/SKILL.md"  "count_gt0 '$d/skills' 'SKILL.md' 3"
     pass "~/.claude/CLAUDE.md is System-Level Claude" "grep -q 'System-Level Claude' '$d/CLAUDE.md'"
+    pass "~/.claude/CLAUDE.md has response format (once)" "rf_once '$d/CLAUDE.md'"
+    pass "every ~/.claude agent has response format" "rf_every '$d/agents' '*.md'"
+    pass "every ~/.claude skill has response format"  "rf_every '$d/skills' 'SKILL.md'"
     pass "~/.claude/bin/claude-launch is executable" "[ -x '$d/bin/claude-launch' ]"
     if has_jq; then
         pass "settings.json has PostToolUse hook"  "jq -e '.hooks.PostToolUse[0].hooks[0].command' '$d/settings.json' >/dev/null"
@@ -63,6 +77,10 @@ verify_codex() {
     pass "agent toml has developer_instructions"  "grep -q 'developer_instructions' '$d/agents/quality-review-code.toml'"
     pass "~/.codex/AGENTS.md is System-Level Codex" "grep -q 'System-Level Codex' '$d/AGENTS.md'"
     pass "~/.codex/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
+    pass "~/.codex/AGENTS.md has response format (once)" "rf_once '$d/AGENTS.md'"
+    pass "every ~/.codex agent has response format"   "rf_every '$d/agents' '*.toml'"
+    pass "every ~/.codex prompt has response format"  "rf_every '$d/prompts' '*.md'"
+    pass "every ~/.codex skill has response format"   "rf_every '$d/skills' 'SKILL.md'"
     if has_jq; then
         pass "hooks.json top level is Codex's description/hooks" "jq -e '[keys[] | select(. != \"description\" and . != \"hooks\")] | length == 0' '$d/hooks.json' >/dev/null"
         pass "hooks.json has PostToolUse hook"     "jq -e '.hooks.PostToolUse[0].hooks[0].command' '$d/hooks.json' >/dev/null"
@@ -78,6 +96,9 @@ verify_opencode() {
     pass "skills in ~/.config/opencode/skills/*/SKILL.md" "count_gt0 '$d/skills' 'SKILL.md' 3"
     pass "~/.config/opencode/AGENTS.md is System-Level OpenCode" "grep -q 'System-Level OpenCode' '$d/AGENTS.md'"
     pass "~/.config/opencode/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
+    pass "~/.config/opencode/AGENTS.md has response format (once)" "rf_once '$d/AGENTS.md'"
+    pass "every ~/.config/opencode agent has response format" "rf_every '$d/agents' '*.md'"
+    pass "every ~/.config/opencode skill has response format" "rf_every '$d/skills' 'SKILL.md'"
     pass "plugins/post_code_hook_plugin.mjs exists" "[ -f '$d/plugins/post_code_hook_plugin.mjs' ]"
     pass "plugin placeholders substituted" "! grep -q '__.*_PATH__' '$d/plugins/post_code_hook_plugin.mjs'"
     pass "plugin wires pre-deploy check" "grep -q 'pre_deploy_check.sh' '$d/plugins/post_code_hook_plugin.mjs'"
@@ -93,6 +114,8 @@ verify_pi() {
     pass "skills in ~/.omp/agent/skills/*/SKILL.md" "count_gt0 '$d/skills' 'SKILL.md' 3"
     pass "~/.omp/agent/AGENTS.md is System-Level Pi" "grep -q 'System-Level Pi' '$d/AGENTS.md'"
     pass "~/.omp/agent/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
+    pass "~/.omp/agent/AGENTS.md has response format (once)" "rf_once '$d/AGENTS.md'"
+    pass "every ~/.omp/agent skill has response format" "rf_every '$d/skills' 'SKILL.md'"
     pass "extensions/pi-checks.ts exists" "[ -f '$d/extensions/pi-checks.ts' ]"
     pass "extension hooks dir substituted" "! grep -q '__PI_HOOKS_DIR__' '$d/extensions/pi-checks.ts'"
     pass "extension wires pre-deploy check" "grep -q 'pre_deploy_check.sh' '$d/extensions/pi-checks.ts'"

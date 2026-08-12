@@ -43,6 +43,21 @@ parent session's model.
 - **WHEN** agent mode renders a persona without `agent: true` (e.g. commit, ponytail)
 - **THEN** it is skipped and does not count toward `PERSONA_COUNT`
 
+### Requirement: Every rendered persona carries the shared response-format block
+
+`generate_personas` SHALL fail when `shared/steering/response-format.md` is
+missing and SHALL append its contents to each persona body in all three modes
+(`prompt`, `skill`, `agent`), because an agent or skill carries its own system
+prompt and would otherwise miss the response rules the assembled steering
+applies to the main loop. The block is appended at render time — persona
+sources under `shared/personas/` SHALL NOT carry their own copy — and rendered
+output is rewritten on every run, so no marker delimiters are needed.
+
+#### Scenario: Response format survives Codex TOML quoting
+
+- **WHEN** agent mode renders a Codex persona whose body gains the appended block
+- **THEN** the `developer_instructions` literal block still closes correctly and contains `## Response Format`
+
 ### Requirement: Listing mirrors persona frontmatter
 `list_personas <tool>` SHALL print each persona with its tool-native
 invocation (`/<name>` for Codex, `/skill:<name>` for Pi) and description, and

@@ -43,6 +43,13 @@ Edit the single source, never the rendered output:
 - **Steering:** `shared/steering/base.md`, tokenised per tool via
   `shared/steering/tools/<tool>.json`. The `{{EXTRA_SECTION}}` token sits
   glued to the last line of the final section. Keep it there when editing.
+- **Response format:** `shared/steering/response-format.md` is a second
+  injected source, not a per-tool var. It fills `{{RESPONSE_FORMAT}}` in
+  `base.md`, is appended to every rendered persona by `generate_personas`, and
+  is appended to every packaged `SKILL.md` by the Claude Desktop bundle script.
+  Edit it once; changing it means regenerating the bundle. It governs chat
+  replies only — never widen it to authored content, or it breaks the
+  `writing-draft-*` personas and the review checklists.
 - **MCP servers:** `shared/mcp-config.json` (filesystem, puppeteer,
   playwright, context7, dart, aws-mcp, aws-iac). Registered for Claude Code,
   Codex and OpenCode. Oh My Pi has no MCP support.
