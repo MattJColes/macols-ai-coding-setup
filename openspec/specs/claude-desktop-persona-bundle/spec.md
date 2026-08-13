@@ -13,6 +13,17 @@ the bundle as `macols-personas`.
 - **WHEN** a maintainer runs the persona packaging script
 - **THEN** the checked-in bundle is replaced with a Claude plugin ZIP containing every current persona
 
+### Requirement: Bundled skills carry the shared response-format block
+The packaging script SHALL fail when `shared/steering/response-format.md` is
+missing and SHALL append its contents to every packaged `SKILL.md`, mirroring
+`generate_personas`, so Claude Desktop matches the CLI surfaces. The appended
+block feeds the bundle revision cksum, so a change to it requires regenerating
+the checked-in archive.
+
+#### Scenario: Response format reaches Claude Desktop
+- **WHEN** the bundle is unpacked and any skill is read
+- **THEN** its `SKILL.md` ends with the shared `## Response Format` block
+
 ### Requirement: Stale persona bundles are detected
 The packaging script SHALL provide a check mode that fails when the checked-in
 archive differs from a freshly generated archive.

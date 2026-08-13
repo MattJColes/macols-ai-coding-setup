@@ -222,6 +222,29 @@ rules. Each tool loads it differently:
 Ponytail's hooks need `node` on the non-interactive PATH. The installers link
 `node`/`npm`/`npx` into `~/.local/bin`.
 
+### Response format
+
+`shared/steering/response-format.md` holds one block of output rules — lead
+with the action, number multi-step work, restate progress, suppress tangents,
+real time estimates, cap lists, no preamble or closers, end on one concrete
+next step. Adapted from [i-have-adhd](https://github.com/ayghri/i-have-adhd)
+(MIT), which ships the same idea as an opt-in skill.
+
+Here it is always on, and it reaches every surface from that one file:
+
+- **Steering:** substituted into `base.md` via `{{RESPONSE_FORMAT}}`, so all
+  four tools' steering documents carry it.
+- **Personas:** appended to every rendered agent, skill and Codex prompt by
+  `generate_personas` — a subagent has its own system prompt and would
+  otherwise miss the rules.
+- **Claude Desktop:** appended to every `SKILL.md` in the packaged bundle.
+
+The block scopes itself to chat replies. Content the agent authors — documents,
+blog posts, specs, PR and commit bodies, code and comments — keeps its own
+conventions, so the writing personas and the review checklists are unaffected.
+Say "stop adhd mode" or "long form" to suspend it for a session. Edit the one
+file and rerun the installers to change the rules.
+
 ### OpenSpec
 
 The installers add the [OpenSpec](https://github.com/Fission-AI/openspec) CLI

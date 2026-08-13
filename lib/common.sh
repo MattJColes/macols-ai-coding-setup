@@ -24,6 +24,9 @@ REPO_ROOT="$(cd "$LIB_DIR/.." && pwd)"
 SHARED_DIR="$REPO_ROOT/shared"
 PERSONAS_DIR="$SHARED_DIR/personas"
 STEERING_DIR="$SHARED_DIR/steering"
+# Shared response-format block: substituted into every tool's steering and
+# appended to every rendered persona, so subagents get the same rules.
+RESPONSE_FORMAT_FILE="$STEERING_DIR/response-format.md"
 HOOKS_DIR="$SHARED_DIR/hooks"
 MCP_CONFIG_FILE="$SHARED_DIR/mcp-config.json"
 
@@ -291,6 +294,9 @@ read -r -d '' PERSONA_GEN_JS <<'PERSONA_EOF' || true
 const fs = require("fs"), path = require("path");
 const mode = process.env.MODE, tool = process.env.TOOL;
 const pdir = process.env.PERSONAS_DIR, tdir = process.env.TARGET_DIR;
+// Appended to every persona body so agents and skills carry the same response
+// rules as the assembled steering. Source: shared/steering/response-format.md.
+const RESPONSE_FORMAT = fs.readFileSync(process.env.RESPONSE_FORMAT_FILE, "utf8").trim();
 const DEFAULT_TOOLS = ["Read", "Write", "Edit", "Bash", "Grep", "Glob"];
 const OC_MODEL = { opus: "anthropic/claude-opus-4-8", sonnet: "anthropic/claude-sonnet-4-6" };
 const OC_AGENT_TOOLS = ["read", "write", "edit", "bash", "grep", "glob"];
@@ -329,7 +335,9 @@ fs.mkdirSync(tdir, { recursive: true });
 for (const name of fs.readdirSync(pdir).sort()) {
   const src = path.join(pdir, name, "SKILL.md");
   if (!fs.existsSync(src)) continue;
-  const { data, body } = parse(fs.readFileSync(src, "utf8"));
+  const parsed = parse(fs.readFileSync(src, "utf8"));
+  const data = parsed.data;
+  const body = parsed.body.trimEnd() + "\n\n" + RESPONSE_FORMAT + "\n";
   const pname = data.name || name;
   let label = name;
 
@@ -412,7 +420,11 @@ PERSONA_EOF
 generate_personas() {
     require_node || return 1
     local out
-    out=$(TOOL="$1" MODE="$2" PERSONAS_DIR="$PERSONAS_DIR" TARGET_DIR="$3" node -e "$PERSONA_GEN_JS")
+    [ -f "$RESPONSE_FORMAT_FILE" ] || {
+        printf "${RED}Response-format source missing (%s)${NC}\n" "$RESPONSE_FORMAT_FILE"; return 1
+    }
+    out=$(TOOL="$1" MODE="$2" PERSONAS_DIR="$PERSONAS_DIR" TARGET_DIR="$3" \
+        RESPONSE_FORMAT_FILE="$RESPONSE_FORMAT_FILE" node -e "$PERSONA_GEN_JS")
     # PERSONA_COUNT is read by the installers that source this file.
     # shellcheck disable=SC2034
     PERSONA_COUNT=$(printf "%s" "$out" | sed -n 's/^__COUNT__//p')
@@ -450,11 +462,17 @@ assemble_steering() {
     if [ ! -f "$STEERING_DIR/base.md" ] || [ ! -f "$vars" ]; then
         printf "${RED}Steering source missing (base.md or %s)${NC}\n" "$vars"; return 1
     fi
+    if [ ! -f "$RESPONSE_FORMAT_FILE" ]; then
+        printf "${RED}Steering source missing (%s)${NC}\n" "$RESPONSE_FORMAT_FILE"; return 1
+    fi
     mkdir -p "$(dirname "$dest")"
-    BASE="$STEERING_DIR/base.md" VARS="$vars" DEST="$dest" node -e '
+    # RESPONSE_FORMAT is not a per-tool var — it comes from its own shared file so
+    # the same block can also be appended to every rendered persona.
+    BASE="$STEERING_DIR/base.md" VARS="$vars" DEST="$dest" RF="$RESPONSE_FORMAT_FILE" node -e '
 const fs = require("fs");
 let out = fs.readFileSync(process.env.BASE, "utf8");
 const vars = JSON.parse(fs.readFileSync(process.env.VARS, "utf8"));
+vars.RESPONSE_FORMAT = fs.readFileSync(process.env.RF, "utf8").trim();
 for (const [k, v] of Object.entries(vars)) {
     const val = Array.isArray(v) ? v.join("\n") : String(v);
     out = out.split("{{" + k + "}}").join(val);
