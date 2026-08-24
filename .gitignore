@@ -163,6 +163,9 @@ nvim.backup.*
 .claude/memory/
 .cache/
 
+# ZCode workspace artifacts (session plans written by the ZCode app itself)
+.zcode/
+
 # Empty package-manager scaffolding (this is a shell-script repo; no JS project here)
 package.json
 package-lock.json

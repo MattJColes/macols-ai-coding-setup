@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 #
-# Self-contained installer for the Oh My Pi coding agent (@oh-my-pi/pi-coding-agent).
+# Self-contained installer for the Pi coding agents: the plain `pi` CLI
+# (@earendil-works/pi-coding-agent) and Oh My Pi `omp`
+# (@oh-my-pi/pi-coding-agent). The tool keyword and this file's name stay
+# `pi` so existing invocations keep working.
 #
-# Oh My Pi (`omp`) replaces the plain Pi agent — the tool keyword and this
-# file's name stay `pi` so existing invocations keep working. Ensures the
-# `omp` CLI, then installs Agent Skills, the system AGENTS.md, MCP servers,
-# the pi-checks extension and omp's pluggable packages — all from the single
-# sources of truth under shared/.
-#
-# omp differs from the other CLIs: skills are invoked as /skill:<name>, hooks
-# are TypeScript extensions (not a settings hook array), and MCP servers are
-# configured in ~/.omp/agent/mcp.json rather than registered via a CLI.
+# The two agents share no config directories — `pi` reads ~/.pi/agent and
+# `omp` reads ~/.omp/agent — so every shared resource is provisioned twice:
+# Agent Skills, the system AGENTS.md and the pi-checks extension land in both
+# agent dirs. MCP servers are omp-only (plain pi has no MCP support) and are
+# written to ~/.omp/agent/mcp.json. Packages are installed per agent through
+# each binary's own installer.
 #
 set -euo pipefail
 
@@ -18,49 +18,52 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=lib/common.sh
 source "$SCRIPT_DIR/lib/common.sh"
 
-# omp keeps pi's PI_CODING_AGENT_DIR override but defaults to ~/.omp/agent.
-PI_DIR="${PI_CODING_AGENT_DIR:-$HOME/.omp/agent}"
-SKILLS_DIR="$PI_DIR/skills"
-EXTENSIONS_DIR="$PI_DIR/extensions"
-AGENTS_FILE="$PI_DIR/AGENTS.md"
+# PI_CODING_AGENT_DIR still overrides the omp agent dir for back-compat. Note
+# that an exported PI_CODING_AGENT_DIR also redirects the `pi` binary itself
+# at runtime; this script applies it to the omp side only.
+PI_AGENT_DIR="$HOME/.pi/agent"
+OMP_DIR="${PI_CODING_AGENT_DIR:-$HOME/.omp/agent}"
 
-# omp packages, installed via `omp install <source>` (now an alias of
-# `omp plugin install`). Bare names resolve as npm packages; git-hosted
+# Packages per agent. omp installs with `omp install <source>` (an alias of
+# `omp plugin install`): bare names resolve as npm packages and git-hosted
 # packages use the `github:user/repo` form (the old pi-style
-# `git:github.com/...` prefix is no longer accepted).
+# `git:github.com/...` prefix is no longer accepted). pi installs with
+# `pi install <source>` using explicit `npm:`/`git:github.com/user/repo`
+# sources.
 #
-# The other legacy pi packages (context-mode, pi-subagents, pi-ask-user,
-# pi-markdown-preview, pi-btw) fail omp's extension validation — omp ships
-# those capabilities natively (bundled task agents, ask-user, markdown
-# rendering, context management) — so they are deliberately not installed.
+# pi-subagents is installed for plain pi because the steering delegates
+# parallel/chained work to it — omp bundles that capability natively. The
+# other legacy pi packages (context-mode, pi-ask-user, pi-markdown-preview,
+# pi-btw) are skipped: omp ships those capabilities natively and plain pi
+# does not need them to follow this repo's steering.
 #
 # pi-agent-web-access is also deliberately skipped: it deep-imports linkedom's
 # internal canvas.cjs, which assigns module.exports inside a try/catch. omp's
 # Bun loader detects default exports via static analysis (cjs-module-lexer),
 # which ignores try blocks, so it reports "Missing 'default' export" and the
 # install rolls back — it never installs. Re-add if fixed upstream.
-#   • ponytail             — lazy/YAGNI mode extension (github.com/DietrichGebert/ponytail;
-#                            also published as @dietrichgebert/ponytail on npm if git fetch is blocked)
+#   • ponytail — lazy/YAGNI mode extension (github.com/DietrichGebert/ponytail)
+PI_PACKAGES="npm:pi-subagents git:github.com/$PONYTAIL_REPO"
 OMP_PACKAGES="github:$PONYTAIL_REPO"
 
 usage() {
     cat << EOF
 Usage: $0 [OPTIONS]
 
-Installs (and, unless told otherwise, the omp CLI itself) Agent Skills, the
-system AGENTS.md, MCP servers, the pi-checks extension and omp packages from
-shared/.
+Installs (and, unless told otherwise, both agent binaries) Agent Skills, the
+system AGENTS.md, MCP servers (omp only), the pi-checks extension and each
+agent's packages from shared/.
 
 Options:
     -h, --help        Show this help message
-    --skills-only     Install only Agent Skills (/skill:<name>)
-    --context-only    Install only the system AGENTS.md
-    --hooks-only      Install only the pi-checks extension
-    --packages-only   Install only the omp packages
-    --mcps-only       Install only MCP servers (~/.omp/agent/mcp.json)
-    --no-pi           Skip installing/upgrading the omp binary
-    --no-packages     Skip installing omp packages
-    -p, --project     Install skills to ./.omp/skills and AGENTS.md to ./AGENTS.md (implies --no-pi)
+    --skills-only     Install only Agent Skills (/skill:<name>, both agents)
+    --context-only    Install only the system AGENTS.md (both agents)
+    --hooks-only      Install only the pi-checks extension (both agents)
+    --packages-only   Install only the agent packages
+    --mcps-only       Install only omp MCP servers (~/.omp/agent/mcp.json)
+    --no-pi           Skip installing/upgrading the pi and omp binaries
+    --no-packages     Skip installing agent packages
+    -p, --project     Install skills to ./.pi/skills and ./.omp/skills and AGENTS.md to ./AGENTS.md (implies --no-pi)
     --list            List available personas and exit
 EOF
 }
@@ -76,13 +79,25 @@ install_skills() {
 }
 
 install_packages() {
-    command -v omp &> /dev/null || { printf "${RED}omp not found — install omp first (drop --no-pi)${NC}\n"; return 1; }
-    printf "${BLUE}Installing omp packages...${NC}\n"
     local pkg
-    for pkg in $OMP_PACKAGES; do
-        printf "${BLUE}  → omp install %s${NC}\n" "$pkg"
-        if omp install "$pkg"; then printf "${GREEN}  ✓ %s${NC}\n" "$pkg"; else printf "${YELLOW}  ⚠ Failed to install %s (continuing)${NC}\n" "$pkg"; fi
-    done
+    if command -v pi &> /dev/null; then
+        printf "${BLUE}Installing pi packages...${NC}\n"
+        for pkg in $PI_PACKAGES; do
+            printf "${BLUE}  → pi install %s${NC}\n" "$pkg"
+            if pi install "$pkg"; then printf "${GREEN}  ✓ %s${NC}\n" "$pkg"; else printf "${YELLOW}  ⚠ Failed to install %s (continuing)${NC}\n" "$pkg"; fi
+        done
+    else
+        printf "${YELLOW}⚠ pi not found — skipping pi packages (drop --no-pi)${NC}\n"
+    fi
+    if command -v omp &> /dev/null; then
+        printf "${BLUE}Installing omp packages...${NC}\n"
+        for pkg in $OMP_PACKAGES; do
+            printf "${BLUE}  → omp install %s${NC}\n" "$pkg"
+            if omp install "$pkg"; then printf "${GREEN}  ✓ %s${NC}\n" "$pkg"; else printf "${YELLOW}  ⚠ Failed to install %s (continuing)${NC}\n" "$pkg"; fi
+        done
+    else
+        printf "${YELLOW}⚠ omp not found — skipping omp packages (drop --no-pi)${NC}\n"
+    fi
 }
 
 DO_SKILLS=true; DO_CONTEXT=true; DO_HOOKS=true; DO_PI=true; DO_PACKAGES=true; DO_MCPS=true
@@ -106,10 +121,10 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-banner "Oh My Pi Coding Agent Installer"
+banner "Pi Coding Agents Installer (pi + omp)"
 
 if [ "$DO_PI" = true ] && [ "$PROJECT_INSTALL" = false ]; then
-    ensure_cli pi
+    ensure_cli pi   # installs both the `pi` and `omp` binaries
     ensure_openspec || printf "${YELLOW}⚠ openspec install skipped/failed${NC}\n"
     ensure_ast_grep || printf "${YELLOW}⚠ ast-grep install skipped/failed${NC}\n"
     ensure_yq || printf "${YELLOW}⚠ yq install skipped/failed${NC}\n"
@@ -118,28 +133,35 @@ if [ "$DO_PI" = true ] && [ "$PROJECT_INSTALL" = false ]; then
 fi
 if [ "$DO_PACKAGES" = true ] && [ "$PROJECT_INSTALL" = false ]; then install_packages; echo ""; fi
 if [ "$DO_SKILLS" = true ]; then
-    if [ "$PROJECT_INSTALL" = true ]; then install_skills "./.omp/skills"; else install_skills "$SKILLS_DIR"; fi; echo ""
+    if [ "$PROJECT_INSTALL" = true ]; then
+        install_skills "./.pi/skills"; install_skills "./.omp/skills"
+    else
+        install_skills "$PI_AGENT_DIR/skills"; install_skills "$OMP_DIR/skills"
+    fi; echo ""
 fi
 if [ "$DO_CONTEXT" = true ]; then
     if [ "$PROJECT_INSTALL" = true ]; then
         assemble_steering pi "./AGENTS.md"; append_ponytail_ruleset "./AGENTS.md"
     else
-        assemble_steering pi "$AGENTS_FILE"; append_ponytail_ruleset "$AGENTS_FILE"
+        assemble_steering pi "$PI_AGENT_DIR/AGENTS.md"; append_ponytail_ruleset "$PI_AGENT_DIR/AGENTS.md"
+        assemble_steering pi "$OMP_DIR/AGENTS.md"; append_ponytail_ruleset "$OMP_DIR/AGENTS.md"
     fi; echo ""
 fi
 if [ "$DO_MCPS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
-    register_mcps_pi "$PI_DIR" || printf "${YELLOW}⚠ MCP registration skipped/failed${NC}\n"; echo ""
+    # Plain pi has no MCP support — omp only.
+    register_mcps_pi "$OMP_DIR" || printf "${YELLOW}⚠ MCP registration skipped/failed${NC}\n"; echo ""
 fi
 if [ "$DO_HOOKS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
-    install_pi_extension "$EXTENSIONS_DIR"
+    install_pi_extension "$PI_AGENT_DIR/extensions"
+    install_pi_extension "$OMP_DIR/extensions"
     echo ""
 fi
 
 done_banner
 echo "Next steps:"
-echo "  • Run 'omp' to start the agent (or '/reload' inside omp to pick up the extension)"
+echo "  • Run 'pi' or 'omp' to start either agent (or '/reload' inside either to pick up the extension)"
 echo "  • Skills are available as /skill:<name> (e.g. /skill:development-build-python-backends)"
 echo "  • The pi-checks extension runs tests/lint/security advisories after edits and turns,"
 echo "    and a cdk deploy/destroy confirmation guard"
-echo "  • MCP servers are configured in $PI_DIR/mcp.json (aws-* MCPs need ~/.aws/credentials)"
+echo "  • MCP servers are configured in $OMP_DIR/mcp.json (omp only; aws-* MCPs need ~/.aws/credentials)"
 echo ""

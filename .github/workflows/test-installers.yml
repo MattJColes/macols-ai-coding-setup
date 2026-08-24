@@ -51,7 +51,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tool: [claudecode, codex, opencode, pi]
+        tool: [claudecode, codex, opencode, pi, zcode]
     steps:
       - uses: actions/checkout@v7
 
@@ -69,7 +69,10 @@ jobs:
       - name: Run install_${{ matrix.tool }}.sh
         run: |
           chmod +x install_${{ matrix.tool }}.sh lib/common.sh tests/verify_install.sh
-          ./install_${{ matrix.tool }}.sh
+          # ZCode is a macOS desktop app — on Linux CI only render its configs.
+          args=""
+          [ "${{ matrix.tool }}" = "zcode" ] && args="--no-cli"
+          ./install_${{ matrix.tool }}.sh $args
 
       - name: Verify ${{ matrix.tool }} configuration
         run: ./tests/verify_install.sh ${{ matrix.tool }}

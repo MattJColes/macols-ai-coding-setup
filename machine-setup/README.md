@@ -1,8 +1,8 @@
 # Optional development environment
 
 These are the scripts I use to set up my macOS and Ubuntu development machines.
-They install the language runtimes, container tools, editor and four coding
-agents used by this repo.
+They install the language runtimes, container tools, editor and coding agents
+used by this repo.
 
 If you only want the agent config, use the per-tool installers in the
 [top-level README](../README.md). The scripts here install system packages and
@@ -45,8 +45,10 @@ Both platform installers provide:
 - Node.js through NVM, TypeScript and AWS CDK
 - AWS CLI, GitHub CLI, Podman and common command-line tools
 - Neovim/LazyVim, ripgrep, fd and lazygit
-- Claude Code, Codex, OpenCode and Oh My Pi, including this repository's
-  generated personas, instructions, MCP registration and hooks
+- Claude Code, Codex, OpenCode, both Pi agents (plain `pi` and Oh My Pi) and
+  ZCode's configuration (the ZCode app itself is a separate desktop install),
+  including this repository's generated personas, instructions, MCP
+  registration and hooks
 
 Platform-specific additions:
 
@@ -99,6 +101,7 @@ nvim --version
 claude --version
 codex --version
 opencode --version
+pi --version
 omp --version
 ```
 
@@ -125,7 +128,9 @@ The installers write to these user locations:
 ~/.claude/                     Claude Code
 ~/.codex/                      Codex
 ~/.config/opencode/            OpenCode
-~/.omp/                        Oh My Pi
+~/.pi/                         Pi agent (plain pi)
+~/.omp/                        Oh My Pi (omp)
+~/.zcode/                      ZCode
 ~/.local/bin/                  user-level executables
 ```
 

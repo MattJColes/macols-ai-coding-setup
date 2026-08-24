@@ -1,0 +1,16 @@
+{
+  "TOOL_TITLE": "ZCode",
+  "ASSISTANT_NOUN": "ZCode assistant",
+  "PLAN_MODE_CLAUSE": " Do not enter plan mode unless explicitly asked to plan.",
+  "TRACK_CHUNK": "Track each chunk with the todo list (TodoWrite).",
+  "MATCH_SPECIALIST": "Pull in the `/command` or Skill that fits each chunk.",
+  "COLLAB_SECTION": [
+    "## Skills & Slash Commands",
+    "",
+    "- Specialist personas are installed as Agent Skills (`~/.zcode/skills/`, loaded automatically when their description matches the work) and as slash commands in `~/.zcode/commands/` (e.g. `/development-build-python-backends`, `/quality-review-code`, `/workflow-commit-and-push`).",
+    "- Reach for the one that matches the work: `/development-build-python-backends` for Python services, `/development-build-react-frontends` for React/TypeScript UI, `/infrastructure-provision-cdk-python` or `/infrastructure-provision-cdk-typescript` for infrastructure, `/quality-test-python` or `/quality-test-typescript` for tests, `/quality-review-code` before finishing, etc.",
+    "- Give each invocation a clear, self-contained instruction with the context it needs — file paths, requirements, constraints, and expected output.",
+    "- When work splits into independent pieces, sequence them through the todo list and pull in the matching command or skill for each chunk. Do not over-decompose tightly-coupled work — sequential execution is fine."
+  ],
+  "EXTRA_SECTION": ""
+}

@@ -6,7 +6,7 @@
 (rendered files, persisted config) fail the run; soft checks
 (network/auth-dependent introspection like CLI versions or `mcp list`) only
 warn. CI runs shellcheck plus an Ubuntu install-and-verify matrix across all
-four tools.
+five tools.
 
 ## Requirements
 
@@ -26,7 +26,9 @@ fail (CLI versions, openspec/ast-grep/yq presence, MCP listing).
 
 The `test-installers` workflow SHALL shellcheck every shell script and run
 each installer followed by its verifier in a matrix across
-claudecode/codex/opencode/pi on Ubuntu.
+claudecode/codex/opencode/pi/zcode on Ubuntu. ZCode is a macOS desktop app,
+so its installer SHALL run there with `--no-cli` (config rendering only) and
+its verifier SHALL check the app's presence only as a soft check.
 
 #### Scenario: Installer regression
 

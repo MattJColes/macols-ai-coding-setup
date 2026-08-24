@@ -55,3 +55,16 @@ MCP config from `mcp.json`, not from `config.yml`.
 
 - **WHEN** the file already contains other keys (e.g. `disabledServers`)
 - **THEN** only the `mcpServers` key is replaced; other keys survive
+
+### Requirement: ZCode servers are merged into config.json under mcp.servers
+`register_mcps_zcode` SHALL write the servers under the `mcp.servers` key of
+`~/.zcode/cli/config.json` with `$HOME` expanded, using ZCode's strict
+per-server schema (`type: "stdio"`, `command`, `args`, `env`, `enabled` — an
+unknown key silently drops the whole server), preserving all other keys in an
+existing config such as `hooks` and `plugins`.
+<!-- anchor: mcp-registration.zcode -->
+
+#### Scenario: Existing config.json with hooks and plugins
+
+- **WHEN** the file already contains `hooks` and `plugins` keys
+- **THEN** only `mcp.servers` gains entries; the other keys survive

@@ -3,14 +3,15 @@
 # Top-level orchestrator for macols-ai-coding-setup.
 #
 # Installs the agentic CLIs and their configuration. By default it configures
-# all four tools (Claude Code, Codex, OpenCode, Oh My Pi — tool keyword `pi`);
-# pass tool names to scope it. Each per-tool installer is self-contained (it
-# ensures Homebrew + the CLI binary, then installs configs from the single
-# sources of truth under shared/).
+# all five tools (Claude Code, Codex, OpenCode, Oh My Pi — tool keyword `pi`,
+# which also installs the plain `pi` agent — and ZCode); pass tool names to
+# scope it. Each per-tool installer is self-contained (it ensures Homebrew +
+# the CLI binary, then installs configs from the single sources of truth
+# under shared/).
 #
 # Examples:
-#   ./install.sh                 # all four tools
-#   ./install.sh claudecode pi   # just Claude Code and Pi
+#   ./install.sh                 # all five tools
+#   ./install.sh claudecode pi   # just Claude Code and the Pi agents
 #   ./install.sh --env           # run the machine setup first
 #
 set -euo pipefail
@@ -23,8 +24,9 @@ usage() {
     cat << 'EOF'
 Usage: ./install.sh [--env] [TOOL ...]
 
-TOOL is one or more of: claudecode codex opencode pi  (default: all four).
-(`pi` installs Oh My Pi — the `omp` binary.)
+TOOL is one or more of: claudecode codex opencode pi zcode  (default: all five).
+(`pi` installs both Pi agents — plain `pi` and Oh My Pi (`omp`). `zcode`
+installs ZCode's configs; the app itself is a desktop install.)
 
 Options:
     -h, --help    Show this help message
@@ -32,10 +34,10 @@ Options:
                   (Homebrew/apt, Python, Node, Podman, etc.) for this OS
 
 Examples:
-    ./install.sh                     Install and configure all four tools
+    ./install.sh                     Install and configure all five tools
     ./install.sh codex               Install and configure only Codex
-    ./install.sh claudecode pi       Install Claude Code and Oh My Pi
-    ./install.sh --env               Set up the workstation and all four tools
+    ./install.sh claudecode pi       Install Claude Code and the Pi agents
+    ./install.sh --env               Set up the workstation and all five tools
 
 To install selected components instead of a tool's full setup, call its
 installer directly. For example:
@@ -52,12 +54,12 @@ while [ $# -gt 0 ]; do
     case "$1" in
         -h|--help) usage; exit 0 ;;
         --env) RUN_ENV=true ;;
-        claudecode|codex|opencode|pi) TOOLS+=("$1") ;;
+        claudecode|codex|opencode|pi|zcode) TOOLS+=("$1") ;;
         *) printf "${RED}Unknown argument: %s${NC}\n" "$1"; usage; exit 1 ;;
     esac
     shift
 done
-[ ${#TOOLS[@]} -eq 0 ] && TOOLS=(claudecode codex opencode pi)
+[ ${#TOOLS[@]} -eq 0 ] && TOOLS=(claudecode codex opencode pi zcode)
 
 banner "macols-ai-coding-setup Installer"
 

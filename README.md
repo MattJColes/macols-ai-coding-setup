@@ -1,8 +1,9 @@
 # macols-ai-coding-setup
 
-I keep my **Claude Code**, **Codex**, **OpenCode** and **Oh My Pi** setup in this
-repo. The files under `shared/` define the personas, instructions, MCP servers
-and checks. Each installer turns them into the format its tool expects.
+I keep my **Claude Code**, **Codex**, **OpenCode**, **Pi** (plain `pi` +
+**Oh My Pi**) and **ZCode** setup in this repo. The files under `shared/`
+define the personas, instructions, MCP servers and checks. Each installer
+turns them into the format its tool expects.
 
 There is also an optional setup for my macOS and Ubuntu development machines.
 It installs the language runtimes, containers and terminal tools I use.
@@ -22,12 +23,14 @@ cd macols-ai-coding-setup
 
 ./install.sh codex             # one tool
 ./install.sh claudecode pi     # several tools
-./install.sh                   # all four tools
+./install.sh                   # all five tools
 ```
 
 By default, the scripts install missing CLIs and update configuration in your
 home directory. If you already have the CLI, call its installer with
-`--no-cli`. Oh My Pi uses `--no-pi` for the same job.
+`--no-cli`. The Pi installer uses `--no-pi` (it covers both the `pi` and
+`omp` binaries). ZCode is a desktop app — its installer writes configs and
+warns when the app itself is missing.
 
 The tool installers run on macOS and Linux. The optional development-machine
 setup targets macOS and Ubuntu 24.04/26.04.
@@ -84,7 +87,8 @@ packages alone, then writes the project files supported by that tool:
 | Claude Code | `.claude/agents/`, `.claude/skills/` |
 | Codex | `.codex/skills/`, `.codex/agents/`, `AGENTS.md` |
 | OpenCode | `.opencode/agents/`, `.opencode/skills/` |
-| Oh My Pi | `.omp/skills/`, `AGENTS.md` |
+| Pi (`pi` + `omp`) | `.pi/skills/`, `.omp/skills/`, `AGENTS.md` |
+| ZCode | `.zcode/skills/`, `.zcode/commands/`, `AGENTS.md` |
 
 You can combine `--project` with component selection, such as
 `install_codex.sh --project --skills-only`.
@@ -98,11 +102,12 @@ You can combine `--project` with component selection, such as
 
 ```
 macols-ai-coding-setup/
-├── install.sh              # orchestrator: env (optional) + all four tools
+├── install.sh              # orchestrator: env (optional) + all five tools
 ├── install_claudecode.sh   # self-contained per-tool installers
 ├── install_codex.sh        #   (ensure brew + CLI, then install configs)
 ├── install_opencode.sh
-├── install_pi.sh           # installs Oh My Pi (omp)
+├── install_pi.sh           # installs both Pi agents (pi + omp)
+├── install_zcode.sh        # installs ZCode configs (app is a desktop install)
 ├── lib/
 │   └── common.sh           # shared install functions used by all installers
 ├── bin/
@@ -135,8 +140,10 @@ the config this repo provides.
 | `install_codex.sh` | `--skills-only`, `--agents-only`, `--instructions-only`, `--mcps-only`, `--hooks-only` | `--no-cli` | `--project`, `--list` |
 | `install_opencode.sh` | `--agents-only`, `--skills-only`, `--mcps-only`, `--hooks-only` | `--no-cli` | `--project`, `--list` |
 | `install_pi.sh` | `--skills-only`, `--context-only`, `--hooks-only`, `--packages-only`, `--mcps-only` | `--no-pi` | `--no-packages`, `--project`, `--list` |
+| `install_zcode.sh` | `--skills-only`, `--commands-only`, `--instructions-only`, `--mcps-only`, `--hooks-only` | `--no-cli` | `--project`, `--list` |
 
-`--no-cli` and `--no-pi` skip the binary install or upgrade. They don't remove
+`--no-cli` and `--no-pi` skip the binary install or upgrade (for the Pi
+installer that means both the `pi` and `omp` binaries). They don't remove
 anything. MCP registration still needs the tool's CLI on your `PATH`.
 
 ### Machine setup
@@ -183,10 +190,13 @@ launcher.
 | Claude Code | agents `~/.claude/agents/`, skills `~/.claude/skills/` | `~/.claude/CLAUDE.md` | `claude mcp add-json` → `~/.claude.json` | `~/.claude/settings.json` |
 | Codex | skills `~/.codex/skills/`, agents `~/.codex/agents/*.toml` | `~/.codex/AGENTS.md` | `codex mcp add` → `~/.codex/config.toml` | `~/.codex/hooks.json` |
 | OpenCode | agents `~/.config/opencode/agents/`, skills `…/skills/` | `~/.config/opencode/AGENTS.md` | `mcp` key in `~/.config/opencode/opencode.json` | plugin in `…/plugins/` |
-| Oh My Pi | Agent Skills `~/.omp/agent/skills/` (`/skill:<name>`) | `~/.omp/agent/AGENTS.md` | `mcpServers` key in `~/.omp/agent/mcp.json` | `pi-checks` extension |
+| Pi (`pi` + `omp`) | Agent Skills in `~/.pi/agent/skills/` and `~/.omp/agent/skills/` (`/skill:<name>`) | both `…/agent/AGENTS.md` | `mcpServers` key in `~/.omp/agent/mcp.json` (omp only) | `pi-checks` extension in both agent dirs |
+| ZCode | skills `~/.zcode/skills/`, commands `~/.zcode/commands/` | `~/.zcode/AGENTS.md` | `mcp.servers` in `~/.zcode/cli/config.json` | `hooks.events` in `~/.zcode/cli/config.json` |
 
-Oh My Pi replaces the old plain `pi` agent, and the installer sets up the Bun
-runtime it needs. Codex removed custom prompts (`~/.codex/prompts/`) upstream
+The two Pi agents share no config directories — plain `pi` reads `~/.pi/agent`
+and Oh My Pi (`omp`) reads `~/.omp/agent` — so the installer writes skills,
+steering and the pi-checks extension into both, and installs the Bun runtime
+omp needs. Codex removed custom prompts (`~/.codex/prompts/`) upstream
 in favour of Agent Skills; the installer cleans up prompts left by earlier
 versions of this repo.
 
@@ -214,8 +224,9 @@ rules. Each tool loads it differently:
 - **Claude Code:** plugin: `claude plugin marketplace add DietrichGebert/ponytail`
   + `claude plugin install ponytail@ponytail` (falls back to declaring both in
   `~/.claude/settings.json` when offline, ready for the next launch).
-- **Oh My Pi:** package: `omp install git:github.com/DietrichGebert/ponytail`.
-- **Codex / OpenCode / Oh My Pi AGENTS.md:** ponytail's AGENTS.md ruleset
+- **Oh My Pi:** package: `omp install github:DietrichGebert/ponytail`.
+- **Plain Pi:** package: `pi install git:github.com/DietrichGebert/ponytail`.
+- **Codex / OpenCode / Pi / ZCode AGENTS.md:** ponytail's AGENTS.md ruleset
   (vendored at `shared/steering/ponytail.AGENTS.md`) is appended inside
   `<!-- ponytail:ruleset:start/end -->` marker comments. Re-runs replace the
   block. Re-vendor the file to pick up upstream changes.
@@ -234,7 +245,7 @@ next step. Adapted from [i-have-adhd](https://github.com/ayghri/i-have-adhd)
 Here it is always on, and it reaches every surface from that one file:
 
 - **Steering:** substituted into `base.md` via `{{RESPONSE_FORMAT}}`, so all
-  four tools' steering documents carry it.
+  five tools' steering documents carry it.
 - **Personas:** appended to every rendered agent and skill by
   `generate_personas` — a subagent has its own system prompt and would
   otherwise miss the rules.
@@ -313,7 +324,8 @@ missing or stale:
 
 The MCP list lives in `shared/mcp-config.json`: **filesystem**, **puppeteer**,
 **playwright**, **context7**, **dart**, **aws-mcp** and **aws-iac**. The Claude
-Code, Codex and OpenCode installers register them in their own config formats.
+Code, Codex, OpenCode, Pi (omp) and ZCode installers register them in their
+own config formats.
 
 - **aws-mcp:** the managed [AWS MCP Server](https://aws.amazon.com/blogs/aws/the-aws-mcp-server-is-now-generally-available/)
   (Agent Toolkit for AWS), reached through the `mcp-proxy-for-aws` package,
@@ -362,7 +374,8 @@ file owns each part of the setup.
 aws configure                                   # AWS credentials for aws-* MCPs
 podman machine init && podman machine start     # containers (macOS)
 claude --version && codex --version             # sanity check
-omp --version                                   # oh-my-pi
+pi --version && omp --version                   # pi agents
+ls -d /Applications/ZCode.app                   # ZCode (desktop app)
 openspec --version                              # spec-driven dev CLI (auto-installed)
 openspec init                                   # opt a project into OpenSpec (per repo)
 ast-grep --version                              # structural search CLI (auto-installed)
