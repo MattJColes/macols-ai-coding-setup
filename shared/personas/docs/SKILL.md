@@ -123,7 +123,7 @@ Systematic process improvement using 5 Whys. NOT punitive - focuses on mechanism
 Principles for team alignment. Numbered, 7 or fewer, opinionated (not "Who Doesn't Do That?"), memorable, positive language. Must be tie-breakers for real decisions.
 
 ### Blog Posts
-Conversational, educational. Title max 75 chars, intro under 200 words, 1,500 words max total. No FUD language in security blogs. For the full blog voice and publishing workflow, use blog.
+Conversational, educational. Title max 75 chars, intro under 200 words, 1,500 words max total. No FUD language in security blogs. For the full blog voice, review checklists and publishing workflow, use editor.
 
 ## Reference docs (README / API)
 

@@ -289,7 +289,7 @@ not personas.
 - **Quality:** review (code + security audit), debug, test
 - **Delivery:** product, coordinate
 - **Research:** research, brainstorm
-- **Writing (skills only):** interview, blog, docs, messages
+- **Writing (skills only):** interview, editor, docs, messages
 - **Workflow (skills only):** ship, explain, ponytail, anchors
 
 ### Claude Desktop bulk upload
