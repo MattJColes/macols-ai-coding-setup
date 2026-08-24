@@ -4,8 +4,7 @@
 
 `shared/mcp-config.json` is the single source of MCP servers (filesystem,
 puppeteer, playwright, context7, dart, aws-mcp, aws-iac). Each tool registers
-them through its native mechanism with `$HOME` expanded; Oh My Pi gets no MCP
-by design.
+them through its native mechanism with `$HOME` expanded.
 
 ## Requirements
 
@@ -45,12 +44,14 @@ standalone `mcp.json` is ignored by OpenCode and SHALL NOT be used.
 - **WHEN** the file already contains user keys (theme, keybinds, …)
 - **THEN** only the `mcp` key (and a default `$schema`) is written; other keys survive
 
-### Requirement: Oh My Pi gets no MCP servers
+### Requirement: Oh My Pi servers are merged into mcp.json
+`register_mcps_pi` SHALL write the servers under the `mcpServers` key of
+`~/.omp/agent/mcp.json` (Claude-style `command`/`args`/`env` entries with
+`$HOME` expanded), preserving all other keys in an existing file — omp reads
+MCP config from `mcp.json`, not from `config.yml`.
+<!-- anchor: mcp-registration.pi -->
 
-The Pi installer SHALL NOT register MCP servers — omp has no MCP support by
-design and its checks run through the pi-checks extension instead.
+#### Scenario: Existing mcp.json with disabled servers
 
-#### Scenario: Pi install
-
-- **WHEN** `install_pi.sh` completes
-- **THEN** no MCP registration has been attempted for omp
+- **WHEN** the file already contains other keys (e.g. `disabledServers`)
+- **THEN** only the `mcpServers` key is replaced; other keys survive

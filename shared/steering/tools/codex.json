@@ -3,14 +3,14 @@
   "ASSISTANT_NOUN": "Codex assistant",
   "PLAN_MODE_CLAUSE": "",
   "TRACK_CHUNK": "Track each chunk with the plan (`update_plan`).",
-  "MATCH_SPECIALIST": "Pull in the custom prompt that fits each chunk.",
+  "MATCH_SPECIALIST": "Pull in the skill or agent that fits each chunk.",
   "COLLAB_SECTION": [
-    "## Custom Prompts (Slash Commands)",
+    "## Agent Skills & Custom Agents",
     "",
-    "- Specialised workflows are installed as custom prompts in `~/.codex/prompts/` and invoked as slash commands (e.g. `/development-build-python-backends`, `/quality-review-code`, `/workflow-commit-and-push`).",
-    "- Reach for the prompt that matches the work: `/development-build-python-backends` for Python services, `/development-build-react-frontends` for React/TypeScript UI, `/infrastructure-provision-cdk-python` or `/infrastructure-provision-cdk-typescript` for infrastructure, `/quality-test-python` or `/quality-test-typescript` for tests, `/quality-review-code` before finishing, etc.",
+    "- Specialist personas are installed as Agent Skills in `~/.codex/skills/` (loaded on demand — run `/skills` to list, or mention one by name) and as custom agents in `~/.codex/agents/` that Codex can delegate to.",
+    "- Reach for the persona that matches the work: `development-build-python-backends` for Python services, `development-build-react-frontends` for React/TypeScript UI, `infrastructure-provision-cdk-python` or `infrastructure-provision-cdk-typescript` for infrastructure, `quality-test-python` or `quality-test-typescript` for tests, `quality-review-code` before finishing, etc.",
     "- Give each invocation a clear, self-contained instruction with the context it needs — file paths, requirements, constraints, and expected output.",
-    "- When work splits into independent pieces, sequence them through the plan and pull in the matching prompt for each piece. Do not over-decompose tightly-coupled work — sequential execution is fine."
+    "- When work splits into independent pieces, sequence them through the plan and pull in the matching skill or agent for each piece. Do not over-decompose tightly-coupled work — sequential execution is fine."
   ],
   "EXTRA_SECTION": ""
 }

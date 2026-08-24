@@ -21,3 +21,10 @@ mcp-registration.opencode:
     kind: function_definition
     has: { field: name, regex: '^register_mcps_opencode$' }
   files: [lib/common.sh]
+
+mcp-registration.pi:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^register_mcps_pi$' }
+  files: [lib/common.sh]

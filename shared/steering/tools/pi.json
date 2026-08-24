@@ -20,9 +20,9 @@
     "- This install ships specialist personas as Agent Skills. Invoke one with",
     "  `/skill:<name>` (e.g. `/skill:development-build-python-backends`, `/skill:quality-review-code`) when a",
     "  task matches its specialism, and follow the loaded SKILL.md instructions.",
-    "- Pi has no MCP. When you need an external capability, prefer a well-documented",
-    "  CLI tool (with a README the agent can read) or a Skill over reaching for a",
-    "  protocol server, or install a package via `omp install <pkg>`.",
+    "- MCP servers are configured in `~/.omp/agent/mcp.json`. For one-off external",
+    "  capabilities, a well-documented CLI tool (with a README the agent can read),",
+    "  a Skill, or a package via `omp install <pkg>` is still often simpler.",
     "- A `pi-checks` extension runs tests, lint, type-checks and security scans after",
     "  file edits and at the end of a turn. Its output is advisory — read the",
     "  findings and fix real issues, but it will not block you."

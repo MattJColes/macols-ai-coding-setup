@@ -16,15 +16,16 @@ every rendered agent inherits its tool's session/default model.
 
 ### Requirement: Generation emits each tool's native format from the same body
 
-`generate_personas <tool> <skill|prompt|agent> <target_dir>` SHALL render
+`generate_personas <tool> <skill|agent> <target_dir>` SHALL render
 every persona through the embedded Node generator and set `PERSONA_COUNT` to
-the number generated. Prompt mode SHALL emit Codex flat prompts (`<name>.md`
-with `description` + `argument-hint`). Skill mode SHALL emit OpenCode skills
+the number generated. There is no prompt mode — Codex removed custom prompts
+in favour of Agent Skills. Skill mode SHALL emit OpenCode skills
 (`compatibility: opencode`), Codex Agent Skills (`name` + `description`
 frontmatter only), and Claude/Pi Agent Skills (`allowed-tools` list, plus
 `user-invocable` for Claude only). Agent mode SHALL emit only personas with
 `agent: true`: Claude agents get a `tools:` CSV; OpenCode agents get a
-boolean tool map; Codex agents get a `<name>.toml` with `name`, `description`
+description-only frontmatter (the boolean tool map is deprecated in
+OpenCode); Codex agents get a `<name>.toml` with `name`, `description`
 and `developer_instructions` (TOML literal block, escaped-string fallback).
 No rendered agent carries a `model:` key — every agent (Claude, OpenCode,
 Codex) inherits the parent session's model.
