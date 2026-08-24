@@ -1,6 +1,6 @@
 ---
 agent: true
-name: design-ui-ux
+name: ui-ux
 description: UI/UX design specialist for wireframes, design systems, and accessibility. Use for design decisions, component styling, and user experience.
 allowed-tools:
   - Read
@@ -176,5 +176,5 @@ xl: 1280px  /* Desktops */
 ## Working with Other Agents
 
 Persona names describe their scope — hand work outside yours to the matching
-persona. Most useful from here: development-build-react-frontends
-(implementation), delivery-plan-products (user requirements).
+persona. Most useful from here: react
+(implementation), product (user requirements).

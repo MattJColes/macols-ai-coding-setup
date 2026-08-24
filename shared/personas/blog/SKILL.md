@@ -1,7 +1,14 @@
 ---
-agent: true
-name: writing-draft-blog-posts
+name: blog
 description: Write short articles / posts for Matt Coles in his voice. Use when drafting, editing, or outlining posts for the blog.
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+  - Grep
+  - Glob
+user-invocable: true
 ---
 
 # Writing Blog Posts for Matt Coles
@@ -19,35 +26,32 @@ publishing process. Read it before helping draft or editing any post.
   Fine to reference this credibility lightly when it's relevant — never as a flex.
 
 ## Voice (the key rules)
-- Middle-ground casual: conversational and a bit terse — make the point and move on. First
-  person, present tense. Go easy on em-dashes (overusing them reads as AI).
-- Terse means economical, not staccato. Two failure modes, and both read as AI: staccato
-  ("Short sentence. Another point. Close.") and the over-correction — long sentences
-  chaining clause after clause with commas. Aim for the middle: mostly medium-length
-  sentences, joined with colons or "and"/"so" where the ideas connect, no more than a
-  couple of commas per sentence, and a comma splice only as the rare aside. Joining ideas:
-  default to a full stop and a new sentence; a semicolon is fine where it genuinely reads
-  better. Dashes get stripped in Matt's own edit passes, so use " - " connectors sparingly
-  too. Don't end a
-  paragraph or section on a punchy fragment ("Worth a read.", "And occasionally, a
-  maybe."); fold it into the previous sentence.
-- A bit of fun is part of the voice: dry jokes, playful naming ("lgtmaybe" — "the joke I
+Middle-ground casual: conversational and a bit terse - make the point and move
+on. First person, present tense. The shared prose voice below is the baseline
+(this is published prose, so its capitalisation, punctuation and AI-tell rules
+apply in full); the bullets after it are the blog-specific calibrations.
+
+{{include: _shared/voice.md}}
+
+Blog-specific calibrations on top of the shared voice:
+- Terse means economical, not staccato. Two failure modes, and both read as AI:
+  staccato ("Short sentence. Another point. Close.") and the over-correction -
+  long sentences chaining clause after clause with commas. Aim for the middle:
+  mostly medium-length sentences, joined with "and"/"so" where the ideas
+  connect, no more than a couple of commas per sentence, and a comma splice
+  only as the rare aside. Don't end a paragraph or section on a punchy
+  fragment ("Worth a read.", "And occasionally, a maybe."); fold it into the
+  previous sentence.
+- A bit of fun is part of the voice: dry jokes, playful naming ("lgtmaybe" - "the joke I
   wanted in the name before I'd written a line of it"), the odd exclamation or emoji. One
-  or two per post, made in passing — the humour rides along with the point, it never
+  or two per post, made in passing - the humour rides along with the point, it never
   replaces it.
-- KEEP standard capitalisation and apostrophes — capital `I`, `don't`, `it's`. It should
-  read deliberate, not like typos. (Matt's raw chat style is lowercase-i and dropped
-  apostrophes; do NOT replicate that in published prose.) Straight quotes and apostrophes
-  only (`'`, `"`) — never curly/smart quotes; they creep in when prose is drafted elsewhere.
 - Concrete over corporate. No buzzword stacking. Link to the repo / sources rather than
   describing them at length.
-- Active voice — "I moved it", not "it was moved". First person present mostly forces this;
-  watch for passive slipping in around results and decisions.
 - Tighten wordy or cutesy phrasing. Example: "where I dump the experiments" became
   "where I write up the work that's held up".
 - Prefer his phrasing "simple first, room to grow later" (he chose "grow" over "flex").
-- Short paragraphs.
-- Shorter is better — he asks for condensing passes on drafts. Cut throat-clearing
+- Shorter is better - he asks for condensing passes on drafts. Cut throat-clearing
   sentences that announce a point instead of making it ("This is the bit that made it
   work, so it's worth explaining", "This is the question that nagged at me most",
   "so let me start there"); start sections in the middle of the point.
@@ -56,75 +60,33 @@ publishing process. Read it before helping draft or editing any post.
   suspect the gap keeps narrowing").
 
 ## Avoid (explicit dislikes)
+The shared AI-tell list above is the baseline and non-negotiable - Matt runs
+his drafts past AI detectors. These are the blog-specific dislikes and the
+detailed calibrations the shared list only summarises:
+
 - The opener "Most of what I do starts as 'I wonder if I can…'". Don't use that framing.
 - Over-self-deprecation that undersells him, e.g. "half of it doesn't survive contact with
-  reality / the half that does ends up here." A little humility is fine — but frame around
+  reality / the half that does ends up here." A little humility is fine - but frame around
   judgement, trade-offs, and the patterns behind what works: what's worth sharing and *why*.
-- AI-detector tells — Matt runs his drafts past these. Don't pile up em-dashes; don't lean on
-  rule-of-three lists, "X, not Y" antithesis, or polished aphorisms ("nothing erodes trust
-  faster than noise" — just say it plainly); skip cutesy understatement ("gently out of
-  hand", "far too many containers", "out-ranked by our cats"). Vary sentence length, use plain
-  words ("marker" not "sentinel", "freeze up" not "go inert", "clear" not "unambiguous"), and
-  keep a couple of real personal asides.
-- Contrastive reframes — "not X, but Y", "we stopped trying — instead we…", "a different
-  split". The em-dash pivot is the tell: a clause hanging off a dash to deliver a twist.
-  One idea per sentence, no reframe clauses hanging off dashes; say the second idea straight
-  in its own sentence. The quick test: if a sentence has an em-dash doing a "here's the
-  twist" pivot, or a list of three, cut it and say it plainly.
-- Editorializing adjectives — "quietly governs", "an unglamorous decision", "one deliberate
-  choice". Don't tell the reader something is clever or ironic; give the fact and let them
-  find it. Same family: telling them what's easy or hard ("easy to say, hard to do") — show
-  the difficulty by naming the actual thing, don't label it.
-- False universals — "everyone knows", "most companies", "we've all been there". That's
-  asserting on the reader's behalf, and with a mixed audience it also judges them. Stay
-  neutral toward the audience: describe your own experience, not their mistakes.
-- Formal transitions — "Furthermore", "Additionally", "Moreover", "In conclusion". Connect
-  ideas with plain "and"/"so"/"but", or just start the next sentence.
-- Considered-sounding intensifiers and smooth-cadence padding — a strong, specific AI tell.
-  Adverbs like "genuinely," "quietly," "subtly," "notably," "simply," "truly," and emphatic
-  phrases like "exactly when" dress up a plain claim to sound reflective. Examples from a
-  real edit of the skills-vs-MCP post: "Skills got genuinely good" → "Skills work well now";
-  "quietly assumes" → "assumes"; "exactly when you need the server" → "when you need the
-  server." Rule: drop the adverb, state the claim plainly. Same family in smooth-cadence
-  hedges — "the whole answer," "stops being enough," "the first thing I reach for." Fine
-  once, but they accumulate and read as commentary, not a person.
-- Metaphors where a factual sentence does the job — especially for results and performance
-  claims. "Missed planted bugs that every frontier model caught" beats "caught without
-  blinking", "clawed some of it back", or "a floor you don't get under": state what happened
-  and what the numbers showed. The same goes for visual describers in everyday prose, not
-  just claims: don't reach for verbs that paint a picture ("peeling off microservices" —
-  say "breaking out microservices"). At most one piece of imagery per post, and only where
-  it adds something a plain sentence can't. Same family: anthropomorphising whimsy —
-  "glue code whose only job is to apologise for the model", "goes red on a Tuesday for
-  reasons nobody can reconstruct" (both from the Pydantic Evals post). Vivid, but it's
-  stock LLM humour. Humour must come from the actual situation, not from giving software
-  feelings.
-- Section-ending zinger cadence — the tell that got the Pydantic Evals post called out as
+- Cutesy understatement ("gently out of hand", "far too many containers",
+  "out-ranked by our cats"). Vary sentence length, use plain words ("freeze
+  up" not "go inert", "clear" not "unambiguous"), and keep a couple of real
+  personal asides.
+- Section-ending zinger cadence - the tell that got the Pydantic Evals post called out as
   AI-written on r/LocalLLaMA: nearly every section closed on a polished punchline ("You
   ask for a shape and that's what you get", "the framework can't tell the difference",
   "The boilerplate doesn't shrink, it stops existing"). Each line passes the aphorism rule
-  on its own; the density is the tell. At most one section-ending punchline per post —
+  on its own; the density is the tell. At most one section-ending punchline per post -
   every other section ends mid-register on a plain sentence.
-- Uniform paragraph rhythm — every paragraph running setup, elaboration, landing. Real
-  prose has flat paragraphs that just convey information and stop. Some paragraphs should
-  end without landing anything.
-- Unspecific anecdotes — "I've lost that afternoon more than once" (Pydantic Evals post)
-  with zero detail is a generated sentence. Every personal anecdote names something real
-  (the project, the field, roughly when) or gets cut. If Matt hasn't supplied the detail,
-  ask him for it rather than writing around it.
-- Technobabble — jargon-stacked sentences that sound technical but never explain the mechanism
-  ("leverages a scalable event-driven architecture to seamlessly orchestrate workloads").
-  Buzzword density signals a pitch, not an engineer. Say what the thing actually does in plain
-  words ("a Lambda picks each job off the queue"), and name a technology only when the reader
-  needs it to follow along or act.
-- Waffling — circling a point without landing it: long wind-ups before the claim, restating
-  the question, hedging in both directions ("it depends", "on the other hand"), a qualifier on
-  every sentence, three sentences doing one sentence's work. Matt states an opinion and gives
-  the reason; a post that hedges everything has no reason to exist. State the point, give the
-  reason, stop.
+- Metaphors where a factual sentence does the job - especially for results and performance
+  claims ("caught without blinking" vs "missed planted bugs that every frontier model
+  caught"). The same goes for visual describers in everyday prose: don't reach for verbs
+  that paint a picture ("peeling off microservices" - say "breaking out microservices").
+  At most one piece of imagery per post, and only where it adds something a plain
+  sentence can't.
 - "Honest/honestly" as a verbal crutch (once per post at most), and confession-trope
-  headers like "The honest part nobody writes about" — just state the claim as the header.
-- Attention-seeking section headings — snappy, matter-of-fact, or clickbaity. No
+  headers like "The honest part nobody writes about" - just state the claim as the header.
+- Attention-seeking section headings - snappy, matter-of-fact, or clickbaity. No
   colon-punchlines ("The one rule: don't nest it in tmux"), aphorism pronouncements
   ("Shape is not quality", "Good enough is a skill"), cute inversions ("Yolo mode, where
   it belongs"), or rhetorical snark as headings. Headings are signposts, not performances:
@@ -297,15 +259,11 @@ violations, it doesn't vibe-check. Go through the draft and tally:
    "simply", "truly") — count occurrences.
 5. Personal anecdotes lacking a specific (project, field, roughly when) — count them.
    Target 0; ask Matt for the missing detail, don't invent it or write around it.
-6. LLM-register vocabulary — words nobody uses in a real blog or conversation but LLMs
-   reach for constantly: "delve", "dive into", "robust", "seamless(ly)", "crucial",
-   "pivotal", "comprehensive", "streamline", "harness", "unlock", "empower", "elevate",
-   "foster", "boasts", "myriad", "plethora", "tapestry", "landscape" (figurative),
-   "journey" (figurative), "underscores", "game-changer", "supercharge", "in today's
-   world", "at its core", "it's worth noting", "not only X but also Y". Count
-   occurrences. Target 0 — swap each for the term Matt would actually use ("solid" or
-   "reliable" for "robust", "look at" for "delve into", "important" or just cut for
-   "crucial").
+6. LLM-register vocabulary — count occurrences of every word in the LLM-register
+   rows of the shared words-to-kill table above (from "delve into" down to
+   "not only X but also Y"). Target 0 — swap each for the term Matt would
+   actually use ("solid" or "reliable" for "robust", "look at" for "delve
+   into", "important" or just cut for "crucial").
 7. Document shape: H2 count against read time — over the ceiling in "Document-shape
    tells" (two or three H2s in a sub-10-minute post, none on a section under ~200
    words) → merge sections.

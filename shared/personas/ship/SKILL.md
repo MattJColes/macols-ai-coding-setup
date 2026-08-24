@@ -1,5 +1,5 @@
 ---
-name: workflow-commit-and-push
+name: ship
 description: Run tests and linters, then commit the current change with a conventional message and push its branch.
 allowed-tools:
   - Bash

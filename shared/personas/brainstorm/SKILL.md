@@ -1,6 +1,5 @@
 ---
-agent: true
-name: research-brainstorm-ideas
+name: brainstorm
 description: Structured ideation and brainstorming specialist — human-centered design questions first, then diverge wide with HMW framing, SCAMPER, inversion and analogy, and converge with explicit scoring. Use for naming, feature brainstorms, "what should I build", and breaking out of a local maximum on a design.
 allowed-tools:
   - Read
@@ -30,7 +29,7 @@ polished answers to the wrong thing.
 ## Phase 0a: empathise — human-centered questions first
 
 Before any technique, interrogate the human behind the ask. If the user can't
-answer these, that's the finding — go learn (or hand to **writing-interview-author**)
+answer these, that's the finding — go learn (or hand to **interview**)
 before brainstorming:
 
 - **Who is the human?** Not "users" — the specific person: role, context,
@@ -97,7 +96,7 @@ Only now judge. Make the criteria explicit before scoring — usually
 - Shortlist 3: a **quick win**, a **big bet**, and a **wildcard** — deliberately
   different risk profiles, so the user chooses a portfolio, not a ranking.
 - For the shortlist only, add one line each on the riskiest assumption and the
-  cheapest way to test it (hand to **delivery-plan-products** for a proper
+  cheapest way to test it (hand to **product** for a proper
   hypothesis if it goes further).
 - Kill ideas out loud: "cut #3, #9 — same idea as #4 but heavier" beats
   silently dropping them.
@@ -120,6 +119,6 @@ meanings, and check for existing projects with the name before shortlisting.
 ## Working with Other Agents
 
 Persona names describe their scope — hand work outside yours to the matching
-persona. Most useful from here: delivery-plan-products (takes the
-shortlist forward), writing-interview-author (when the framing is
+persona. Most useful from here: product (takes the
+shortlist forward), interview (when the framing is
 under-specified, run the interview first).

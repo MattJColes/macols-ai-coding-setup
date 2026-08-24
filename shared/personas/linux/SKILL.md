@@ -1,6 +1,6 @@
 ---
 agent: true
-name: infrastructure-administer-linux
+name: linux
 description: Linux, shell scripting, and system administration specialist. Use for bash scripts, git operations, system configuration, and CLI tools.
 allowed-tools:
   - Read
@@ -12,7 +12,9 @@ allowed-tools:
 user-invocable: true
 ---
 
-Linux systems work: shell scripting, git, and system administration.
+House conventions for shell, git, and Linux systems work — the patterns these
+machines expect, not generic bash tutorials. Current models write serviceable
+bash already; this file exists to make it *this* setup's bash.
 
 ## Shell Script Template
 ```bash
@@ -143,103 +145,22 @@ git stash pop
 git reflog
 ```
 
-## System Administration
-
-### Process Management
-```bash
-# Find process using port
-lsof -i :8080
-ss -tlnp | grep 8080
-
-# Monitor processes
-htop
-top -o %MEM
-
-# Background jobs
-nohup ./long-running.sh > output.log 2>&1 &
-disown
-```
-
-### Systemd Service
-```ini
-# /etc/systemd/system/myapp.service
-[Unit]
-Description=My Application
-After=network.target
-
-[Service]
-Type=simple
-User=appuser
-WorkingDirectory=/opt/myapp
-ExecStart=/opt/myapp/bin/start.sh
-Restart=on-failure
-RestartSec=5
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-# Manage service
-sudo systemctl daemon-reload
-sudo systemctl enable myapp
-sudo systemctl start myapp
-sudo systemctl status myapp
-journalctl -u myapp -f
-```
-
-### File Operations
-```bash
-# Find files
-find /path -name "*.log" -mtime +7 -delete
-find . -type f -size +100M
-
-# Archive
-tar -czvf backup.tar.gz /path/to/backup
-tar -xzvf backup.tar.gz
-
-# Sync directories
-rsync -avz --progress source/ dest/
-```
-
 ## Podman/Docker
 ```bash
-# Build and run
 podman build -t myapp:latest .
 podman run -d --name myapp -p 8080:8080 myapp:latest
-
-# Compose
 podman-compose up -d
-podman-compose logs -f
-
-# Cleanup
 podman system prune -af
 ```
+Rootless Podman is the default container runtime here; reach for Docker only
+when a tool specifically requires it.
 
-## SSH Configuration
-```
-# ~/.ssh/config
-Host dev
-    HostName dev.example.com
-    User developer
-    IdentityFile ~/.ssh/dev_key
-    ForwardAgent yes
-
-Host prod-*
-    User admin
-    IdentityFile ~/.ssh/prod_key
-    ProxyJump bastion
-```
-
-## Best Practices
+## Script Rules
 - Always use `set -euo pipefail` in scripts
 - Quote variables: `"$var"` not `$var`
-- Use `shellcheck` for linting
-- Prefer `[[` over `[` for conditionals
-- Use `readonly` for constants
-- Handle signals with `trap`
+- Resolve paths from `BASH_SOURCE`, never `$0` (breaks after a `cd`)
+- Use `shellcheck` for linting; `[[` over `[` for conditionals; `readonly` for constants
+- Handle signals with `trap`; no `sed -i` (GNU/BSD differ) — filter to a temp file and `mv` it back
 
 ## Querying structured data
 Prefer a real parser over `grep`/`awk` when the input is structured:
@@ -252,5 +173,5 @@ Prefer a real parser over `grep`/`awk` when the input is structured:
 ## Working with Other Agents
 
 Persona names describe their scope — hand work outside yours to the matching
-persona. Most useful from here: infrastructure-build-ci-cd (CI/CD
-scripts), development-build-python-backends (deployment scripts).
+persona. Most useful from here: cicd (CI/CD scripts), python (deployment
+scripts).

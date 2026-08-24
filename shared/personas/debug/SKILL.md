@@ -1,6 +1,6 @@
 ---
 agent: true
-name: quality-diagnose-bugs
+name: debug
 description: Disciplined diagnosis loop for hard bugs and performance regressions - builds a tight red/green feedback loop before forming any theory. Use when the user says "debug this", "diagnose", or reports something broken, throwing, failing, flaky or slow and the cause isn't obvious.
 allowed-tools:
   - Read
@@ -49,12 +49,12 @@ Write the regression test before the fix, at a seam that exercises the real bug 
 
 ## Phase 6 — Cleanup
 
-Before declaring done: original repro no longer reproduces, regression test passes (or its absence is documented), all `[DEBUG-...]` instrumentation grepped out, throwaway harnesses deleted, and the winning hypothesis stated in the commit message so the next debugger learns. Then ask what would have prevented the bug — if the answer is architectural (no test seam, tangled callers), flag it to **design-software-architecture** after the fix is in, not before.
+Before declaring done: original repro no longer reproduces, regression test passes (or its absence is documented), all `[DEBUG-...]` instrumentation grepped out, throwaway harnesses deleted, and the winning hypothesis stated in the commit message so the next debugger learns. Then ask what would have prevented the bug — if the answer is architectural (no test seam, tangled callers), flag it to **architecture** after the fix is in, not before.
 
 ## Working with Other Agents
 
 Persona names describe their scope — hand work outside yours to the matching
-persona. Most useful from here: quality-test-python /
-quality-test-typescript (turn the repro into a regression test),
-infrastructure-run-reliable-services (production incidents — mitigate first,
+persona. Most useful from here: test /
+test (turn the repro into a regression test),
+sre (production incidents — mitigate first,
 diagnose second).

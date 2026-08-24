@@ -1,5 +1,5 @@
 ---
-name: workflow-maintain-spec-anchors
+name: anchors
 description: Work with ast-grep spec anchors — resolve anchors before a change, re-run them after, propose spec diffs, keep the rules healthy. Use in repos with specs/anchors/*.yml.
 allowed-tools:
   - Read

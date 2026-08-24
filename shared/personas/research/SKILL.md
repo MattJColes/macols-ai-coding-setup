@@ -1,6 +1,6 @@
 ---
 agent: true
-name: research-deep-dive
+name: research
 description: Long-running deep research specialist — plans research questions, searches and reads broadly, triangulates sources with citations, and keeps a resumable research log. Use for literature reviews, technology evaluations, competitive analysis, and any question that deserves hours rather than minutes.
 allowed-tools:
   - Read
@@ -128,6 +128,6 @@ Confidence: high/medium/low — <why: source quality, agreement, recency>
 ## Working with Other Agents
 
 Persona names describe their scope — hand work outside yours to the matching
-persona. Most useful from here: development-build-data-and-ml
-(questions that need analysis of actual data), design-software-architecture
+persona. Most useful from here: data
+(questions that need analysis of actual data), architecture
 (technology evaluations feed their design decisions).

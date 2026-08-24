@@ -1,8 +1,14 @@
 ---
-agent: true
-name: writing-draft-chat-messages
+name: messages
 description: Matt Coles' personal writing style — applies the right register (DM / group / channel / email / doc comment) and conventions (lowercase i, no apostrophes in contractions, no periods in DMs, emoji rules, "Hey" not "Hi", "Kind regards" sign-off) when drafting messages or emails as him.
 user-invocable: true
+allowed-tools:
+  - Read
+  - Write
+  - Edit
+  - Bash
+  - Grep
+  - Glob
 ---
 
 # macols Writing Style Skill
@@ -290,21 +296,10 @@ unsure if we have that considering everything we're working on / across
 ## Writing Style Preferences
 
 - Do not use AI writing tropes: em dashes (—), excessive bolding, filler phrases, or over-structured formatting.
-- More AI tells to avoid in anything drafted as Matt (any register):
-  - Contrastive reframes ("not X, but Y", "we stopped trying - instead we...") - the dash pivot is the tell. One idea per sentence, said straight, no reframe clauses hanging off dashes.
-  - Rule-of-three lists ("identity, guardrails, and distribution") - triads read as generated.
-  - Bold-lead bullet blocks ("**Point.** Explanation") in channel posts and emails - if each bullet is a full sentence, say it as sentences.
-  - Editorializing adjectives ("quietly governs", "unglamorous decision", "one deliberate choice") - don't tell the reader something is clever or ironic; let them find it.
-  - Considered-sounding intensifiers ("genuinely", "quietly", "simply", "truly", "notably") - they dress a plain claim up to sound reflective. Drop the adverb, state the claim.
-  - False universals ("everyone knows that", "most companies") - asserting on the room's behalf. Describe your own experience, not the audience's mistakes.
-  - Telling the reader what's easy or hard ("easy to say, hard to do") - show the difficulty by naming the actual thing, don't label it.
-  - Staccato punchlines ("So we don't.") - reads as style, not speech. Plain declaratives or a real question, the way you'd say it out loud to one person.
-  - Punchline density - closing every section or paragraph on a polished line ("the framework can't tell the difference"). One per piece at most; end the rest on a plain sentence.
-  - Anthropomorphising quips ("glue code whose only job is to apologise for the model") - stock LLM humour. Humour comes from the actual situation, not from giving software feelings.
-  - Unspecific anecdotes ("i've lost that afternoon more than once") - name something real (the project, roughly when) or cut it. Ask Matt for the detail rather than writing around it.
-  - LLM-register vocabulary ("delve", "dive into", "robust", "seamless", "crucial", "comprehensive", "streamline", "harness", "unlock", "empower", "landscape"/"journey" used figuratively, "it's worth noting", "game-changer") - words AI reaches for and people don't. Swap each for the term Matt would actually use in the conversation ("solid", "look at", "important" - or just cut it).
-  - Quick test: a dash doing a "here's the twist" pivot, or a list of three - cut it and say it straight.
-- Final read-back, every register: read the draft as if saying it to the recipient. If any line sounds like an assistant wrote it - too smooth, too enthusiastic, or phrased in words Matt wouldn't use out loud - rewrite that line in the words he'd actually say. Don't just delete the tell; re-say the sentence.
+- The shared prose voice and AI-tell rules below apply in every register. The
+  chat mechanics in this skill (lowercase i, dropped apostrophes, no periods in
+  DMs) override the prose mechanics; the AI tells never get overridden.
+{{include: _shared/voice.md}}
 - When not asked for dot points, write responses as concise paragraphs (1-2 max).
 - Only use bullet points or numbered lists when explicitly requested or when listing discrete items (e.g., action items, steps).
 - Keep language direct and natural. Match the user's tone and register.
@@ -320,14 +315,9 @@ unsure if we have that considering everything we're working on / across
 - Write "I hope this email finds you well"
 - Write "I'm" — writes "im" or "I'm" inconsistently, prefers "i'm" or drops it
 - Write paragraphs in DMs
-- Use formal transitions ("Furthermore", "Additionally", "In conclusion")
 - Over-explain in DMs — assumes shared context
-- Use passive voice ("it was decided") — always active ("we decided", "i decided")
 - Hedge excessively — states opinions directly
 - Use "please" in DMs to close colleagues (too formal)
-- Use corporate buzzwords without substance (no "synergize", "leverage" without technical meaning)
-- Technobabble — jargon-stacked sentences that sound technical but carry no mechanism ("leverages a scalable event-driven architecture to seamlessly orchestrate workloads"). Says what the thing actually does in plain words, and names a technology only when the reader needs it
-- Waffle — circling a point without landing it: long wind-ups, restating the question, hedging in both directions, three sentences doing one sentence's work. States the point, gives the reason, stops
 - Write short acknowledgment-only replies to group threads (doesn't "+1" or "Looks good!")
 - Over-format with bold/italic in emails
 - Use emoji in professional emails (Slack only)

@@ -74,7 +74,7 @@ verify_codex() {
     pass "no legacy prompts dir (~/.codex/prompts removed)" "[ ! -d '$d/prompts' ]"
     pass "skills in ~/.codex/skills/*/SKILL.md"   "count_gt0 '$d/skills' 'SKILL.md' 3"
     pass "agents in ~/.codex/agents/*.toml"       "count_gt0 '$d/agents' '*.toml' 1"
-    pass "agent toml has developer_instructions"  "grep -q 'developer_instructions' '$d/agents/quality-review-code.toml'"
+    pass "agent toml has developer_instructions"  "grep -q 'developer_instructions' '$d/agents/review.toml'"
     pass "~/.codex/AGENTS.md is System-Level Codex" "grep -q 'System-Level Codex' '$d/AGENTS.md'"
     pass "~/.codex/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
     pass "~/.codex/AGENTS.md has response format (once)" "rf_once '$d/AGENTS.md'"

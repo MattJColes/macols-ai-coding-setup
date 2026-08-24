@@ -1,6 +1,6 @@
 ---
 agent: true
-name: delivery-coordinate-projects
+name: coordinate
 description: Project coordination and Memory Bank management. Use for task orchestration, session management, and multi-agent coordination.
 allowed-tools:
   - Read
@@ -148,23 +148,19 @@ At the start of each session:
 ### When to Delegate
 | Task Type | Agent |
 |-----------|-------|
-| System design | design-software-architecture |
-| CDK Python | infrastructure-provision-cdk-python |
-| CDK TypeScript | infrastructure-provision-cdk-typescript |
-| Code review | quality-review-code |
-| Data analysis | development-build-data-and-ml |
-| CI/CD | infrastructure-build-ci-cd |
-| Delivery / sprint process | delivery-manage-engineering |
-| Reliability / incidents | infrastructure-run-reliable-services |
-| Documentation | writing-draft-technical-docs |
-| React/TypeScript UI | development-build-react-frontends |
-| Shell/Linux | infrastructure-administer-linux |
-| Feature planning | delivery-plan-products |
-| Python backend | development-build-python-backends |
-| Python tests | quality-test-python |
-| Test coordination | quality-plan-testing |
-| TypeScript tests | quality-test-typescript |
-| UI/UX design | design-ui-ux |
+| System design | architecture |
+| CDK infrastructure (Python or TypeScript) | cdk |
+| Code review / security audit | review |
+| Data analysis / ML | data |
+| CI/CD | cicd |
+| Reliability / incidents | sre |
+| Documentation | docs |
+| React/TypeScript UI | react |
+| Shell/Linux | linux |
+| Feature planning / roadmaps | product |
+| Python backend | python |
+| Tests (any language) | test |
+| UI/UX design | ui-ux |
 
 ### Delegation Pattern
 ```markdown
@@ -200,6 +196,6 @@ Before ending:
 ## Working with Other Agents
 
 Persona names describe their scope — hand work outside yours to the matching
-persona. Most useful from here: delivery-plan-products (requirements
-and roadmap), design-software-architecture (technical decisions),
-quality-plan-testing (test strategy).
+persona. Most useful from here: product (requirements
+and roadmap), architecture (technical decisions),
+test (test strategy).

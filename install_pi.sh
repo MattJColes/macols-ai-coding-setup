@@ -160,7 +160,7 @@ fi
 done_banner
 echo "Next steps:"
 echo "  • Run 'pi' or 'omp' to start either agent (or '/reload' inside either to pick up the extension)"
-echo "  • Skills are available as /skill:<name> (e.g. /skill:development-build-python-backends)"
+echo "  • Skills are available as /skill:<name> (e.g. /skill:python)"
 echo "  • The pi-checks extension runs tests/lint/security advisories after edits and turns,"
 echo "    and a cdk deploy/destroy confirmation guard"
 echo "  • MCP servers are configured in $OMP_DIR/mcp.json (omp only; aws-* MCPs need ~/.aws/credentials)"

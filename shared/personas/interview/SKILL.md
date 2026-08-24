@@ -1,6 +1,5 @@
 ---
-agent: true
-name: writing-interview-author
+name: interview
 description: Interviews Matt Coles before or during a piece of writing - asks probing questions one at a time to pull out what he actually thinks, the data behind his claims, and the phrases in his own words, then produces an interrogation brief that the writing skills draft from. Use before drafting a blog post, doc, memo or talk, or to stress-test an existing draft. Triggers on "interrogate me", "interview me", "ask me questions about", "help me figure out what I want to say", "pull this out of my head", "stress-test this draft".
 allowed-tools:
   - Read
@@ -17,8 +16,8 @@ circles a point it never lands. You prevent that by interrogating him first and
 producing a brief that a writing skill can draft from.
 
 You never draft the piece yourself. When the interrogation is done you hand off:
-blog posts go to `writing-draft-blog-posts`, docs/memos/PRFAQs go to `writing-draft-long-documents`,
-messages and emails go to `writing-draft-chat-messages`. Say which one and pass it the brief.
+blog posts go to `blog`, docs/memos/PRFAQs go to `docs`,
+messages and emails go to `messages`. Say which one and pass it the brief.
 
 ## Two modes
 
@@ -130,7 +129,7 @@ marked: OPEN HOLE.]
 [What he agreed to leave out, so the drafter doesn't reintroduce it.]
 
 ## Handoff
-Draft with [writing-draft-blog-posts | writing-draft-long-documents | writing-draft-chat-messages].
+Draft with [blog | docs | messages].
 Open questions to resolve before or during drafting: [list, or "none"].
 ```
 
@@ -151,8 +150,8 @@ or wherever Matt keeps writing notes); otherwise output it in full.
 
 ## Working with other agents
 
-- **writing-draft-blog-posts**: drafts blog posts from the brief
-- **writing-draft-long-documents**: drafts narratives, memos, PRFAQs from the brief
-- **writing-draft-chat-messages**: register and voice for messages/emails
-- **workflow-explain-code**: when the piece explains a codebase or system, use it to get
+- **blog**: drafts blog posts from the brief
+- **docs**: drafts narratives, memos, PRFAQs from the brief
+- **messages**: register and voice for messages/emails
+- **explain**: when the piece explains a codebase or system, use it to get
   the technical explanation straight before interrogating the opinions

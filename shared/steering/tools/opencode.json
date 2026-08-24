@@ -8,7 +8,7 @@
     "## Agents & Skills",
     "",
     "- Specialist personas are installed as skills (loaded on-demand via the skill tool) and, where the persona ships one, as agents (invoked via the Task tool).",
-    "- Reach for the persona that matches the work: `development-build-python-backends` for Python services, `development-build-react-frontends` for React/TypeScript UI, `infrastructure-provision-cdk-python`/`infrastructure-provision-cdk-typescript` for infrastructure, `quality-test-python`/`quality-test-typescript` for tests, `quality-review-code` before finishing, etc.",
+    "- Reach for the persona that matches the work: `python` for Python services, `react` for React/TypeScript UI, `cdk` for infrastructure, `test` for tests, `review` before finishing, etc.",
     "- Give each agent a clear, self-contained prompt with all the context it needs — file paths, requirements, constraints, and expected output. Agents do not share context with each other.",
     "- When work splits into independent pieces, delegate each to the matching agent. Do not over-decompose tightly-coupled work — sequential execution is fine."
   ],
