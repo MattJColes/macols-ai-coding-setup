@@ -52,7 +52,9 @@ Usage: $0 [OPTIONS]
 
 Installs (and, unless told otherwise, both agent binaries) Agent Skills, the
 system AGENTS.md, MCP servers (omp only), the pi-checks extension and each
-agent's packages from shared/.
+agent's packages from shared/. Registering MCP servers also asks for a Brave
+Search API key (blank to skip); set BRAVE_API_KEY in the environment to supply
+it non-interactively.
 
 Options:
     -h, --help        Show this help message
@@ -60,7 +62,7 @@ Options:
     --context-only    Install only the system AGENTS.md (both agents)
     --hooks-only      Install only the pi-checks extension (both agents)
     --packages-only   Install only the agent packages
-    --mcps-only       Install only omp MCP servers (~/.omp/agent/mcp.json)
+    --mcps-only       Install only omp MCP servers (~/.omp/agent/mcp.json; asks for the Brave Search API key)
     --no-pi           Skip installing/upgrading the pi and omp binaries
     --no-packages     Skip installing agent packages
     -p, --project     Install skills to ./.pi/skills and ./.omp/skills and AGENTS.md to ./AGENTS.md (implies --no-pi)
@@ -148,7 +150,8 @@ if [ "$DO_CONTEXT" = true ]; then
     fi; echo ""
 fi
 if [ "$DO_MCPS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
-    # Plain pi has no MCP support — omp only.
+    # Plain pi has no MCP support — omp only, Brave Search included.
+    ensure_brave_api_key || printf "${YELLOW}⚠ Brave Search not configured — brave-search MCP left out${NC}\n"
     register_mcps_pi "$OMP_DIR" || printf "${YELLOW}⚠ MCP registration skipped/failed${NC}\n"; echo ""
 fi
 if [ "$DO_HOOKS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
@@ -164,4 +167,10 @@ echo "  • Skills are available as /skill:<name> (e.g. /skill:python)"
 echo "  • The pi-checks extension runs tests/lint/security advisories after edits and turns,"
 echo "    and a cdk deploy/destroy confirmation guard"
 echo "  • MCP servers are configured in $OMP_DIR/mcp.json (omp only; aws-* MCPs need ~/.aws/credentials)"
+if [ -s "$BRAVE_KEY_FILE" ]; then
+    echo "  • omp web search runs through the brave-search MCP (key in $BRAVE_KEY_FILE); plain pi has no MCP support"
+else
+    echo "  • For omp web search, get a Brave key (https://brave.com/search/api/) then run:"
+    echo "      BRAVE_API_KEY=<key> ./install_pi.sh --mcps-only"
+fi
 echo ""

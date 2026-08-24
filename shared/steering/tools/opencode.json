@@ -12,5 +12,14 @@
     "- Give each agent a clear, self-contained prompt with all the context it needs — file paths, requirements, constraints, and expected output. Agents do not share context with each other.",
     "- When work splits into independent pieces, delegate each to the matching agent. Do not over-decompose tightly-coupled work — sequential execution is fine."
   ],
-  "EXTRA_SECTION": ""
+  "EXTRA_SECTION": [
+    "",
+    "",
+    "## Web Search",
+    "",
+    "- When a task needs current information from the web, use the `brave-search` MCP",
+    "  server. It is registered in `~/.config/opencode/opencode.json` when a Brave",
+    "  Search API key is configured; if it is missing, say so rather than guessing at",
+    "  facts you cannot check."
+  ]
 }

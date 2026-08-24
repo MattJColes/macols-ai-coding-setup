@@ -29,6 +29,9 @@ soft() { if eval "$2"; then green "$1"; else warn "$1 (soft)"; fi; }
 count_gt0() { [ "$(find "$1" -maxdepth "${3:-2}" -name "${2}" 2>/dev/null | wc -l)" -gt 0 ]; }
 has_jq() { command -v jq &> /dev/null; }
 has_ponytail_block() { grep -q 'ponytail:ruleset:start' "$1" 2>/dev/null; }
+# brave-search is registered for OpenCode/omp only, and only when a key file
+# exists — so assert its presence or its absence, whichever the key implies.
+has_brave_key() { [ -s "$HOME/.config/macols/brave-api-key" ]; }
 
 # The shared response-format block lands in the steering doc exactly once...
 rf_once() { [ "$(grep -c '^## Response Format' "$1" 2>/dev/null)" = 1 ]; }
@@ -104,6 +107,13 @@ verify_opencode() {
     pass "plugin wires pre-deploy check" "grep -q 'pre_deploy_check.sh' '$d/plugins/post_code_hook_plugin.js'"
     if has_jq; then
         pass "opencode.json has filesystem MCP under .mcp" "jq -e '.mcp.filesystem' '$d/opencode.json' >/dev/null"
+        if has_brave_key; then
+            pass "opencode.json has brave-search MCP reading the key file" \
+                "jq -e '.mcp[\"brave-search\"].environment.BRAVE_API_KEY_FILE' '$d/opencode.json' >/dev/null"
+        else
+            pass "opencode.json omits brave-search MCP without a key" \
+                "! jq -e '.mcp[\"brave-search\"]' '$d/opencode.json' >/dev/null"
+        fi
     fi
 }
 
@@ -129,6 +139,13 @@ verify_pi() {
     verify_pi_layout "$omp_d" "~/.omp/agent"
     if has_jq; then
         pass "omp mcp.json has filesystem MCP under .mcpServers" "jq -e '.mcpServers.filesystem' '$omp_d/mcp.json' >/dev/null"
+        if has_brave_key; then
+            pass "omp mcp.json has brave-search MCP reading the key file" \
+                "jq -e '.mcpServers[\"brave-search\"].env.BRAVE_API_KEY_FILE' '$omp_d/mcp.json' >/dev/null"
+        else
+            pass "omp mcp.json omits brave-search MCP without a key" \
+                "! jq -e '.mcpServers[\"brave-search\"]' '$omp_d/mcp.json' >/dev/null"
+        fi
     fi
 }
 
