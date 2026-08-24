@@ -139,7 +139,7 @@ the config this repo provides.
 | `install_claudecode.sh` | `--agents-only`, `--skills-only`, `--mcps-only`, `--hooks-only` | `--no-cli` | `--project`, `--list` |
 | `install_codex.sh` | `--skills-only`, `--agents-only`, `--instructions-only`, `--mcps-only`, `--hooks-only` | `--no-cli` | `--project`, `--list` |
 | `install_opencode.sh` | `--agents-only`, `--skills-only`, `--mcps-only`, `--hooks-only` | `--no-cli` | `--project`, `--list` |
-| `install_pi.sh` | `--skills-only`, `--context-only`, `--hooks-only`, `--packages-only`, `--mcps-only` | `--no-pi` | `--no-packages`, `--project`, `--list` |
+| `install_pi.sh` | `--skills-only`, `--context-only`, `--hooks-only`, `--packages-only`, `--mcps-only`, `--models-only` | `--no-pi` | `--no-packages`, `--no-models`, `--project`, `--list` |
 | `install_zcode.sh` | `--skills-only`, `--commands-only`, `--instructions-only`, `--mcps-only`, `--hooks-only` | `--no-cli` | `--project`, `--list` |
 
 `--no-cli` and `--no-pi` skip the binary install or upgrade (for the Pi
@@ -196,7 +196,8 @@ launcher.
 The two Pi agents share no config directories — plain `pi` reads `~/.pi/agent`
 and Oh My Pi (`omp`) reads `~/.omp/agent` — so the installer writes skills,
 steering and the pi-checks extension into both, and installs the Bun runtime
-omp needs. Codex removed custom prompts (`~/.codex/prompts/`) upstream
+omp needs. omp also gets its model choices written to `~/.omp/agent/models.yml`
+and `~/.omp/agent/config.yml` (see [Models (omp)](#models-omp)). Codex removed custom prompts (`~/.codex/prompts/`) upstream
 in favour of Agent Skills; the installer cleans up prompts left by earlier
 versions of this repo.
 
@@ -351,6 +352,75 @@ The key is written to `~/.config/macols/brave-api-key` with mode 600 and the
 config only references it through `BRAVE_API_KEY_FILE` — no secret is written
 into `opencode.json` or `mcp.json`. Delete that file and re-run the installer to
 remove the server again.
+
+## Models (omp)
+
+`install_pi.sh` asks which model Oh My Pi starts a session on (its `default`
+role) and which it plans with (its `plan` role). Each answer is either a
+provider omp already ships — `anthropic`, `openai`, `openai-codex`, `zai`,
+`google`, `openrouter`, `cerebras`, and so on — or an OpenAI-compatible
+endpoint you describe yourself: vLLM, Ollama, LM Studio, LiteLLM, any gateway.
+Plain `pi` has no equivalent config, so this is omp-only.
+
+Providers land in `~/.omp/agent/models.yml`:
+
+```yaml
+providers:
+  vllm-lan:
+    baseUrl: http://exodus:8000/v1
+    api: openai-completions
+    apiKey: "!cat '/Users/you/.config/macols/omp-vllm-lan-api-key'"
+    models:
+      - id: unsloth/Qwen3.8-27B-NVFP4
+        reasoning: true
+        contextWindow: 262144
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }
+```
+
+and the roles in `~/.omp/agent/config.yml`:
+
+```yaml
+modelRoles:
+  default: vllm-lan/unsloth/Qwen3.8-27B-NVFP4
+  plan: zai/glm-5.2
+```
+
+The installer only asks once — once `modelRoles.default` is set it says so and
+moves on. To change the models later:
+
+```bash
+./install_pi.sh --models-only     # re-ask both questions
+./install_pi.sh --no-models       # skip the questions on a full install
+```
+
+`/model` inside omp changes them for a session too.
+
+API keys are never written into `models.yml`. Each one goes to
+`~/.config/macols/omp-<provider>-api-key` with mode 600 and is referenced as
+`!cat '<path>'`, which omp resolves by running the command. A blank answer
+skips the key — right for an endpoint that needs none (the provider is then
+written with `auth: none`) and for a provider you have already authenticated
+with `omp /login <provider>`.
+
+A custom endpoint is recorded with zero cost, which is true for something you
+host but not for a paid gateway; edit `models.yml` if it bills you. Both files
+are re-serialised on write, so unrelated providers, roles and settings survive
+but YAML comments do not — the same trade omp itself makes when it saves
+settings.
+
+For a non-interactive machine, supply the answers as environment variables
+instead. `OMP_MODELS_CONFIG` points at a `models.yml`-shaped YAML or JSON file
+whose `providers` are merged in, and the two role variables take
+`<provider>/<model-id>` selectors:
+
+```bash
+OMP_MODELS_CONFIG=./my-providers.yml \
+OMP_DEFAULT_MODEL=vllm-lan/unsloth/Qwen3.8-27B-NVFP4 \
+OMP_PLAN_MODEL=zai/glm-5.2 \
+  ./install_pi.sh --models-only
+```
+
+Setting any of them applies exactly what they say and asks nothing.
 
 ## Hooks
 

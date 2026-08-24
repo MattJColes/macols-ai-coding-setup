@@ -28,6 +28,17 @@ soft() { if eval "$2"; then green "$1"; else warn "$1 (soft)"; fi; }
 
 count_gt0() { [ "$(find "$1" -maxdepth "${3:-2}" -name "${2}" 2>/dev/null | wc -l)" -gt 0 ]; }
 has_jq() { command -v jq &> /dev/null; }
+has_bun() { command -v bun &> /dev/null; }
+# omp_yaml_has <file> <js expression over `doc`> — true when the expression is
+# truthy for the parsed YAML. Bun is omp's own runtime, so it is present
+# wherever omp is.
+omp_yaml_has() {
+    OMP_VERIFY_FILE="$1" OMP_VERIFY_EXPR="$2" bun -e '
+import { YAML } from "bun";
+const doc = YAML.parse(await Bun.file(process.env.OMP_VERIFY_FILE).text()) || {};
+process.exit(new Function("doc", `return (${process.env.OMP_VERIFY_EXPR})`)(doc) ? 0 : 1);
+' 2>/dev/null
+}
 has_ponytail_block() { grep -q 'ponytail:ruleset:start' "$1" 2>/dev/null; }
 # brave-search is registered for OpenCode/omp only, and only when a key file
 # exists — so assert its presence or its absence, whichever the key implies.
@@ -146,6 +157,24 @@ verify_pi() {
             pass "omp mcp.json omits brave-search MCP without a key" \
                 "! jq -e '.mcpServers[\"brave-search\"]' '$omp_d/mcp.json' >/dev/null"
         fi
+    fi
+    # Model/provider setup is opt-in — `install_pi.sh` only asks interactively,
+    # or reads OMP_MODELS_CONFIG / OMP_DEFAULT_MODEL / OMP_PLAN_MODEL. Assert
+    # the written shape when it happened; say so plainly when it did not.
+    if [ -f "$omp_d/models.yml" ] || [ -f "$omp_d/config.yml" ]; then
+        if has_bun; then
+            [ -f "$omp_d/models.yml" ] && pass "omp models.yml parses with a non-empty providers map" \
+                "omp_yaml_has '$omp_d/models.yml' 'doc.providers && Object.keys(doc.providers).length > 0'"
+            [ -f "$omp_d/config.yml" ] && soft "omp config.yml assigns modelRoles.default" \
+                "omp_yaml_has '$omp_d/config.yml' 'typeof doc.modelRoles?.default === \"string\"'"
+        else
+            warn "bun not available — skipping omp model config assertions"
+        fi
+        # Keys belong in a mode-600 file referenced as `!cat ...`, never inline.
+        [ -f "$omp_d/models.yml" ] && pass "omp models.yml references API keys instead of inlining them" \
+            "! grep -qE '^[[:space:]]+apiKey: \"?(sk-|gsk_|xai-|AIza)' '$omp_d/models.yml'"
+    else
+        warn "omp models not configured — run ./install_pi.sh --models-only to pick them"
     fi
 }
 
