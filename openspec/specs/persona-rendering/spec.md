@@ -5,7 +5,8 @@
 Personas are authored exactly once as `shared/personas/<name>/SKILL.md` and
 rendered into each tool's native persona format at install time. The rendered
 output (`~/.claude/agents/*`, `~/.claude/skills/*`, Codex skills/agents,
-OpenCode agents/skills, Pi skills) is generated, never hand-edited.
+OpenCode agents/skills, Pi skills, ZCode skills/commands) is generated, never
+hand-edited.
 
 ## Requirements
 
@@ -24,13 +25,17 @@ every rendered agent inherits its tool's session/default model.
 - **THEN** the same body renders as an agent and as a skill (e.g. code-reviewer)
 
 ### Requirement: Generation emits each tool's native format from the same body
-`generate_personas <tool> <skill|agent> <target_dir>` SHALL render
+`generate_personas <tool> <skill|command|agent> <target_dir>` SHALL render
 every persona through the embedded Node generator and set `PERSONA_COUNT` to
 the number generated. There is no prompt mode — Codex removed custom prompts
-in favour of Agent Skills. Skill mode SHALL emit OpenCode skills
-(`compatibility: opencode`), Codex Agent Skills (`name` + `description`
-frontmatter only), and Claude/Pi Agent Skills (`allowed-tools` list, plus
-`user-invocable` for Claude only). Agent mode SHALL emit only personas with
+in favour of Agent Skills; command mode is ZCode's own slash-command shape.
+Skill mode SHALL emit OpenCode skills (`compatibility: opencode`), Codex and
+ZCode Agent Skills (`name` + `description` frontmatter only — both keys are
+required or ZCode drops the skill), and Claude/Pi Agent Skills
+(`allowed-tools` list, plus `user-invocable` for Claude only). Command mode
+SHALL emit ZCode slash commands (`<name>.md` with `description` +
+`argument-hint` frontmatter; the filename is the command name). Agent mode
+SHALL emit only personas with
 `agent: true`: Claude agents get a `tools:` CSV; OpenCode agents get a
 description-only frontmatter (the boolean tool map is deprecated in
 OpenCode); Codex agents get a `<name>.toml` with `name`, `description`
@@ -61,9 +66,9 @@ output is rewritten on every run, so no marker delimiters are needed.
 
 ### Requirement: Listing mirrors persona frontmatter
 `list_personas <tool>` SHALL print each persona with its tool-native
-invocation (`/<name>` for Codex, `/skill:<name>` for Pi) and description, and
-SHALL mark `agent: true` personas with an `+agent` marker for agent-capable
-tools (Claude Code, OpenCode, Codex).
+invocation (`/<name>` for Codex and ZCode, `/skill:<name>` for Pi) and
+description, and SHALL mark `agent: true` personas with an `+agent` marker
+for agent-capable tools (Claude Code, OpenCode, Codex).
 <!-- anchor: persona-rendering.list -->
 
 #### Scenario: Agent-capable persona listed for Claude Code

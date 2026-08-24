@@ -28,3 +28,10 @@ mcp-registration.pi:
     kind: function_definition
     has: { field: name, regex: '^register_mcps_pi$' }
   files: [lib/common.sh]
+
+mcp-registration.zcode:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^register_mcps_zcode$' }
+  files: [lib/common.sh]

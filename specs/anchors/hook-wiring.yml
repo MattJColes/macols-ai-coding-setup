@@ -15,6 +15,13 @@ hook-wiring.codex:
     has: { field: name, regex: '^write_codex_hooks$' }
   files: [lib/common.sh]
 
+hook-wiring.zcode:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^write_zcode_hooks$' }
+  files: [lib/common.sh]
+
 hook-wiring.opencode-plugin:
   language: bash
   rule:

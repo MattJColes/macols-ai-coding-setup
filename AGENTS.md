@@ -2,9 +2,10 @@
 
 ## What this repo is
 
-The source config lives under `shared/`. The four installers render it into the
-formats used by Claude Code, Codex, OpenCode and Oh My Pi. Shared rendering and
-installer functions live in `lib/common.sh`.
+The source config lives under `shared/`. The five installers render it into the
+formats used by Claude Code, Codex, OpenCode, the Pi agents (plain `pi` and
+Oh My Pi) and ZCode. Shared rendering and installer functions live in
+`lib/common.sh`.
 
 The checked-in `.claude/` directory only contains OpenSpec's opsx commands and
 skills. Claude agents and skills are generated from
@@ -28,15 +29,16 @@ Start at the source that owns the requested behaviour:
 | Full machine setup | `machine-setup/` | syntax check + platform-specific smoke test |
 
 Do not edit generated files under `~/.claude`, `~/.codex`,
-`~/.config/opencode` or `~/.omp`. Change the source here and rerun the
-installer.
+`~/.config/opencode`, `~/.pi`, `~/.omp` or `~/.zcode`. Change the source here
+and rerun the installer.
 
 Edit the single source, never the rendered output:
 
 - **Personas:** `shared/personas/<name>/SKILL.md`. Frontmatter drives
   rendering: `agent: true` also emits a Claude/OpenCode agent and a Codex
   agent TOML. `user-invocable: true` also emits a Claude skill, so one file can
-  provide both forms (e.g. quality-review-code). After adding, editing,
+  provide both forms (e.g. quality-review-code). Every persona also renders as
+  a ZCode Agent Skill and slash command. After adding, editing,
   renaming or removing a persona, run
   `./scripts/package_claude_desktop_personas.sh` and include the regenerated
   `bundles/macols-personas-claude-plugin.zip` in the same change.
@@ -52,7 +54,8 @@ Edit the single source, never the rendered output:
   `writing-draft-*` personas and the review checklists.
 - **MCP servers:** `shared/mcp-config.json` (filesystem, puppeteer,
   playwright, context7, dart, aws-mcp, aws-iac). Registered for Claude Code,
-  Codex, OpenCode and Oh My Pi (written to `~/.omp/agent/mcp.json`).
+  Codex, OpenCode, Oh My Pi (written to `~/.omp/agent/mcp.json`) and ZCode
+  (written to `~/.zcode/cli/config.json`). Plain pi has no MCP support.
 - **Hooks:** `shared/hooks/*` (post-code, post-task, pre-deploy),
   referenced in place, wired by `write_*_hooks` in `lib/common.sh`.
 - **Machine setup:** `machine-setup/` (macOS + Ubuntu 24/26). The herdr script
@@ -112,12 +115,13 @@ path based on `BASH_SOURCE`.
 ```bash
 bash -n <script>                 # syntax, every touched script
 ./scripts/package_claude_desktop_personas.sh --check
-./tests/verify_install.sh <claudecode|codex|opencode|pi>
+./tests/verify_install.sh <claudecode|codex|opencode|pi|zcode>
 ./scripts/spec_drift_gate.sh --check   # anchor hygiene (needs ast-grep + yq)
 ```
 
 CI (`.github/workflows/test-installers`) runs shellcheck, an Ubuntu
-install-and-verify matrix across all four tools, and the spec-anchors job
+install-and-verify matrix across all five tools (ZCode config-only via
+`--no-cli`; it is a macOS desktop app), and the spec-anchors job
 (anchor hygiene + the gate self-test, plus an advisory drift pass on PRs).
 For config-merge logic, prove idempotency by running the step twice against
 a scratch `$HOME` and asserting the config appears exactly once.

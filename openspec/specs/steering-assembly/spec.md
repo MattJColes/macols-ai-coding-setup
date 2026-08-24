@@ -6,8 +6,8 @@ One steering document per tool is assembled from the single source
 `shared/steering/base.md` by substituting `{{TOKEN}}` placeholders with
 per-tool values from `shared/steering/tools/<tool>.json`, plus the shared
 response-format block from `shared/steering/response-format.md`. AGENTS.md-driven
-tools (Codex, OpenCode, Pi) additionally get the vendored ponytail ruleset
-merged in.
+tools (Codex, OpenCode, Pi, ZCode) additionally get the vendored ponytail
+ruleset merged in.
 
 ## Requirements
 
@@ -36,7 +36,7 @@ specs, PR and commit bodies, code) to its own conventions.
 
 #### Scenario: Response format reaches every tool
 
-- **WHEN** steering is assembled for claudecode, codex, opencode and pi
+- **WHEN** steering is assembled for every tool (claudecode, codex, opencode, pi, zcode)
 - **THEN** each rendered document contains exactly one `## Response Format` section
 
 ### Requirement: Ponytail ruleset merge is marker-delimited and idempotent

@@ -46,6 +46,19 @@ for its `apply_patch` tool.
 - **WHEN** Codex starts with the generated hooks.json
 - **THEN** it does not report `failed to parse hooks config … unknown field`
 
+### Requirement: ZCode hooks mirror Claude's, gated by hooks.enabled
+`write_zcode_hooks <config_json>` SHALL write the same Pre/Post/Stop events
+as Claude into `~/.zcode/cli/config.json` under `hooks.events`, with
+`hooks.enabled: true` (config-file hooks never fire without it) and
+`type: "command"` timeouts in seconds (30/120/300). Existing keys elsewhere
+in the config (mcp, plugins, …) SHALL survive.
+<!-- anchor: hook-wiring.zcode -->
+
+#### Scenario: Existing config.json with plugin state
+
+- **WHEN** `write_zcode_hooks` runs on a config that already has `plugins`
+- **THEN** only the `hooks` key is replaced; the other keys survive
+
 ### Requirement: The OpenCode plugin is installed with substituted hook paths
 `install_opencode_plugin <plugins_dir>` SHALL render
 `shared/hooks/opencode_post_code_plugin.mjs` into the plugins dir as a `.js`
@@ -64,20 +77,22 @@ identical retry — the user having confirmed — passes).
 - **WHEN** the plugin is installed
 - **THEN** it shells out to the hooks under this repo's `shared/hooks/`, not to copies
 
-### Requirement: The Pi extension bakes in the hooks directory
+### Requirement: The Pi extension bakes in the hooks directory, in both agents
 `install_pi_extension <extensions_dir>` SHALL render
 `shared/hooks/pi-checks.ts` with `__PI_HOOKS_DIR__` replaced by the absolute
 shared hooks dir, wiring `tool_call` (bash) to the cdk pre-deploy guard
 (`ctx.ui.confirm`, blocking only on explicit decline; advisory warning when
 headless), `tool_result` to the post-code check, and `agent_end` to the
 post-task battery, surfaced via
-`pi.sendMessage`.
+`pi.sendMessage`. The two Pi agents share no config directories, so
+`install_pi.sh` SHALL install the extension into both
+`~/.pi/agent/extensions` and `~/.omp/agent/extensions`.
 <!-- anchor: hook-wiring.pi-extension -->
 
 #### Scenario: Extension installed
 
 - **WHEN** `install_pi.sh` completes
-- **THEN** `extensions/pi-checks.ts` exists and contains no `__PI_HOOKS_DIR__` placeholder
+- **THEN** `pi-checks.ts` exists in both agent dirs and contains no `__PI_HOOKS_DIR__` placeholder
 
 ### Requirement: The pre-deploy matcher is single-sourced
 The cdk deploy/destroy pattern and confirmation reason SHALL live only in

@@ -2,7 +2,7 @@
 #
 # Post-install verification for a single CLI.
 #
-# Usage: tests/verify_install.sh <claudecode|codex|opencode|pi>
+# Usage: tests/verify_install.sh <claudecode|codex|opencode|pi|zcode>
 #
 # Asserts that the installer placed files in the expected locations and that
 # the CLI reports a configured state via non-auth introspection. Exits non-zero
@@ -107,20 +107,46 @@ verify_opencode() {
     fi
 }
 
+# verify_pi_layout <dir> <label> — assert one Pi agent dir is fully provisioned.
+verify_pi_layout() {
+    local d="$1" label="$2"
+    pass "skills in $label/skills/*/SKILL.md" "count_gt0 '$d/skills' 'SKILL.md' 3"
+    pass "$label/AGENTS.md is System-Level Pi" "grep -q 'System-Level Pi' '$d/AGENTS.md'"
+    pass "$label/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
+    pass "$label/AGENTS.md has response format (once)" "rf_once '$d/AGENTS.md'"
+    pass "every $label skill has response format" "rf_every '$d/skills' 'SKILL.md'"
+    pass "$label extensions/pi-checks.ts exists" "[ -f '$d/extensions/pi-checks.ts' ]"
+    pass "$label extension hooks dir substituted" "! grep -q '__PI_HOOKS_DIR__' '$d/extensions/pi-checks.ts'"
+    pass "$label extension wires pre-deploy check" "grep -q 'pre_deploy_check.sh' '$d/extensions/pi-checks.ts'"
+}
+
 verify_pi() {
-    local d="${PI_CODING_AGENT_DIR:-$HOME/.omp/agent}"
+    local omp_d="${PI_CODING_AGENT_DIR:-$HOME/.omp/agent}"
     soft "omp --version" "command -v omp >/dev/null && omp --version >/dev/null 2>&1"
-    pass "plain pi is not provisioned" "! command -v pi >/dev/null"
-    pass "skills in ~/.omp/agent/skills/*/SKILL.md" "count_gt0 '$d/skills' 'SKILL.md' 3"
-    pass "~/.omp/agent/AGENTS.md is System-Level Pi" "grep -q 'System-Level Pi' '$d/AGENTS.md'"
-    pass "~/.omp/agent/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
-    pass "~/.omp/agent/AGENTS.md has response format (once)" "rf_once '$d/AGENTS.md'"
-    pass "every ~/.omp/agent skill has response format" "rf_every '$d/skills' 'SKILL.md'"
-    pass "extensions/pi-checks.ts exists" "[ -f '$d/extensions/pi-checks.ts' ]"
-    pass "extension hooks dir substituted" "! grep -q '__PI_HOOKS_DIR__' '$d/extensions/pi-checks.ts'"
-    pass "extension wires pre-deploy check" "grep -q 'pre_deploy_check.sh' '$d/extensions/pi-checks.ts'"
+    soft "pi --version" "command -v pi >/dev/null && pi --version >/dev/null 2>&1"
+    pass "plain pi binary is installed" "command -v pi >/dev/null"
+    verify_pi_layout "$HOME/.pi/agent" "~/.pi/agent"
+    verify_pi_layout "$omp_d" "~/.omp/agent"
     if has_jq; then
-        pass "mcp.json has filesystem MCP under .mcpServers" "jq -e '.mcpServers.filesystem' '$d/mcp.json' >/dev/null"
+        pass "omp mcp.json has filesystem MCP under .mcpServers" "jq -e '.mcpServers.filesystem' '$omp_d/mcp.json' >/dev/null"
+    fi
+}
+
+verify_zcode() {
+    local d="$HOME/.zcode"
+    soft "ZCode app present" "[ -d /Applications/ZCode.app ] || [ -d '$HOME/Applications/ZCode.app' ]"
+    pass "skills in ~/.zcode/skills/*/SKILL.md" "count_gt0 '$d/skills' 'SKILL.md' 3"
+    pass "commands in ~/.zcode/commands/*.md" "count_gt0 '$d/commands' '*.md' 1"
+    pass "~/.zcode/AGENTS.md is System-Level ZCode" "grep -q 'System-Level ZCode' '$d/AGENTS.md'"
+    pass "~/.zcode/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
+    pass "~/.zcode/AGENTS.md has response format (once)" "rf_once '$d/AGENTS.md'"
+    pass "every ~/.zcode skill has response format" "rf_every '$d/skills' 'SKILL.md'"
+    pass "every ~/.zcode command has response format" "rf_every '$d/commands' '*.md'"
+    if has_jq; then
+        pass "config.json hooks are enabled" "jq -e '.hooks.enabled == true' '$d/cli/config.json' >/dev/null"
+        pass "config.json has PostToolUse hook" "jq -e '.hooks.events.PostToolUse[0].hooks[0].command' '$d/cli/config.json' >/dev/null"
+        pass "config.json Stop runs post-task battery" "jq -e '.hooks.events.Stop[0].hooks[0].command | test(\"post_task\")' '$d/cli/config.json' >/dev/null"
+        pass "config.json has filesystem MCP under .mcp.servers" "jq -e '.mcp.servers.filesystem' '$d/cli/config.json' >/dev/null"
     fi
 }
 
@@ -130,7 +156,8 @@ case "$TOOL" in
     codex)      verify_codex ;;
     opencode)   verify_opencode ;;
     pi)         verify_pi ;;
-    *) echo "Usage: $0 <claudecode|codex|opencode|pi>"; exit 2 ;;
+    zcode)      verify_zcode ;;
+    *) echo "Usage: $0 <claudecode|codex|opencode|pi|zcode>"; exit 2 ;;
 esac
 
 if [ "$FAILED" -eq 0 ]; then

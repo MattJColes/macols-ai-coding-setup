@@ -3,10 +3,10 @@
 # Shared install library for the macols-ai-coding-setup agentic-CLI installers.
 #
 # Sourced by install_claudecode.sh / install_codex.sh / install_opencode.sh /
-# install_pi.sh. Holds everything those installers have in common: colours,
-# Node bootstrap, Homebrew / CLI bootstrap, persona generation, steering
-# assembly, ponytail install, MCP registration and hook wiring — all driven
-# from the single sources of truth under shared/.
+# install_pi.sh / install_zcode.sh. Holds everything those installers have in
+# common: colours, Node bootstrap, Homebrew / CLI bootstrap, persona
+# generation, steering assembly, ponytail install, MCP registration and hook
+# wiring — all driven from the single sources of truth under shared/.
 #
 # Not meant to be executed directly.
 
@@ -206,7 +206,7 @@ ensure_node_on_noninteractive_path() {
     printf "${GREEN}✓ node/npm/npx linked into %s for non-interactive shells${NC}\n" "$bin_dir"
 }
 
-# ensure_cli <claudecode|codex|opencode|pi> — install the CLI binary if missing.
+# ensure_cli <claudecode|codex|opencode|pi|zcode> — install the CLI binary if missing.
 ensure_cli() {
     local tool="$1" os
     os="$(detect_os)"
@@ -246,23 +246,48 @@ ensure_cli() {
             fi
             ;;
         pi)
-            command -v omp &> /dev/null && omp --version &> /dev/null && { printf "${GREEN}✓ omp already installed: %s${NC}\n" "$(command -v omp)"; return 0; }
-            printf "${BLUE}Installing Oh My Pi (omp) coding agent...${NC}\n"
-            command -v npm &> /dev/null || { printf "${RED}Need npm to install omp. Install Node.js/npm, then re-run.${NC}\n"; return 1; }
-            # omp's npm bundle targets the Bun runtime (engines.bun >= 1.3.14),
-            # so make sure a current bun is on PATH first.
-            if ! command -v bun &> /dev/null; then
-                printf "${BLUE}Installing bun (omp runtime)...${NC}\n"
-                npm install -g bun || { printf "${RED}Could not install bun (required by omp).${NC}\n"; return 1; }
+            # Both Pi agents are installed: the plain `pi` CLI (reads
+            # ~/.pi/agent) and Oh My Pi `omp` (reads ~/.omp/agent). They share
+            # no config directories, so install_pi.sh provisions both layouts.
+            command -v npm &> /dev/null || { printf "${RED}Need npm to install the pi agents. Install Node.js/npm, then re-run.${NC}\n"; return 1; }
+            if command -v pi &> /dev/null; then
+                printf "${GREEN}✓ pi already installed: %s${NC}\n" "$(command -v pi)"
+            else
+                printf "${BLUE}Installing the Pi coding agent (pi)...${NC}\n"
+                npm install -g @earendil-works/pi-coding-agent || { printf "${RED}Could not install pi via npm.${NC}\n"; return 1; }
             fi
-            npm install -g --ignore-scripts @oh-my-pi/pi-coding-agent || { printf "${RED}Could not install omp via npm.${NC}\n"; return 1; }
-            if ! omp --version &> /dev/null; then
-                # An older pre-existing bun can be too old for omp's bundle —
-                # upgrade it and re-check before giving up.
-                printf "${YELLOW}omp failed to run; upgrading bun and retrying...${NC}\n"
-                npm install -g bun || true
-                omp --version &> /dev/null || { printf "${RED}omp installed but does not run — check 'bun --version' (needs >= 1.3.14).${NC}\n"; return 1; }
+            if command -v omp &> /dev/null && omp --version &> /dev/null; then
+                printf "${GREEN}✓ omp already installed: %s${NC}\n" "$(command -v omp)"
+            else
+                printf "${BLUE}Installing Oh My Pi (omp) coding agent...${NC}\n"
+                # omp's npm bundle targets the Bun runtime (engines.bun >= 1.3.14),
+                # so make sure a current bun is on PATH first.
+                if ! command -v bun &> /dev/null; then
+                    printf "${BLUE}Installing bun (omp runtime)...${NC}\n"
+                    npm install -g bun || { printf "${RED}Could not install bun (required by omp).${NC}\n"; return 1; }
+                fi
+                npm install -g --ignore-scripts @oh-my-pi/pi-coding-agent || { printf "${RED}Could not install omp via npm.${NC}\n"; return 1; }
+                if ! omp --version &> /dev/null; then
+                    # An older pre-existing bun can be too old for omp's bundle —
+                    # upgrade it and re-check before giving up.
+                    printf "${YELLOW}omp failed to run; upgrading bun and retrying...${NC}\n"
+                    npm install -g bun || true
+                    omp --version &> /dev/null || { printf "${RED}omp installed but does not run — check 'bun --version' (needs >= 1.3.14).${NC}\n"; return 1; }
+                fi
             fi
+            ;;
+        zcode)
+            # ZCode is a desktop app (Z.ai's GLM harness), not a
+            # package-managed CLI. Config-only: verify the app bundle exists
+            # and warn non-fatally when it doesn't — nothing is downloaded.
+            local app
+            for app in "/Applications/ZCode.app" "$HOME/Applications/ZCode.app"; do
+                if [ -d "$app" ]; then
+                    printf "${GREEN}✓ ZCode app found: %s${NC}\n" "$app"
+                    return 0
+                fi
+            done
+            printf "${YELLOW}⚠ ZCode.app not found — its configs will be written, but install the ZCode app (https://z.ai) to use them${NC}\n"
             ;;
         *)
             printf "${RED}ensure_cli: unknown tool '%s'${NC}\n" "$tool"; return 1 ;;
@@ -286,11 +311,13 @@ handle_common_install_flag() {
 # ── Persona generation (single source: shared/personas/<name>/SKILL.md) ───────
 #
 # One generator emits each tool's native format from the SAME persona body:
-#   • skill mode  → Claude/OpenCode/Pi/Codex Agent Skill (<name>/SKILL.md)
-#   • agent mode  → Claude/OpenCode agent (<name>.md) or Codex agent (<name>.toml),
-#                   only when frontmatter has agent: true
+#   • skill mode   → Claude/OpenCode/Pi/Codex/ZCode Agent Skill (<name>/SKILL.md)
+#   • command mode → ZCode slash command (<name>.md, description + argument-hint)
+#   • agent mode   → Claude/OpenCode agent (<name>.md) or Codex agent (<name>.toml),
+#                    only when frontmatter has agent: true
 # (Codex custom prompts were removed upstream in favour of Agent Skills, so
-# there is no prompt mode any more.)
+# there is no prompt mode any more; command mode is ZCode's own slash-command
+# shape.)
 read -r -d '' PERSONA_GEN_JS <<'PERSONA_EOF' || true
 const fs = require("fs"), path = require("path");
 const mode = process.env.MODE, tool = process.env.TOOL;
@@ -340,11 +367,29 @@ for (const name of fs.readdirSync(pdir).sort()) {
   const pname = data.name || name;
   let label = name;
 
-  if (mode === "skill") {
+  if (mode === "command") {
+    // ZCode slash command (~/.zcode/commands/<name>.md): the filename is the
+    // command name; frontmatter carries description + argument-hint.
+    let fm = "---\n";
+    if (data.description) fm += "description: " + data.description + "\n";
+    fm += "argument-hint: \"[task or context]\"\n";
+    fm += "---\n";
+    fs.writeFileSync(path.join(tdir, name + ".md"), fm + body);
+    console.log("  ✓ /" + name);
+    count++;
+  } else if (mode === "skill") {
     let fm = "---\n";
     if (tool === "codex") {
       // Codex Agent Skill (~/.codex/skills/<name>/SKILL.md): name + description
       // only — Codex ignores Claude-specific keys like allowed-tools.
+      fm += "name: " + pname + "\n";
+      if (data.description) fm += "description: " + data.description + "\n";
+      fm += "---\n";
+      writeDir(tdir, name, fm + body);
+    } else if (tool === "zcode") {
+      // ZCode Agent Skill (~/.zcode/skills/<name>/SKILL.md): name +
+      // description only — both are required or ZCode drops the skill, and
+      // Claude-specific keys are best avoided.
       fm += "name: " + pname + "\n";
       if (data.description) fm += "description: " + data.description + "\n";
       fm += "---\n";
@@ -403,7 +448,7 @@ for (const name of fs.readdirSync(pdir).sort()) {
 console.log("__COUNT__" + count);
 PERSONA_EOF
 
-# generate_personas <tool> <skill|prompt|agent> <target_dir>
+# generate_personas <tool> <skill|command|agent> <target_dir>
 # Prints a per-item checklist; sets PERSONA_COUNT to the number generated.
 generate_personas() {
     require_node || return 1
@@ -419,7 +464,7 @@ generate_personas() {
     printf "%s\n" "$out" | grep -v '^__COUNT__'
 }
 
-# list_personas <claudecode|codex|opencode|pi>
+# list_personas <claudecode|codex|opencode|pi|zcode>
 list_personas() {
     local tool="$1" persona_name description marker
     printf "${BLUE}Available Personas:${NC}\n\n"
@@ -433,6 +478,7 @@ list_personas() {
                 if grep -q "^agent:[[:space:]]*true" "$persona_dir/SKILL.md"; then marker="${CYAN}+agent${NC}"; else marker="      "; fi
                 printf "  ${GREEN}/%-24s${NC} %b  %s\n" "$persona_name" "$marker" "$description" ;;
             pi)    printf "  ${GREEN}/skill:%-18s${NC} %s\n" "$persona_name" "$description" ;;
+            zcode) printf "  ${GREEN}/%-24s${NC} %s\n" "$persona_name" "$description" ;;
             *)
                 if grep -q "^agent:[[:space:]]*true" "$persona_dir/SKILL.md"; then marker="${CYAN}+agent${NC}"; else marker="      "; fi
                 printf "  ${GREEN}%-25s${NC} %b  %s\n" "$persona_name" "$marker" "$description" ;;
@@ -638,6 +684,37 @@ fs.writeFileSync(dest, JSON.stringify(cfg, null, 2) + "\n");
     printf "${GREEN}✓ MCP servers written to %s${NC}\n" "$1/mcp.json"
 }
 
+# register_mcps_zcode — merge the servers into the "mcp.servers" key of
+# ~/.zcode/cli/config.json. ZCode's per-server schema is strict (an unknown
+# key silently drops the whole server), so each entry carries only
+# type/command/args/env/enabled. All other keys in an existing config
+# (hooks, plugins, …) survive.
+register_mcps_zcode() {
+    printf "${BLUE}Writing MCP config into ZCode config.json...${NC}\n"
+    require_node || return 1
+    [ -f "$MCP_CONFIG_FILE" ] || { printf "${RED}MCP config not found: %s${NC}\n" "$MCP_CONFIG_FILE"; return 1; }
+    local config_file="$HOME/.zcode/cli/config.json"
+    mkdir -p "$(dirname "$config_file")"
+    SRC="$MCP_CONFIG_FILE" ZCODE_JSON="$config_file" HOME_DIR="$HOME" node -e '
+const fs = require("fs");
+const src = JSON.parse(fs.readFileSync(process.env.SRC, "utf8")).mcpServers || {};
+const dest = process.env.ZCODE_JSON;
+let cfg = {};
+if (fs.existsSync(dest)) { try { cfg = JSON.parse(fs.readFileSync(dest, "utf8")); } catch (e) {} }
+const expand = (s) => String(s).split("$HOME").join(process.env.HOME_DIR);
+const servers = {};
+for (const [name, s] of Object.entries(src)) {
+    const entry = { type: "stdio", command: expand(s.command), args: (s.args || []).map(expand), enabled: true };
+    if (s.env) { entry.env = {}; for (const [k, v] of Object.entries(s.env)) entry.env[k] = expand(v); }
+    servers[name] = entry;
+}
+cfg.mcp = cfg.mcp || {};
+cfg.mcp.servers = Object.assign({}, cfg.mcp.servers, servers);
+fs.writeFileSync(dest, JSON.stringify(cfg, null, 2) + "\n");
+'
+    printf "${GREEN}✓ MCP servers written to %s${NC}\n" "$config_file"
+}
+
 # ── Hook wiring ──────────────────────────────────────────────────────────────
 # Hooks are referenced in place from shared/hooks (not copied), so the shared
 # check libraries resolve correctly via the wrappers' relative path.
@@ -718,6 +795,33 @@ const config = {
     }
 };
 fs.writeFileSync(env.HOOKS_JSON, JSON.stringify(config, null, 2) + "\n");
+'
+    printf "${GREEN}✓ Hooks written to %s${NC}\n" "$1"
+}
+
+# write_zcode_hooks <config_json> — merge the advisory hooks into ZCode's
+# config.json under hooks.events. Config-file hooks only fire when
+# hooks.enabled is true, and type "command" timeouts are seconds. Existing
+# keys elsewhere in the config (mcp, plugins, …) survive.
+write_zcode_hooks() {
+    require_node || return 1
+    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_HOOK" || return 1
+    mkdir -p "$(dirname "$1")"
+    HOOKS_JSON="$1" HOOK_SCRIPT="$CODE_HOOK" TASK_HOOK_SCRIPT="$TASK_HOOK" PRE_DEPLOY_HOOK_SCRIPT="$PRE_DEPLOY_HOOK" node -e '
+const fs = require("fs"), env = process.env;
+let cfg = {};
+if (fs.existsSync(env.HOOKS_JSON)) { try { cfg = JSON.parse(fs.readFileSync(env.HOOKS_JSON, "utf8")); } catch (e) {} }
+// Same events as the Claude settings hooks. Matchers are regexes over the
+// tool name; Write/Edit alias the apply-patch tool, as in the Codex hooks.
+cfg.hooks = {
+    enabled: true,
+    events: {
+        PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT, timeout: 30, enabled: true }] }],
+        PostToolUse: [{ matcher: "Edit|Write|NotebookEdit", hooks: [{ type: "command", command: env.HOOK_SCRIPT, timeout: 120, enabled: true }] }],
+        Stop: [{ hooks: [{ type: "command", command: env.TASK_HOOK_SCRIPT, timeout: 300, enabled: true }] }]
+    }
+};
+fs.writeFileSync(env.HOOKS_JSON, JSON.stringify(cfg, null, 2) + "\n");
 '
     printf "${GREEN}✓ Hooks written to %s${NC}\n" "$1"
 }

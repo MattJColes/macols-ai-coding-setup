@@ -13,9 +13,12 @@ Installers idempotently provision the agent CLI plus companion tooling
 `ensure_cli <tool>` SHALL return immediately when the native CLI install is
 already present, otherwise install: claude via the official curl installer;
 codex via the official standalone installer with brew (macOS) or npm as
-fallbacks; opencode via brew, npm, or the curl installer; pi (omp) via npm
+fallbacks; opencode via brew, npm, or the curl installer; pi installs both
+Pi agents — plain `pi` (`@earendil-works/pi-coding-agent`) and omp (via npm
 `--ignore-scripts` after ensuring the bun runtime, upgrading bun and retrying
-once if omp fails to run.
+once if omp fails to run); zcode verifies the ZCode desktop app is present
+and warns non-fatally when it isn't (nothing is downloaded — it is a desktop
+install, not a package-managed CLI).
 <!-- anchor: cli-provisioning.cli -->
 
 #### Scenario: Re-run with CLI present
