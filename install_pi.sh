@@ -127,7 +127,9 @@ while [ $# -gt 0 ]; do
         --mcps-only)     set_subset; DO_MCPS=true ;;
         # An explicit --models-only is a request to change the models, so it
         # overrides the "already configured, do not re-ask" short-circuit.
-        --models-only)   set_subset; DO_MODELS=true; OMP_RECONFIGURE_MODELS=true ;;
+        # Exported because configure_omp_models lives in lib/common.sh: a plain
+        # assignment reads as unused when shellcheck lints this file on its own.
+        --models-only)   set_subset; DO_MODELS=true; export OMP_RECONFIGURE_MODELS=true ;;
         --no-pi)         DO_PI=false ;;
         --no-packages)   DO_PACKAGES=false ;;
         --no-models)     DO_MODELS=false ;;
