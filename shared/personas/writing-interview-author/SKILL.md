@@ -1,6 +1,5 @@
 ---
 agent: true
-model: opus
 name: writing-interview-author
 description: Interviews Matt Coles before or during a piece of writing - asks probing questions one at a time to pull out what he actually thinks, the data behind his claims, and the phrases in his own words, then produces an interrogation brief that the writing skills draft from. Use before drafting a blog post, doc, memo or talk, or to stress-test an existing draft. Triggers on "interrogate me", "interview me", "ask me questions about", "help me figure out what I want to say", "pull this out of my head", "stress-test this draft".
 allowed-tools:

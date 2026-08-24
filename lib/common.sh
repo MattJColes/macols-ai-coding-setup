@@ -298,7 +298,6 @@ const pdir = process.env.PERSONAS_DIR, tdir = process.env.TARGET_DIR;
 // rules as the assembled steering. Source: shared/steering/response-format.md.
 const RESPONSE_FORMAT = fs.readFileSync(process.env.RESPONSE_FORMAT_FILE, "utf8").trim();
 const DEFAULT_TOOLS = ["Read", "Write", "Edit", "Bash", "Grep", "Glob"];
-const OC_MODEL = { opus: "anthropic/claude-opus-4-8", sonnet: "anthropic/claude-sonnet-4-6" };
 const OC_AGENT_TOOLS = ["read", "write", "edit", "bash", "grep", "glob"];
 
 function parse(text) {
@@ -381,9 +380,9 @@ for (const name of fs.readdirSync(pdir).sort()) {
     let fm = "---\n";
     if (tool === "codex") {
       // Codex custom agent (~/.codex/agents/<name>.toml). Required fields:
-      // name, description, developer_instructions. model is omitted so the
-      // agent inherits the parent session's (Codex model ids are OpenAI's —
-      // the persona's opus/sonnet hint does not map). Instructions use a TOML
+      // name, description, developer_instructions. As for all rendered
+      // agents, model is omitted — personas are model-agnostic and agents
+      // inherit the parent session's model. Instructions use a TOML
       // literal block (no escape processing); fall back to an escaped basic
       // string if the body ever contains the ''' delimiter.
       const b = body.endsWith("\n") ? body : body + "\n";
@@ -393,9 +392,8 @@ for (const name of fs.readdirSync(pdir).sort()) {
       else doc += "developer_instructions = '''\n" + b + "'''\n";
       fs.writeFileSync(path.join(tdir, pname + ".toml"), doc);
     } else if (tool === "opencode") {
-      const model = OC_MODEL[data.model] || OC_MODEL.sonnet;
-      fm += "description: " + (data.description || "") + "\n";
-      fm += "model: " + model + "\ntools:\n";
+      // No model: — the agent inherits the session's model.
+      fm += "description: " + (data.description || "") + "\ntools:\n";
       for (const t of OC_AGENT_TOOLS) fm += "  " + t + ": true\n";
       fm += "---\n";
       fs.writeFileSync(path.join(tdir, name + ".md"), fm + body);
@@ -404,8 +402,7 @@ for (const name of fs.readdirSync(pdir).sort()) {
       const tools = (data["allowed-tools"] && data["allowed-tools"].length) ? data["allowed-tools"] : DEFAULT_TOOLS;
       fm += "name: " + pname + "\n";
       fm += "description: " + data.description + "\n";
-      fm += "tools: " + tools.join(", ") + "\n";
-      fm += "model: " + (data.model || "sonnet") + "\n---\n";
+      fm += "tools: " + tools.join(", ") + "\n---\n";
       fs.writeFileSync(path.join(tdir, pname + ".md"), fm + body);
     }
     console.log("  ✓ " + pname);

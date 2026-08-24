@@ -18,8 +18,11 @@ LMSTUDIO_HOST="${LMSTUDIO_HOST:-localhost}"
 LMSTUDIO_PORT="${LMSTUDIO_PORT:-1234}"
 LMSTUDIO_API_URL="http://${LMSTUDIO_HOST}:${LMSTUDIO_PORT}/v1"
 
-# GLM-4.7-Flash model identifier (as shown in LM Studio)
+# GLM model identifier (as shown in LM Studio)
 # Common identifiers: glm-4.7-flash, zai-org/glm-4.7-flash
+# GLM-4.7-Flash is the newest flash-class GLM that runs locally; larger
+# GLM-5.x models (e.g. glm-5.3) have no local-sized variant — set GLM_MODEL
+# to one only when pointing at a server that can host it.
 GLM_MODEL="${GLM_MODEL:-glm-4.7-flash}"
 
 # OpenCode configuration paths
@@ -122,7 +125,7 @@ cat > "$OPENCODE_CONFIG_FILE" << EOF
           },
           "limit": {
             "context": 131072,
-            "output": 4096
+            "output": 32768
           }
         }
       },
@@ -166,11 +169,11 @@ echo -e "${BLUE}Adding shell aliases...${NC}"
 
 # Check if aliases already exist
 if ! grep -q "# OpenCode LM Studio aliases" "$SHELL_RC" 2>/dev/null; then
-    cat >> "$SHELL_RC" << 'EOF'
+    cat >> "$SHELL_RC" << EOF
 
 # OpenCode LM Studio aliases
-alias opencode-glm='opencode --model lmstudio/glm-4.7-flash'
-alias opencode-claude='opencode --model anthropic/claude-sonnet-4-6'
+alias opencode-glm='opencode --model lmstudio/${GLM_MODEL}'
+alias opencode-claude='opencode --model anthropic/claude-sonnet-5'
 alias lmstudio-status='curl -s http://localhost:1234/v1/models | jq .'
 EOF
     echo -e "${GREEN}OK Shell aliases added to ${SHELL_RC}${NC}"
@@ -237,7 +240,8 @@ echo "  lmstudio-status"
 echo -e "\n${YELLOW}Environment Variables:${NC}"
 echo "  LMSTUDIO_HOST - LM Studio host (default: localhost)"
 echo "  LMSTUDIO_PORT - LM Studio port (default: 1234)"
-echo "  GLM_MODEL     - Model identifier (default: glm-4.7-flash)"
+echo "  GLM_MODEL     - Model identifier (default: glm-4.7-flash for local GGUF;"
+echo "                  set a glm-5.3-class id when pointing at a server that can host it)"
 
 echo -e "\n${BLUE}Note: Restart your terminal or run 'source ${SHELL_RC}' to use aliases.${NC}"
 

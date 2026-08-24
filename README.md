@@ -264,7 +264,7 @@ workflow-maintain-spec-anchors persona. A repo opts in by adding rules under
 ## Personas
 
 Each persona is one file: `shared/personas/<name>/SKILL.md`. Its frontmatter
-(`agent: true`, `model:`, `allowed-tools:`) drives how each installer renders it.
+(`agent: true`, `allowed-tools:`, `user-invocable:`) drives how each installer renders it.
 Add or edit a persona once and every tool picks it up on the next install.
 
 - **Development:** development-build-python-backends,

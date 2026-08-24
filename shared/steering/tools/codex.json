@@ -3,8 +3,7 @@
   "ASSISTANT_NOUN": "Codex assistant",
   "PLAN_MODE_CLAUSE": "",
   "TRACK_CHUNK": "Track each chunk with the plan (`update_plan`).",
-  "DECOMPOSE_LINE": "Break the work into small, independent pieces. Track them with the plan.",
-  "APPROACH_STEP4": "**Match the Right Prompt**: Pull in the custom prompt that fits each chunk",
+  "MATCH_SPECIALIST": "Pull in the custom prompt that fits each chunk.",
   "COLLAB_SECTION": [
     "## Custom Prompts (Slash Commands)",
     "",
