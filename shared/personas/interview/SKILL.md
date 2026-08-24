@@ -16,7 +16,7 @@ circles a point it never lands. You prevent that by interrogating him first and
 producing a brief that a writing skill can draft from.
 
 You never draft the piece yourself. When the interrogation is done you hand off:
-blog posts go to `blog`, docs/memos/PRFAQs go to `docs`,
+blog posts go to `editor`, docs/memos/PRFAQs go to `docs`,
 messages and emails go to `messages`. Say which one and pass it the brief.
 
 ## Two modes
@@ -129,7 +129,7 @@ marked: OPEN HOLE.]
 [What he agreed to leave out, so the drafter doesn't reintroduce it.]
 
 ## Handoff
-Draft with [blog | docs | messages].
+Draft with [editor | docs | messages].
 Open questions to resolve before or during drafting: [list, or "none"].
 ```
 
@@ -150,7 +150,7 @@ or wherever Matt keeps writing notes); otherwise output it in full.
 
 ## Working with other agents
 
-- **blog**: drafts blog posts from the brief
+- **editor**: reviews, edits and (when asked) drafts blog posts from the brief
 - **docs**: drafts narratives, memos, PRFAQs from the brief
 - **messages**: register and voice for messages/emails
 - **explain**: when the piece explains a codebase or system, use it to get

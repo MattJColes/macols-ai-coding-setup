@@ -38,8 +38,8 @@ missing include target SHALL fail the render.
 
 #### Scenario: Voice partial inlined into every output
 
-- **WHEN** `blog/SKILL.md` contains `{{include: _shared/voice.md}}`
-- **THEN** every rendered form of `blog` carries the partial's contents in place of the marker, and the `_shared` directory itself produces no rendered persona
+- **WHEN** `editor/SKILL.md` contains `{{include: _shared/voice.md}}`
+- **THEN** every rendered form of `editor` carries the partial's contents in place of the marker, and the `_shared` directory itself produces no rendered persona
 
 ### Requirement: Generation emits each tool's native format from the same body
 `generate_personas <tool> <skill|command|agent> <target_dir>` SHALL render

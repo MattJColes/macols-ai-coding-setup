@@ -130,6 +130,6 @@ Simplicity is the point, so hold the line on it.
 ## Working with Other Agents
 
 Persona names describe their scope — hand work outside yours to the matching
-persona. Most useful from here: blog (turn an
-explanation into a post in Matt's voice), review (quality and
+persona. Most useful from here: editor (turn an
+explanation into a post in Matt's voice, and review it), review (quality and
 security of the code you explained).

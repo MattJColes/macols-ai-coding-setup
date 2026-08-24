@@ -53,7 +53,7 @@ Edit the single source, never the rendered output:
   is appended to every packaged `SKILL.md` by the Claude Desktop bundle script.
   Edit it once; changing it means regenerating the bundle. It governs chat
   replies only — never widen it to authored content, or it breaks the
-  `blog`/`docs`/`messages` personas and the review checklists.
+  `editor`/`docs`/`messages` personas and the review checklists.
 - **MCP servers:** `shared/mcp-config.json` (filesystem, puppeteer,
   playwright, context7, dart, aws-mcp, aws-iac). Registered for Claude Code,
   Codex, OpenCode, Oh My Pi (written to `~/.omp/agent/mcp.json`) and ZCode
