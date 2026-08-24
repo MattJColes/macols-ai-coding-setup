@@ -139,7 +139,7 @@ ensure_openspec() {
 }
 
 # ensure_ast_grep — install the ast-grep structural-search CLI used by the
-# quality-review-code persona and the Spec Anchors steering section. Idempotent:
+# review persona and the Spec Anchors steering section. Idempotent:
 # returns immediately when the CLI is on PATH. Global npm install (the
 # @ast-grep/cli package ships both `ast-grep` and `sg` binaries) — npm is the
 # one toolchain every installer already bootstraps, whereas brew is not
@@ -318,6 +318,11 @@ handle_common_install_flag() {
 # (Codex custom prompts were removed upstream in favour of Agent Skills, so
 # there is no prompt mode any more; command mode is ZCode's own slash-command
 # shape.)
+#
+# A persona body may reference shared partials with {{include: _shared/<file>.md}}
+# (paths relative to shared/personas/). Partials are inlined before emission so
+# every rendered form — skill, command or agent, any tool — is self-contained.
+# Directories starting with "_" hold partials, not personas, and need no SKILL.md.
 read -r -d '' PERSONA_GEN_JS <<'PERSONA_EOF' || true
 const fs = require("fs"), path = require("path");
 const mode = process.env.MODE, tool = process.env.TOOL;
@@ -326,6 +331,14 @@ const pdir = process.env.PERSONAS_DIR, tdir = process.env.TARGET_DIR;
 // rules as the assembled steering. Source: shared/steering/response-format.md.
 const RESPONSE_FORMAT = fs.readFileSync(process.env.RESPONSE_FORMAT_FILE, "utf8").trim();
 const DEFAULT_TOOLS = ["Read", "Write", "Edit", "Bash", "Grep", "Glob"];
+
+function applyIncludes(body) {
+  return body.replace(/\{\{include:\s*([^}\s]+)\s*\}\}/g, (_, rel) => {
+    const file = path.join(pdir, rel);
+    if (!fs.existsSync(file)) throw new Error("include not found: " + rel);
+    return fs.readFileSync(file, "utf8").trim();
+  });
+}
 
 function parse(text) {
   const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
@@ -363,7 +376,7 @@ for (const name of fs.readdirSync(pdir).sort()) {
   if (!fs.existsSync(src)) continue;
   const parsed = parse(fs.readFileSync(src, "utf8"));
   const data = parsed.data;
-  const body = parsed.body.trimEnd() + "\n\n" + RESPONSE_FORMAT + "\n";
+  const body = applyIncludes(parsed.body).trimEnd() + "\n\n" + RESPONSE_FORMAT + "\n";
   const pname = data.name || name;
   let label = name;
 
