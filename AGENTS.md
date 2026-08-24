@@ -52,7 +52,7 @@ Edit the single source, never the rendered output:
   `writing-draft-*` personas and the review checklists.
 - **MCP servers:** `shared/mcp-config.json` (filesystem, puppeteer,
   playwright, context7, dart, aws-mcp, aws-iac). Registered for Claude Code,
-  Codex and OpenCode. Oh My Pi has no MCP support.
+  Codex, OpenCode and Oh My Pi (written to `~/.omp/agent/mcp.json`).
 - **Hooks:** `shared/hooks/*` (post-code, post-task, pre-deploy),
   referenced in place, wired by `write_*_hooks` in `lib/common.sh`.
 - **Machine setup:** `machine-setup/` (macOS + Ubuntu 24/26). The herdr script

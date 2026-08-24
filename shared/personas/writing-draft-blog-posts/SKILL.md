@@ -1,6 +1,5 @@
 ---
 agent: true
-model: opus
 name: writing-draft-blog-posts
 description: Write short articles / posts for Matt Coles in his voice. Use when drafting, editing, or outlining posts for the blog.
 ---

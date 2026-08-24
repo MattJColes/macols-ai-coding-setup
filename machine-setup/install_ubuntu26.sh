@@ -333,14 +333,14 @@ read -p "Pull an Ollama model now? [y/N]: " -r REPLY
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo ""
     echo "Popular models:"
-    echo "  - qwen3:30b     (30B - powerful, recommended)"
-    echo "  - qwen2.5-coder (7B - coding focused)"
-    echo "  - deepseek-r1   (7B - reasoning focused)"
-    echo "  - llama3.2      (3B - fast, lightweight)"
-    echo "  - llama3.1      (8B - balanced)"
+    echo "  - qwen3.6:27b     (27B - powerful, recommended)"
+    echo "  - qwen3-coder:30b (30B MoE - coding focused)"
+    echo "  - devstral:24b    (24B - agentic coding)"
+    echo "  - gpt-oss:20b     (20B MoE - fast reasoning)"
+    echo "  - deepseek-r1     (7B - reasoning focused)"
     echo ""
-    read -rp "Enter model name [qwen3:30b]: " ollama_model
-    ollama_model=${ollama_model:-qwen3:30b}
+    read -rp "Enter model name [qwen3.6:27b]: " ollama_model
+    ollama_model=${ollama_model:-qwen3.6:27b}
 
     echo "Pulling $ollama_model..."
     ollama pull "$ollama_model"

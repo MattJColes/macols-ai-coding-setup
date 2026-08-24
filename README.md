@@ -58,8 +58,8 @@ flags to install those components together.
 # Claude Code MCPs and hooks only. Keep the existing Claude CLI.
 ./install_claudecode.sh --mcps-only --hooks-only --no-cli
 
-# Codex prompts plus shared AGENTS.md instructions
-./install_codex.sh --prompts-only --instructions-only --no-cli
+# Codex skills plus shared AGENTS.md instructions
+./install_codex.sh --skills-only --instructions-only --no-cli
 ```
 
 Component flags only work on the per-tool installers. Run one with `--help` to
@@ -82,7 +82,7 @@ packages alone, then writes the project files supported by that tool:
 | Tool | Project-local output |
 |---|---|
 | Claude Code | `.claude/agents/`, `.claude/skills/` |
-| Codex | `.codex/prompts/`, `.codex/skills/`, `.codex/agents/`, `AGENTS.md` |
+| Codex | `.codex/skills/`, `.codex/agents/`, `AGENTS.md` |
 | OpenCode | `.opencode/agents/`, `.opencode/skills/` |
 | Oh My Pi | `.omp/skills/`, `AGENTS.md` |
 
@@ -90,7 +90,7 @@ You can combine `--project` with component selection, such as
 `install_codex.sh --project --skills-only`.
 
 > [!CAUTION]
-> The installers delete and rebuild generated agents, skills and prompts
+> The installers delete and rebuild generated agents and skills
 > directories. Move or commit any hand-written files in those directories
 > first. JSON and TOML settings owned by the user are merged.
 
@@ -108,7 +108,7 @@ macols-ai-coding-setup/
 ├── bin/
 │   └── claude-launch.sh    # root-safe launcher for --dangerously-skip-permissions
 ├── shared/                 # ── single sources of truth ──
-│   ├── personas/<name>/SKILL.md   # specialist personas (agents/skills/prompts)
+│   ├── personas/<name>/SKILL.md   # specialist personas (agents/skills)
 │   ├── steering/base.md + tools/  # system steering, tokenised per tool
 │   ├── mcp-config.json            # MCP server definitions
 │   ├── hooks/                     # post-code / post-task / pre-deploy + plugins
@@ -132,9 +132,9 @@ the config this repo provides.
 | Installer | Selectable components | Skip CLI install | Other choices |
 |---|---|---|---|
 | `install_claudecode.sh` | `--agents-only`, `--skills-only`, `--mcps-only`, `--hooks-only` | `--no-cli` | `--project`, `--list` |
-| `install_codex.sh` | `--prompts-only`, `--skills-only`, `--agents-only`, `--instructions-only`, `--mcps-only`, `--hooks-only` | `--no-cli` | `--project`, `--list` |
+| `install_codex.sh` | `--skills-only`, `--agents-only`, `--instructions-only`, `--mcps-only`, `--hooks-only` | `--no-cli` | `--project`, `--list` |
 | `install_opencode.sh` | `--agents-only`, `--skills-only`, `--mcps-only`, `--hooks-only` | `--no-cli` | `--project`, `--list` |
-| `install_pi.sh` | `--skills-only`, `--context-only`, `--hooks-only`, `--packages-only` | `--no-pi` | `--no-packages`, `--project`, `--list` (no MCP support) |
+| `install_pi.sh` | `--skills-only`, `--context-only`, `--hooks-only`, `--packages-only`, `--mcps-only` | `--no-pi` | `--no-packages`, `--project`, `--list` |
 
 `--no-cli` and `--no-pi` skip the binary install or upgrade. They don't remove
 anything. MCP registration still needs the tool's CLI on your `PATH`.
@@ -181,13 +181,14 @@ launcher.
 | Tool | Personas as | Steering | MCP | Hooks |
 |------|-------------|----------|-----|-------|
 | Claude Code | agents `~/.claude/agents/`, skills `~/.claude/skills/` | `~/.claude/CLAUDE.md` | `claude mcp add-json` → `~/.claude.json` | `~/.claude/settings.json` |
-| Codex | prompts `~/.codex/prompts/`, skills `~/.codex/skills/`, agents `~/.codex/agents/*.toml` | `~/.codex/AGENTS.md` | `codex mcp add` → `~/.codex/config.toml` | `~/.codex/hooks.json` |
+| Codex | skills `~/.codex/skills/`, agents `~/.codex/agents/*.toml` | `~/.codex/AGENTS.md` | `codex mcp add` → `~/.codex/config.toml` | `~/.codex/hooks.json` |
 | OpenCode | agents `~/.config/opencode/agents/`, skills `…/skills/` | `~/.config/opencode/AGENTS.md` | `mcp` key in `~/.config/opencode/opencode.json` | plugin in `…/plugins/` |
-| Oh My Pi | Agent Skills `~/.omp/agent/skills/` (`/skill:<name>`) | `~/.omp/agent/AGENTS.md` | none by design | `pi-checks` extension |
+| Oh My Pi | Agent Skills `~/.omp/agent/skills/` (`/skill:<name>`) | `~/.omp/agent/AGENTS.md` | `mcpServers` key in `~/.omp/agent/mcp.json` | `pi-checks` extension |
 
-Oh My Pi doesn't support MCP. External capabilities come from CLI tools, Agent
-Skills and packages installed with `omp install <pkg>`. It replaces the old
-plain `pi` agent, and the installer sets up the Bun runtime it needs.
+Oh My Pi replaces the old plain `pi` agent, and the installer sets up the Bun
+runtime it needs. Codex removed custom prompts (`~/.codex/prompts/`) upstream
+in favour of Agent Skills; the installer cleans up prompts left by earlier
+versions of this repo.
 
 ### Git worktree workflow
 
@@ -234,7 +235,7 @@ Here it is always on, and it reaches every surface from that one file:
 
 - **Steering:** substituted into `base.md` via `{{RESPONSE_FORMAT}}`, so all
   four tools' steering documents carry it.
-- **Personas:** appended to every rendered agent, skill and Codex prompt by
+- **Personas:** appended to every rendered agent and skill by
   `generate_personas` — a subagent has its own system prompt and would
   otherwise miss the rules.
 - **Claude Desktop:** appended to every `SKILL.md` in the packaged bundle.
@@ -264,7 +265,7 @@ workflow-maintain-spec-anchors persona. A repo opts in by adding rules under
 ## Personas
 
 Each persona is one file: `shared/personas/<name>/SKILL.md`. Its frontmatter
-(`agent: true`, `model:`, `allowed-tools:`) drives how each installer renders it.
+(`agent: true`, `allowed-tools:`, `user-invocable:`) drives how each installer renders it.
 Add or edit a persona once and every tool picks it up on the next install.
 
 - **Development:** development-build-python-backends,

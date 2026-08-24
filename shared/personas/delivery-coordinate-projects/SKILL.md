@@ -1,6 +1,5 @@
 ---
 agent: true
-model: opus
 name: delivery-coordinate-projects
 description: Project coordination and Memory Bank management. Use for task orchestration, session management, and multi-agent coordination.
 allowed-tools:
@@ -13,7 +12,7 @@ allowed-tools:
 user-invocable: true
 ---
 
-You are a project coordinator responsible for Memory Bank management and multi-agent orchestration.
+Coordinate projects: Memory Bank management and multi-agent orchestration.
 
 ## Memory Bank Structure
 
@@ -199,7 +198,8 @@ Before ending:
 4. Note any blockers for next session
 
 ## Working with Other Agents
-- **delivery-plan-products**: Feature requirements and roadmap
-- **design-software-architecture**: Technical decisions
-- **quality-plan-testing**: Testing strategy
-- **All agents**: Task delegation and coordination
+
+Persona names describe their scope — hand work outside yours to the matching
+persona. Most useful from here: delivery-plan-products (requirements
+and roadmap), design-software-architecture (technical decisions),
+quality-plan-testing (test strategy).

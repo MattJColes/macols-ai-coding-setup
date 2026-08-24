@@ -3,8 +3,7 @@
   "ASSISTANT_NOUN": "OpenCode assistant",
   "PLAN_MODE_CLAUSE": "",
   "TRACK_CHUNK": "Track each chunk as you work through it.",
-  "DECOMPOSE_LINE": "Break the work into small, independent pieces and track them as you go.",
-  "APPROACH_STEP4": "**Match the Right Persona**: Pull in the agent or skill that fits each chunk",
+  "MATCH_SPECIALIST": "Pull in the agent or skill that fits each chunk.",
   "COLLAB_SECTION": [
     "## Agents & Skills",
     "",

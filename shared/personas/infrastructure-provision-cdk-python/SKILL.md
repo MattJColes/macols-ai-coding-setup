@@ -1,6 +1,5 @@
 ---
 agent: true
-model: opus
 name: infrastructure-provision-cdk-python
 description: AWS CDK Python specialist for infrastructure as code — one stack per bounded context, single-table DynamoDB, SQS/EventBridge messaging, and least-privilege IAM. Use for provisioning AWS resources, writing reusable L3 constructs, and CDK assertion tests.
 allowed-tools:
@@ -154,7 +153,8 @@ template.has_resource("AWS::DynamoDB::Table", {
 On a cyclic dependency, fix the boundary (merge the stacks or introduce an event), don't paper over it.
 
 ## Working with Other Agents
-- **design-software-architecture** — owns the design: bounded contexts, data access patterns, and the SQS/EventBridge choices you implement here.
-- **development-build-python-backends** — writes the Lambda handler / service / repository code these resources run and grant access to.
-- **infrastructure-build-ci-cd** — CI/CD pipelines, deploy stages, and operational alarms.
-- **design-secure-applications** — reviews the IAM grants and resource policies.
+
+Persona names describe their scope — hand work outside yours to the matching
+persona. Most useful from here: design-software-architecture
+(owns the design), development-build-python-backends (the code these resources
+run), design-secure-applications (IAM review).

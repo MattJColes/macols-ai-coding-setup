@@ -4,13 +4,13 @@
 #
 # Oh My Pi (`omp`) replaces the plain Pi agent — the tool keyword and this
 # file's name stay `pi` so existing invocations keep working. Ensures the
-# `omp` CLI, then installs Agent Skills, the system AGENTS.md, the pi-checks
-# extension and omp's pluggable packages — all from the single sources of
-# truth under shared/.
+# `omp` CLI, then installs Agent Skills, the system AGENTS.md, MCP servers,
+# the pi-checks extension and omp's pluggable packages — all from the single
+# sources of truth under shared/.
 #
 # omp differs from the other CLIs: skills are invoked as /skill:<name>, hooks
-# are TypeScript extensions (not a settings hook array), and there is NO MCP —
-# omp exposes external capabilities through CLI tools, Agent Skills and packages.
+# are TypeScript extensions (not a settings hook array), and MCP servers are
+# configured in ~/.omp/agent/mcp.json rather than registered via a CLI.
 #
 set -euo pipefail
 
@@ -24,10 +24,10 @@ SKILLS_DIR="$PI_DIR/skills"
 EXTENSIONS_DIR="$PI_DIR/extensions"
 AGENTS_FILE="$PI_DIR/AGENTS.md"
 
-# omp packages, installed via `omp install <source>`. The npm-published ones
-# need the explicit `npm:` source prefix — a bare name (e.g. `omp install
-# pi-agent-web-access`) is treated as a local filesystem PATH and fails with
-# "Path does not exist". Git-hosted packages use the `git:` prefix.
+# omp packages, installed via `omp install <source>` (now an alias of
+# `omp plugin install`). Bare names resolve as npm packages; git-hosted
+# packages use the `github:user/repo` form (the old pi-style
+# `git:github.com/...` prefix is no longer accepted).
 #
 # The other legacy pi packages (context-mode, pi-subagents, pi-ask-user,
 # pi-markdown-preview, pi-btw) fail omp's extension validation — omp ships
@@ -40,15 +40,16 @@ AGENTS_FILE="$PI_DIR/AGENTS.md"
 # which ignores try blocks, so it reports "Missing 'default' export" and the
 # install rolls back — it never installs. Re-add if fixed upstream.
 #   • ponytail             — lazy/YAGNI mode extension (github.com/DietrichGebert/ponytail;
-#                            also published as npm:@dietrichgebert/ponytail if git fetch is blocked)
-OMP_PACKAGES="git:github.com/$PONYTAIL_REPO"
+#                            also published as @dietrichgebert/ponytail on npm if git fetch is blocked)
+OMP_PACKAGES="github:$PONYTAIL_REPO"
 
 usage() {
     cat << EOF
 Usage: $0 [OPTIONS]
 
 Installs (and, unless told otherwise, the omp CLI itself) Agent Skills, the
-system AGENTS.md, the pi-checks extension and omp packages from shared/.
+system AGENTS.md, MCP servers, the pi-checks extension and omp packages from
+shared/.
 
 Options:
     -h, --help        Show this help message
@@ -56,7 +57,7 @@ Options:
     --context-only    Install only the system AGENTS.md
     --hooks-only      Install only the pi-checks extension
     --packages-only   Install only the omp packages
-    --mcps-only       (omp has no MCP — prints guidance and exits)
+    --mcps-only       Install only MCP servers (~/.omp/agent/mcp.json)
     --no-pi           Skip installing/upgrading the omp binary
     --no-packages     Skip installing omp packages
     -p, --project     Install skills to ./.omp/skills and AGENTS.md to ./AGENTS.md (implies --no-pi)
@@ -84,19 +85,9 @@ install_packages() {
     done
 }
 
-print_mcp_guidance() {
-    printf "${YELLOW}omp has no built-in MCP support.${NC}\n"
-    cat << EOF
-omp deliberately omits MCP — it exposes capabilities as CLI tools (with READMEs)
-and Agent Skills instead. To give omp an external capability, install a CLI tool
-and document it, add a skill under $SKILLS_DIR, or install a package via
-'omp install <pkg>'. Nothing to register here.
-EOF
-}
-
-DO_SKILLS=true; DO_CONTEXT=true; DO_HOOKS=true; DO_PI=true; DO_PACKAGES=true
+DO_SKILLS=true; DO_CONTEXT=true; DO_HOOKS=true; DO_PI=true; DO_PACKAGES=true; DO_MCPS=true
 PROJECT_INSTALL=false; SUBSET=false
-set_subset() { if [ "$SUBSET" = false ]; then DO_SKILLS=false; DO_CONTEXT=false; DO_HOOKS=false; DO_PI=false; DO_PACKAGES=false; SUBSET=true; fi; }
+set_subset() { if [ "$SUBSET" = false ]; then DO_SKILLS=false; DO_CONTEXT=false; DO_HOOKS=false; DO_PI=false; DO_PACKAGES=false; DO_MCPS=false; SUBSET=true; fi; }
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -106,7 +97,7 @@ while [ $# -gt 0 ]; do
         --context-only)  set_subset; DO_CONTEXT=true ;;
         --hooks-only)    set_subset; DO_HOOKS=true ;;
         --packages-only) set_subset; DO_PACKAGES=true ;;
-        --mcps-only)     print_mcp_guidance; exit 0 ;;
+        --mcps-only)     set_subset; DO_MCPS=true ;;
         --no-pi)         DO_PI=false ;;
         --no-packages)   DO_PACKAGES=false ;;
         -p|--project)    PROJECT_INSTALL=true; DO_PI=false ;;
@@ -136,6 +127,9 @@ if [ "$DO_CONTEXT" = true ]; then
         assemble_steering pi "$AGENTS_FILE"; append_ponytail_ruleset "$AGENTS_FILE"
     fi; echo ""
 fi
+if [ "$DO_MCPS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
+    register_mcps_pi "$PI_DIR" || printf "${YELLOW}⚠ MCP registration skipped/failed${NC}\n"; echo ""
+fi
 if [ "$DO_HOOKS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     install_pi_extension "$EXTENSIONS_DIR"
     echo ""
@@ -147,5 +141,5 @@ echo "  • Run 'omp' to start the agent (or '/reload' inside omp to pick up the
 echo "  • Skills are available as /skill:<name> (e.g. /skill:development-build-python-backends)"
 echo "  • The pi-checks extension runs tests/lint/security advisories after edits and turns,"
 echo "    and a cdk deploy/destroy confirmation guard"
-echo "  • omp has no MCP — expose external capabilities as CLI tools + skills + packages"
+echo "  • MCP servers are configured in $PI_DIR/mcp.json (aws-* MCPs need ~/.aws/credentials)"
 echo ""

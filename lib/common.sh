@@ -287,9 +287,10 @@ handle_common_install_flag() {
 #
 # One generator emits each tool's native format from the SAME persona body:
 #   • skill mode  → Claude/OpenCode/Pi/Codex Agent Skill (<name>/SKILL.md)
-#   • prompt mode → Codex custom prompt / slash command (<name>.md)
 #   • agent mode  → Claude/OpenCode agent (<name>.md) or Codex agent (<name>.toml),
 #                   only when frontmatter has agent: true
+# (Codex custom prompts were removed upstream in favour of Agent Skills, so
+# there is no prompt mode any more.)
 read -r -d '' PERSONA_GEN_JS <<'PERSONA_EOF' || true
 const fs = require("fs"), path = require("path");
 const mode = process.env.MODE, tool = process.env.TOOL;
@@ -298,8 +299,6 @@ const pdir = process.env.PERSONAS_DIR, tdir = process.env.TARGET_DIR;
 // rules as the assembled steering. Source: shared/steering/response-format.md.
 const RESPONSE_FORMAT = fs.readFileSync(process.env.RESPONSE_FORMAT_FILE, "utf8").trim();
 const DEFAULT_TOOLS = ["Read", "Write", "Edit", "Bash", "Grep", "Glob"];
-const OC_MODEL = { opus: "anthropic/claude-opus-4-8", sonnet: "anthropic/claude-sonnet-4-6" };
-const OC_AGENT_TOOLS = ["read", "write", "edit", "bash", "grep", "glob"];
 
 function parse(text) {
   const m = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
@@ -341,16 +340,7 @@ for (const name of fs.readdirSync(pdir).sort()) {
   const pname = data.name || name;
   let label = name;
 
-  if (mode === "prompt") {
-    // Codex custom prompt (slash command): description + argument-hint, no name.
-    let fm = "---\n";
-    if (data.description) fm += "description: " + data.description + "\n";
-    fm += "argument-hint: \"[task or context]\"\n";
-    fm += "---\n";
-    fs.writeFileSync(path.join(tdir, name + ".md"), fm + body);
-    console.log("  ✓ /" + name);
-    count++;
-  } else if (mode === "skill") {
+  if (mode === "skill") {
     let fm = "---\n";
     if (tool === "codex") {
       // Codex Agent Skill (~/.codex/skills/<name>/SKILL.md): name + description
@@ -381,9 +371,9 @@ for (const name of fs.readdirSync(pdir).sort()) {
     let fm = "---\n";
     if (tool === "codex") {
       // Codex custom agent (~/.codex/agents/<name>.toml). Required fields:
-      // name, description, developer_instructions. model is omitted so the
-      // agent inherits the parent session's (Codex model ids are OpenAI's —
-      // the persona's opus/sonnet hint does not map). Instructions use a TOML
+      // name, description, developer_instructions. As for all rendered
+      // agents, model is omitted — personas are model-agnostic and agents
+      // inherit the parent session's model. Instructions use a TOML
       // literal block (no escape processing); fall back to an escaped basic
       // string if the body ever contains the ''' delimiter.
       const b = body.endsWith("\n") ? body : body + "\n";
@@ -393,19 +383,17 @@ for (const name of fs.readdirSync(pdir).sort()) {
       else doc += "developer_instructions = '''\n" + b + "'''\n";
       fs.writeFileSync(path.join(tdir, pname + ".toml"), doc);
     } else if (tool === "opencode") {
-      const model = OC_MODEL[data.model] || OC_MODEL.sonnet;
-      fm += "description: " + (data.description || "") + "\n";
-      fm += "model: " + model + "\ntools:\n";
-      for (const t of OC_AGENT_TOOLS) fm += "  " + t + ": true\n";
-      fm += "---\n";
+      // No model: (inherits the session's model) and no tools: map — the
+      // boolean tool map is deprecated in OpenCode; the default toolset
+      // applies, and per-tool restrictions belong in `permission` config.
+      fm += "description: " + (data.description || "") + "\n---\n";
       fs.writeFileSync(path.join(tdir, name + ".md"), fm + body);
     } else {
       // claudecode agent.
       const tools = (data["allowed-tools"] && data["allowed-tools"].length) ? data["allowed-tools"] : DEFAULT_TOOLS;
       fm += "name: " + pname + "\n";
       fm += "description: " + data.description + "\n";
-      fm += "tools: " + tools.join(", ") + "\n";
-      fm += "model: " + (data.model || "sonnet") + "\n---\n";
+      fm += "tools: " + tools.join(", ") + "\n---\n";
       fs.writeFileSync(path.join(tdir, pname + ".md"), fm + body);
     }
     console.log("  ✓ " + pname);
@@ -622,6 +610,34 @@ fs.writeFileSync(dest, JSON.stringify(cfg, null, 2) + "\n");
     printf "${GREEN}✓ MCP servers written to %s${NC}\n" "$config_dir/opencode.json"
 }
 
+# register_mcps_pi <agent_dir> — write the "mcpServers" key into <agent_dir>/mcp.json.
+# Oh My Pi reads MCP config from ~/.omp/agent/mcp.json in the same
+# {"mcpServers": {...}} shape as shared/mcp-config.json; other keys in the
+# file (e.g. disabledServers) are preserved.
+register_mcps_pi() {
+    printf "${BLUE}Writing MCP config into mcp.json...${NC}\n"
+    require_node || return 1
+    [ -f "$MCP_CONFIG_FILE" ] || { printf "${RED}MCP config not found: %s${NC}\n" "$MCP_CONFIG_FILE"; return 1; }
+    mkdir -p "$1"
+    SRC="$MCP_CONFIG_FILE" PI_MCP_JSON="$1/mcp.json" HOME_DIR="$HOME" node -e '
+const fs = require("fs");
+const src = JSON.parse(fs.readFileSync(process.env.SRC, "utf8")).mcpServers || {};
+const dest = process.env.PI_MCP_JSON;
+let cfg = {};
+if (fs.existsSync(dest)) { try { cfg = JSON.parse(fs.readFileSync(dest, "utf8")); } catch (e) {} }
+const expand = (s) => String(s).split("$HOME").join(process.env.HOME_DIR);
+const servers = {};
+for (const [name, s] of Object.entries(src)) {
+    const entry = { command: expand(s.command), args: (s.args || []).map(expand) };
+    if (s.env) { entry.env = {}; for (const [k, v] of Object.entries(s.env)) entry.env[k] = expand(v); }
+    servers[name] = entry;
+}
+cfg.mcpServers = servers;
+fs.writeFileSync(dest, JSON.stringify(cfg, null, 2) + "\n");
+'
+    printf "${GREEN}✓ MCP servers written to %s${NC}\n" "$1/mcp.json"
+}
+
 # ── Hook wiring ──────────────────────────────────────────────────────────────
 # Hooks are referenced in place from shared/hooks (not copied), so the shared
 # check libraries resolve correctly via the wrappers' relative path.
@@ -707,6 +723,8 @@ fs.writeFileSync(env.HOOKS_JSON, JSON.stringify(config, null, 2) + "\n");
 }
 
 # install_opencode_plugin <plugins_dir>
+# The installed file must be .js — OpenCode's plugin loader scans only
+# *.ts and *.js, so a .mjs plugin is silently never loaded.
 install_opencode_plugin() {
     check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_CHECK" "$HOOKS_DIR/opencode_post_code_plugin.mjs" || return 1
     mkdir -p "$1"
@@ -714,8 +732,8 @@ install_opencode_plugin() {
     sed -e "s|__HOOK_SCRIPT_PATH__|${CODE_HOOK}|g" \
         -e "s|__TASK_HOOK_SCRIPT_PATH__|${TASK_HOOK}|g" \
         -e "s|__PRE_DEPLOY_CHECK_PATH__|${PRE_DEPLOY_CHECK}|g" \
-        "$HOOKS_DIR/opencode_post_code_plugin.mjs" > "$1/post_code_hook_plugin.mjs"
-    printf "${GREEN}✓ Plugin installed to %s${NC}\n" "$1/post_code_hook_plugin.mjs"
+        "$HOOKS_DIR/opencode_post_code_plugin.mjs" > "$1/post_code_hook_plugin.js"
+    printf "${GREEN}✓ Plugin installed to %s${NC}\n" "$1/post_code_hook_plugin.js"
 }
 
 # install_pi_extension <extensions_dir> — bake the repo hooks dir into pi-checks.ts.

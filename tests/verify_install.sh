@@ -71,7 +71,7 @@ verify_claudecode() {
 verify_codex() {
     local d="$HOME/.codex"
     soft "codex --version" "command -v codex >/dev/null && codex --version >/dev/null 2>&1"
-    pass "prompts in ~/.codex/prompts/*.md"       "count_gt0 '$d/prompts' '*.md' 1"
+    pass "no legacy prompts dir (~/.codex/prompts removed)" "[ ! -d '$d/prompts' ]"
     pass "skills in ~/.codex/skills/*/SKILL.md"   "count_gt0 '$d/skills' 'SKILL.md' 3"
     pass "agents in ~/.codex/agents/*.toml"       "count_gt0 '$d/agents' '*.toml' 1"
     pass "agent toml has developer_instructions"  "grep -q 'developer_instructions' '$d/agents/quality-review-code.toml'"
@@ -79,7 +79,6 @@ verify_codex() {
     pass "~/.codex/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
     pass "~/.codex/AGENTS.md has response format (once)" "rf_once '$d/AGENTS.md'"
     pass "every ~/.codex agent has response format"   "rf_every '$d/agents' '*.toml'"
-    pass "every ~/.codex prompt has response format"  "rf_every '$d/prompts' '*.md'"
     pass "every ~/.codex skill has response format"   "rf_every '$d/skills' 'SKILL.md'"
     if has_jq; then
         pass "hooks.json top level is Codex's description/hooks" "jq -e '[keys[] | select(. != \"description\" and . != \"hooks\")] | length == 0' '$d/hooks.json' >/dev/null"
@@ -99,9 +98,10 @@ verify_opencode() {
     pass "~/.config/opencode/AGENTS.md has response format (once)" "rf_once '$d/AGENTS.md'"
     pass "every ~/.config/opencode agent has response format" "rf_every '$d/agents' '*.md'"
     pass "every ~/.config/opencode skill has response format" "rf_every '$d/skills' 'SKILL.md'"
-    pass "plugins/post_code_hook_plugin.mjs exists" "[ -f '$d/plugins/post_code_hook_plugin.mjs' ]"
-    pass "plugin placeholders substituted" "! grep -q '__.*_PATH__' '$d/plugins/post_code_hook_plugin.mjs'"
-    pass "plugin wires pre-deploy check" "grep -q 'pre_deploy_check.sh' '$d/plugins/post_code_hook_plugin.mjs'"
+    pass "plugins/post_code_hook_plugin.js exists (.js — OpenCode ignores .mjs)" "[ -f '$d/plugins/post_code_hook_plugin.js' ]"
+    pass "no stale .mjs plugin remains" "[ ! -f '$d/plugins/post_code_hook_plugin.mjs' ]"
+    pass "plugin placeholders substituted" "! grep -q '__.*_PATH__' '$d/plugins/post_code_hook_plugin.js'"
+    pass "plugin wires pre-deploy check" "grep -q 'pre_deploy_check.sh' '$d/plugins/post_code_hook_plugin.js'"
     if has_jq; then
         pass "opencode.json has filesystem MCP under .mcp" "jq -e '.mcp.filesystem' '$d/opencode.json' >/dev/null"
     fi
@@ -119,6 +119,9 @@ verify_pi() {
     pass "extensions/pi-checks.ts exists" "[ -f '$d/extensions/pi-checks.ts' ]"
     pass "extension hooks dir substituted" "! grep -q '__PI_HOOKS_DIR__' '$d/extensions/pi-checks.ts'"
     pass "extension wires pre-deploy check" "grep -q 'pre_deploy_check.sh' '$d/extensions/pi-checks.ts'"
+    if has_jq; then
+        pass "mcp.json has filesystem MCP under .mcpServers" "jq -e '.mcpServers.filesystem' '$d/mcp.json' >/dev/null"
+    fi
 }
 
 printf '\n=== Verifying %s ===\n' "$TOOL"

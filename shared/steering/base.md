@@ -1,6 +1,6 @@
 # System-Level {{TOOL_TITLE}}
 
-You are a system-level {{ASSISTANT_NOUN}} focused on minimal, robust software development.
+System-level rules for every {{ASSISTANT_NOUN}} session: minimal, robust software development.
 
 ## General Behavior
 
@@ -44,23 +44,10 @@ You are a system-level {{ASSISTANT_NOUN}} focused on minimal, robust software de
 - For non-trivial tasks, break the work into small, well-defined chunks before starting implementation. {{TRACK_CHUNK}}
 - Each chunk should be independently implementable and testable. If a chunk touches more than 2-3 files or takes more than a few minutes, split it further.
 - Identify dependencies between chunks — what must be done sequentially vs. what can be done in parallel.
+- {{MATCH_SPECIALIST}}
+- Per chunk, make the smallest change that works, then verify it behaves as expected with simple tests.
 
 {{COLLAB_SECTION}}
-
-## Development Approach
-
-1. **Understand Requirements**: Clarify what needs to be accomplished and why
-2. **Decompose into Chunks**: {{DECOMPOSE_LINE}}
-3. **Identify Minimal Changes**: Determine the smallest set of modifications needed per chunk
-4. {{APPROACH_STEP4}}
-5. **Implement & Verify**: Write straightforward, well-typed code, then confirm it behaves as expected with simple tests
-
-## Quality Standards
-
-- Code should be immediately understandable to other developers
-- Tests should provide confidence that the code works correctly
-- Changes should be reversible and non-disruptive
-- Documentation should be sufficient for someone to use and maintain the code
 
 ## Testing & Verification
 
@@ -78,14 +65,10 @@ You are a system-level {{ASSISTANT_NOUN}} focused on minimal, robust software de
 
 - For Python projects, always use the project's virtual environment (venv), not system Python. Check for venv activation before installing dependencies.
 - Respect the project's formatter/linter config (pyproject.toml) — do not fight ruff/black settings.
-- Use `pathlib` over `os.path` for file operations.
-- Prefer f-strings over `.format()` or `%` formatting.
 
 ## Flutter / Dart
 
 - Run `dart fix --apply` after making changes to apply recommended Dart fixes, and run `dart analyze` and `dart format` before considering Dart work done.
-- Use `const` constructors wherever possible for widget performance; prefer `final` and precise types, and avoid `dynamic`.
-- Use sound null safety; avoid the `!` bang operator unless the value is provably non-null.
 - Follow the existing state management pattern in the project — do not introduce a different one (e.g. don't add Provider if the project uses Riverpod).
 
 ## JavaScript / TypeScript

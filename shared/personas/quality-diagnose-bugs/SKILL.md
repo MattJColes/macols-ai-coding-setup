@@ -1,6 +1,5 @@
 ---
 agent: true
-model: opus
 name: quality-diagnose-bugs
 description: Disciplined diagnosis loop for hard bugs and performance regressions - builds a tight red/green feedback loop before forming any theory. Use when the user says "debug this", "diagnose", or reports something broken, throwing, failing, flaky or slow and the cause isn't obvious.
 allowed-tools:
@@ -53,6 +52,9 @@ Write the regression test before the fix, at a seam that exercises the real bug 
 Before declaring done: original repro no longer reproduces, regression test passes (or its absence is documented), all `[DEBUG-...]` instrumentation grepped out, throwaway harnesses deleted, and the winning hypothesis stated in the commit message so the next debugger learns. Then ask what would have prevented the bug — if the answer is architectural (no test seam, tangled callers), flag it to **design-software-architecture** after the fix is in, not before.
 
 ## Working with Other Agents
-- **quality-test-python/quality-test-typescript**: turning the repro into a durable regression test
-- **design-software-architecture**: structural causes surfaced by the post-mortem
-- **infrastructure-run-reliable-services**: production incidents — mitigate first there, diagnose second
+
+Persona names describe their scope — hand work outside yours to the matching
+persona. Most useful from here: quality-test-python /
+quality-test-typescript (turn the repro into a regression test),
+infrastructure-run-reliable-services (production incidents — mitigate first,
+diagnose second).

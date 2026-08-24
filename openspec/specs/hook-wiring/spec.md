@@ -48,7 +48,8 @@ for its `apply_patch` tool.
 
 ### Requirement: The OpenCode plugin is installed with substituted hook paths
 `install_opencode_plugin <plugins_dir>` SHALL render
-`shared/hooks/opencode_post_code_plugin.mjs` into the plugins dir with the
+`shared/hooks/opencode_post_code_plugin.mjs` into the plugins dir as a `.js`
+file (OpenCode's plugin loader scans only `*.ts`/`*.js`) with the
 `__HOOK_SCRIPT_PATH__`/`__TASK_HOOK_SCRIPT_PATH__`/
 `__PRE_DEPLOY_CHECK_PATH__` placeholders replaced by the absolute shared-hook
 paths, removing any previously installed copy first. The plugin runs the
