@@ -22,7 +22,24 @@ every rendered agent inherits its tool's session/default model.
 #### Scenario: One persona is both agent and skill
 
 - **WHEN** a persona's frontmatter has both `agent: true` and `user-invocable: true`
-- **THEN** the same body renders as an agent and as a skill (e.g. code-reviewer)
+- **THEN** the same body renders as an agent and as a skill (e.g. review)
+
+### Requirement: Persona bodies may inline shared partials
+
+A persona body MAY reference partials under `shared/personas/_*/` with
+`{{include: _shared/<file>.md}}` markers (paths relative to
+`shared/personas/`). `generate_personas` and the Claude Desktop packaging
+script SHALL inline each marker with the partial's contents before emission,
+so every rendered form — skill, command or agent, any tool — is self-contained and no
+rendered copy of a partial is hand-maintained. Directories under
+`shared/personas/` whose name starts with `_` hold partials and SHALL NOT be
+treated as personas (no `SKILL.md` required, never rendered or listed). A
+missing include target SHALL fail the render.
+
+#### Scenario: Voice partial inlined into every output
+
+- **WHEN** `blog/SKILL.md` contains `{{include: _shared/voice.md}}`
+- **THEN** every rendered form of `blog` carries the partial's contents in place of the marker, and the `_shared` directory itself produces no rendered persona
 
 ### Requirement: Generation emits each tool's native format from the same body
 `generate_personas <tool> <skill|command|agent> <target_dir>` SHALL render
@@ -46,14 +63,14 @@ Codex) inherits the parent session's model.
 
 #### Scenario: Skill-only persona in agent mode
 
-- **WHEN** agent mode renders a persona without `agent: true` (e.g. commit, ponytail)
+- **WHEN** agent mode renders a persona without `agent: true` (e.g. ship, ponytail)
 - **THEN** it is skipped and does not count toward `PERSONA_COUNT`
 
 ### Requirement: Every rendered persona carries the shared response-format block
 
 `generate_personas` SHALL fail when `shared/steering/response-format.md` is
-missing and SHALL append its contents to each persona body in both modes
-(`skill`, `agent`), because an agent or skill carries its own system
+missing and SHALL append its contents to each persona body in every mode
+(`skill`, `command`, `agent`), because an agent or skill carries its own system
 prompt and would otherwise miss the response rules the assembled steering
 applies to the main loop. The block is appended at render time — persona
 sources under `shared/personas/` SHALL NOT carry their own copy — and rendered

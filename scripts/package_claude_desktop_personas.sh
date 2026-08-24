@@ -39,12 +39,23 @@ package_personas() {
     mkdir -p "$plugin_root/.claude-plugin" "$plugin_root/skills"
     for persona_dir in "$PERSONAS_DIR"/*; do
         [[ -d "$persona_dir" ]] || continue
+        # "_"-prefixed dirs hold shared partials, not personas.
+        [[ "$(basename "$persona_dir")" == _* ]] && continue
         [[ -f "$persona_dir/SKILL.md" ]] || die "missing SKILL.md in $persona_dir"
-        cp -R "$persona_dir" "$plugin_root/skills/"
-        # Mirror generate_personas: bundled skills carry the shared response
-        # format too, so Claude Desktop matches every other surface.
-        printf '\n' >> "$plugin_root/skills/$(basename "$persona_dir")/SKILL.md"
-        cat "$RESPONSE_FORMAT_FILE" >> "$plugin_root/skills/$(basename "$persona_dir")/SKILL.md"
+        local dest
+        dest="$plugin_root/skills/$(basename "$persona_dir")"
+        cp -R "$persona_dir" "$dest"
+        # Mirror generate_personas: inline {{include: ...}} partials so the
+        # bundled skill is self-contained, then append the shared response
+        # format so Claude Desktop matches every other surface.
+        PERSONAS_PARTIALS_ROOT="$PERSONAS_DIR" perl -0pi -e '
+            s!\{\{include:\s*([^}\s]+)\s*\}\}!{
+                local $/;
+                open my $fh, "<", "$ENV{PERSONAS_PARTIALS_ROOT}/$1" or die "include not found: $1\n";
+                my $c = <$fh>; $c =~ s/\s+\z//; $c
+            }!ge' "$dest/SKILL.md"
+        printf '\n' >> "$dest/SKILL.md"
+        cat "$RESPONSE_FORMAT_FILE" >> "$dest/SKILL.md"
         ((persona_count += 1))
     done
     ((persona_count > 0)) || die "no personas found in $PERSONAS_DIR"

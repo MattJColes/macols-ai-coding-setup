@@ -7,8 +7,8 @@
   "COLLAB_SECTION": [
     "## Agent Skills",
     "",
-    "- Specialist personas are installed as Agent Skills, invoked as `/skill:<name>` (e.g. `/skill:development-build-python-backends`, `/skill:quality-review-code`, `/skill:workflow-commit-and-push`), and can also load automatically from their description.",
-    "- Reach for the skill that matches the work: `/skill:development-build-python-backends` for Python services, `/skill:development-build-react-frontends` for React/TypeScript UI, `/skill:infrastructure-provision-cdk-python` or `/skill:infrastructure-provision-cdk-typescript` for infrastructure, `/skill:quality-test-python` or `/skill:quality-test-typescript` for tests, `/skill:quality-review-code` before finishing, etc.",
+    "- Specialist personas are installed as Agent Skills, invoked as `/skill:<name>` (e.g. `/skill:python`, `/skill:review`, `/skill:ship`), and can also load automatically from their description.",
+    "- Reach for the skill that matches the work: `/skill:python` for Python services, `/skill:react` for React/TypeScript UI, `/skill:cdk` for infrastructure, `/skill:test` for tests, `/skill:review` before finishing, etc.",
     "- Give each invocation a clear, self-contained instruction with the context it needs — file paths, requirements, constraints, and expected output.",
     "- When work splits into independent pieces, sequence them through the plan (use the `pi-subagents` package to delegate to parallel/chained subagents). Do not over-decompose tightly-coupled work — sequential execution is fine."
   ],
@@ -18,7 +18,7 @@
     "## Pi Agents (pi / omp): Skills & Tools",
     "",
     "- This install ships specialist personas as Agent Skills for both agents. Invoke one",
-    "  with `/skill:<name>` (e.g. `/skill:development-build-python-backends`, `/skill:quality-review-code`) when a",
+    "  with `/skill:<name>` (e.g. `/skill:python`, `/skill:review`) when a",
     "  task matches its specialism, and follow the loaded SKILL.md instructions.",
     "- MCP servers are configured in `~/.omp/agent/mcp.json` (Oh My Pi only — the plain",
     "  `pi` agent has no MCP support). For one-off external capabilities, a well-documented",

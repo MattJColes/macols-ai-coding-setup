@@ -37,8 +37,10 @@ Edit the single source, never the rendered output:
 - **Personas:** `shared/personas/<name>/SKILL.md`. Frontmatter drives
   rendering: `agent: true` also emits a Claude/OpenCode agent and a Codex
   agent TOML. `user-invocable: true` also emits a Claude skill, so one file can
-  provide both forms (e.g. quality-review-code). Every persona also renders as
-  a ZCode Agent Skill and slash command. After adding, editing,
+  provide both forms (e.g. review). Every persona also renders as
+  a ZCode Agent Skill and slash command. Persona bodies may inline shared
+  partials with `{{include: _shared/<file>.md}}` (renderer inlines them into
+  every output; `_`-prefixed dirs hold partials, not personas). After adding, editing,
   renaming or removing a persona, run
   `./scripts/package_claude_desktop_personas.sh` and include the regenerated
   `bundles/macols-personas-claude-plugin.zip` in the same change.
@@ -51,7 +53,7 @@ Edit the single source, never the rendered output:
   is appended to every packaged `SKILL.md` by the Claude Desktop bundle script.
   Edit it once; changing it means regenerating the bundle. It governs chat
   replies only — never widen it to authored content, or it breaks the
-  `writing-draft-*` personas and the review checklists.
+  `blog`/`docs`/`messages` personas and the review checklists.
 - **MCP servers:** `shared/mcp-config.json` (filesystem, puppeteer,
   playwright, context7, dart, aws-mcp, aws-iac). Registered for Claude Code,
   Codex, OpenCode, Oh My Pi (written to `~/.omp/agent/mcp.json`) and ZCode

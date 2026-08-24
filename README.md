@@ -269,9 +269,8 @@ don't initialise projects for you.
 ### ast-grep
 
 The installers also add [ast-grep](https://ast-grep.github.io) for structural
-code search. The quality-review-code persona uses it, as does the
-workflow-maintain-spec-anchors persona. A repo opts in by adding rules under
-`specs/anchors/*.yml`.
+code search. The review persona uses it, as does the anchors persona. A repo
+opts in by adding rules under `specs/anchors/*.yml`.
 
 ## Personas
 
@@ -279,25 +278,19 @@ Each persona is one file: `shared/personas/<name>/SKILL.md`. Its frontmatter
 (`agent: true`, `allowed-tools:`, `user-invocable:`) drives how each installer renders it.
 Add or edit a persona once and every tool picks it up on the next install.
 
-- **Development:** development-build-python-backends,
-  development-build-react-frontends, development-build-flutter-apps,
-  development-build-data-and-ml
-- **Infrastructure:** infrastructure-provision-cdk-python,
-  infrastructure-provision-cdk-typescript, infrastructure-build-ci-cd,
-  infrastructure-administer-linux, infrastructure-run-reliable-services
-- **Design:** design-software-architecture, design-ui-ux,
-  design-secure-applications
-- **Quality:** quality-review-code, quality-diagnose-bugs,
-  quality-plan-testing, quality-test-python, quality-test-typescript
-- **Delivery:** delivery-plan-products, delivery-manage-engineering,
-  delivery-coordinate-projects
-- **Research:** research-deep-dive, research-brainstorm-ideas,
-  research-review-software-legal
-- **Writing:** writing-interview-author, writing-draft-chat-messages,
-  writing-draft-technical-docs, writing-draft-long-documents,
-  writing-draft-blog-posts
-- **Workflow:** workflow-commit-and-push, workflow-explain-code,
-  workflow-simplify-code, workflow-maintain-spec-anchors
+Personas with `agent: true` also render as subagents (16 of the 25); the rest
+are user-invocable skills only. A persona body may pull in a shared partial
+with `{{include: _shared/<file>.md}}` — the renderer inlines it into every
+output, and `_`-prefixed directories under `shared/personas/` hold partials,
+not personas.
+
+- **Build:** python, react, flutter, data, cdk, cicd, linux
+- **Design:** architecture, ui-ux
+- **Quality:** review (code + security audit), debug, test
+- **Delivery:** product, coordinate
+- **Research:** research, brainstorm
+- **Writing (skills only):** interview, blog, docs, messages
+- **Workflow (skills only):** ship, explain, ponytail, anchors
 
 ### Claude Desktop bulk upload
 
