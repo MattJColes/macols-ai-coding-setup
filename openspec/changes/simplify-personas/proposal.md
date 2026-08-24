@@ -58,5 +58,5 @@ None.
   `README.md`, `AGENTS.md`, `tests/verify_install.sh`,
   `openspec/specs/persona-rendering/spec.md`.
 - `bundles/macols-personas-claude-plugin.zip` regenerated.
-- Installed skills/agents for Claude Code, Codex, OpenCode, and Pi after the
-  installers are re-run.
+- Installed skills/commands/agents for Claude Code, Codex, OpenCode, Pi and
+  ZCode after the installers are re-run.

@@ -7,8 +7,8 @@
   "COLLAB_SECTION": [
     "## Skills & Slash Commands",
     "",
-    "- Specialist personas are installed as Agent Skills (`~/.zcode/skills/`, loaded automatically when their description matches the work) and as slash commands in `~/.zcode/commands/` (e.g. `/development-build-python-backends`, `/quality-review-code`, `/workflow-commit-and-push`).",
-    "- Reach for the one that matches the work: `/development-build-python-backends` for Python services, `/development-build-react-frontends` for React/TypeScript UI, `/infrastructure-provision-cdk-python` or `/infrastructure-provision-cdk-typescript` for infrastructure, `/quality-test-python` or `/quality-test-typescript` for tests, `/quality-review-code` before finishing, etc.",
+    "- Specialist personas are installed as Agent Skills (`~/.zcode/skills/`, loaded automatically when their description matches the work) and as slash commands in `~/.zcode/commands/` (e.g. `/python`, `/review`, `/ship`).",
+    "- Reach for the one that matches the work: `/python` for Python services, `/react` for React/TypeScript UI, `/cdk` for infrastructure, `/test` for tests, `/review` before finishing, etc.",
     "- Give each invocation a clear, self-contained instruction with the context it needs — file paths, requirements, constraints, and expected output.",
     "- When work splits into independent pieces, sequence them through the todo list and pull in the matching command or skill for each chunk. Do not over-decompose tightly-coupled work — sequential execution is fine."
   ],
