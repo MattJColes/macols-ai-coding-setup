@@ -58,6 +58,12 @@ Edit the single source, never the rendered output:
   playwright, context7, dart, aws-mcp, aws-iac). Registered for Claude Code,
   Codex, OpenCode, Oh My Pi (written to `~/.omp/agent/mcp.json`) and ZCode
   (written to `~/.zcode/cli/config.json`). Plain pi has no MCP support.
+  `shared/mcp-config-brave.json` is a second, opt-in source holding
+  `brave-search`; only `register_mcps_opencode` and `register_mcps_pi` merge it,
+  and only when `~/.config/macols/brave-api-key` holds a key
+  (`ensure_brave_api_key` prompts for it, honours `$BRAVE_API_KEY`, writes mode
+  600). The key path in that JSON and `BRAVE_KEY_FILE` in `lib/common.sh` must
+  stay in sync.
 - **Hooks:** `shared/hooks/*` (post-code, post-task, pre-deploy),
   referenced in place, wired by `write_*_hooks` in `lib/common.sh`.
 - **Machine setup:** `machine-setup/` (macOS + Ubuntu 24/26). The herdr script

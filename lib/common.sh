@@ -29,6 +29,13 @@ STEERING_DIR="$SHARED_DIR/steering"
 RESPONSE_FORMAT_FILE="$STEERING_DIR/response-format.md"
 HOOKS_DIR="$SHARED_DIR/hooks"
 MCP_CONFIG_FILE="$SHARED_DIR/mcp-config.json"
+# Brave Search MCP — a second, opt-in MCP source merged in by the OpenCode and
+# Oh My Pi writers only, and only when the key file below holds a key. The
+# server reads the key from the file (BRAVE_API_KEY_FILE takes precedence over
+# BRAVE_API_KEY upstream), so no secret is ever written into a config file.
+# Keep BRAVE_KEY_FILE in sync with the path in mcp-config-brave.json.
+BRAVE_MCP_CONFIG_FILE="$SHARED_DIR/mcp-config-brave.json"
+BRAVE_KEY_FILE="$HOME/.config/macols/brave-api-key"
 
 # ── Pinned versions ──────────────────────────────────────────────────────────
 # Ponytail (https://github.com/DietrichGebert/ponytail) — installed for every
@@ -590,6 +597,54 @@ fs.writeFileSync(env.SETTINGS_FILE, JSON.stringify(s, null, 2) + "\n");
     printf "${GREEN}✓ ponytail marketplace + plugin declared in ~/.claude/settings.json (fetched on next launch)${NC}\n"
 }
 
+# ── Brave Search API key ─────────────────────────────────────────────────────
+
+# ensure_brave_api_key — make sure a Brave Search API key is on disk so the
+# brave-search MCP can be registered (OpenCode and omp only).
+#
+# Returns 0 when $BRAVE_KEY_FILE holds a key, 1 otherwise — callers treat 1 as
+# non-fatal, the registration writers then simply leave brave-search out.
+# Idempotent: an existing key file short-circuits, so re-runs never re-prompt.
+# Non-interactive installs (CI, stdin not a tty) skip silently unless
+# BRAVE_API_KEY is exported. The key is never echoed back and never written
+# into a config file.
+ensure_brave_api_key() {
+    if [ -s "$BRAVE_KEY_FILE" ]; then
+        printf "${GREEN}✓ Brave Search API key already configured (%s)${NC}\n" "$BRAVE_KEY_FILE"
+        return 0
+    fi
+
+    local key="${BRAVE_API_KEY:-}"
+    if [ -n "$key" ]; then
+        printf "${BLUE}Using BRAVE_API_KEY from the environment${NC}\n"
+    elif [ -t 0 ]; then
+        printf "${BLUE}Brave Search MCP — get a key at https://brave.com/search/api/${NC}\n"
+        read -rsp "$(printf "${YELLOW}Brave Search API key (blank to skip): ${NC}")" key
+        echo ""
+    else
+        printf "${YELLOW}⚠ Non-interactive install — set BRAVE_API_KEY to enable Brave Search${NC}\n"
+        return 1
+    fi
+
+    # Trim surrounding whitespace from a pasted key.
+    key="$(printf '%s' "$key" | tr -d '[:space:]')"
+    [ -n "$key" ] || return 1
+
+    mkdir -p "$(dirname "$BRAVE_KEY_FILE")"
+    (umask 077; printf '%s\n' "$key" > "$BRAVE_KEY_FILE")
+    chmod 600 "$BRAVE_KEY_FILE"
+    printf "${GREEN}✓ Brave Search API key saved to %s (mode 600)${NC}\n" "$BRAVE_KEY_FILE"
+}
+
+# brave_mcp_source — echo the Brave MCP config path when a key is configured,
+# nothing otherwise. The OpenCode and omp writers pass the result through as
+# SRC_EXTRA, so brave-search is registered only when it can actually work.
+brave_mcp_source() {
+    if [ -s "$BRAVE_KEY_FILE" ] && [ -f "$BRAVE_MCP_CONFIG_FILE" ]; then
+        printf '%s' "$BRAVE_MCP_CONFIG_FILE"
+    fi
+}
+
 # ── MCP registration (single source: shared/mcp-config.json) ──────────────────
 
 # register_mcps_claude — register every server at user scope via the claude CLI.
@@ -643,15 +698,18 @@ register_mcps_codex() {
 
 # register_mcps_opencode — write the "mcp" key into ~/.config/opencode/opencode.json
 # (OpenCode reads MCP only from opencode.json; a standalone mcp.json is ignored).
+# The optional brave-search server is merged in on top of the shared config
+# when a Brave API key is configured (see brave_mcp_source).
 register_mcps_opencode() {
     printf "${BLUE}Writing MCP config into opencode.json...${NC}\n"
     require_node || return 1
     [ -f "$MCP_CONFIG_FILE" ] || { printf "${RED}MCP config not found: %s${NC}\n" "$MCP_CONFIG_FILE"; return 1; }
     local config_dir="$HOME/.config/opencode"
     mkdir -p "$config_dir"
-    SRC="$MCP_CONFIG_FILE" OPENCODE_JSON="$config_dir/opencode.json" HOME_DIR="$HOME" node -e '
+    SRC="$MCP_CONFIG_FILE" SRC_EXTRA="$(brave_mcp_source)" OPENCODE_JSON="$config_dir/opencode.json" HOME_DIR="$HOME" node -e '
 const fs = require("fs");
-const src = JSON.parse(fs.readFileSync(process.env.SRC, "utf8")).mcpServers || {};
+const read = (p) => JSON.parse(fs.readFileSync(p, "utf8")).mcpServers || {};
+const src = { ...read(process.env.SRC), ...(process.env.SRC_EXTRA ? read(process.env.SRC_EXTRA) : {}) };
 const dest = process.env.OPENCODE_JSON;
 let cfg = {};
 if (fs.existsSync(dest)) { try { cfg = JSON.parse(fs.readFileSync(dest, "utf8")); } catch (e) {} }
@@ -672,15 +730,17 @@ fs.writeFileSync(dest, JSON.stringify(cfg, null, 2) + "\n");
 # register_mcps_pi <agent_dir> — write the "mcpServers" key into <agent_dir>/mcp.json.
 # Oh My Pi reads MCP config from ~/.omp/agent/mcp.json in the same
 # {"mcpServers": {...}} shape as shared/mcp-config.json; other keys in the
-# file (e.g. disabledServers) are preserved.
+# file (e.g. disabledServers) are preserved. The optional brave-search server
+# is merged in when a Brave API key is configured (see brave_mcp_source).
 register_mcps_pi() {
     printf "${BLUE}Writing MCP config into mcp.json...${NC}\n"
     require_node || return 1
     [ -f "$MCP_CONFIG_FILE" ] || { printf "${RED}MCP config not found: %s${NC}\n" "$MCP_CONFIG_FILE"; return 1; }
     mkdir -p "$1"
-    SRC="$MCP_CONFIG_FILE" PI_MCP_JSON="$1/mcp.json" HOME_DIR="$HOME" node -e '
+    SRC="$MCP_CONFIG_FILE" SRC_EXTRA="$(brave_mcp_source)" PI_MCP_JSON="$1/mcp.json" HOME_DIR="$HOME" node -e '
 const fs = require("fs");
-const src = JSON.parse(fs.readFileSync(process.env.SRC, "utf8")).mcpServers || {};
+const read = (p) => JSON.parse(fs.readFileSync(p, "utf8")).mcpServers || {};
+const src = { ...read(process.env.SRC), ...(process.env.SRC_EXTRA ? read(process.env.SRC_EXTRA) : {}) };
 const dest = process.env.PI_MCP_JSON;
 let cfg = {};
 if (fs.existsSync(dest)) { try { cfg = JSON.parse(fs.readFileSync(dest, "utf8")); } catch (e) {} }

@@ -35,3 +35,10 @@ mcp-registration.zcode:
     kind: function_definition
     has: { field: name, regex: '^register_mcps_zcode$' }
   files: [lib/common.sh]
+
+mcp-registration.brave-key:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^ensure_brave_api_key$' }
+  files: [lib/common.sh]

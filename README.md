@@ -328,6 +328,30 @@ own config formats.
   (`awslabs.aws-iac-mcp-server` via uvx): CloudFormation/CDK validation,
   documentation search and best-practice checks. Uses ambient AWS credentials.
 
+### Brave Search (OpenCode + omp)
+
+Web search is a separate, opt-in server in `shared/mcp-config-brave.json`:
+**brave-search** (the official
+[`@brave/brave-search-mcp-server`](https://github.com/brave/brave-search-mcp-server),
+needs Node 22+). Only the OpenCode and Pi (omp) installers register it — Claude
+Code, Codex and ZCode keep the shared list alone, and plain `pi` has no MCP
+support at all.
+
+`install_opencode.sh` and `install_pi.sh` ask for a Brave API key
+([get one here](https://brave.com/search/api/)) when they register MCP servers.
+A blank answer skips it, and the server is then left out of the config rather
+than registered broken. To add a key later, or on a non-interactive machine:
+
+```bash
+BRAVE_API_KEY=<key> ./install_opencode.sh --mcps-only
+BRAVE_API_KEY=<key> ./install_pi.sh --mcps-only
+```
+
+The key is written to `~/.config/macols/brave-api-key` with mode 600 and the
+config only references it through `BRAVE_API_KEY_FILE` — no secret is written
+into `opencode.json` or `mcp.json`. Delete that file and re-run the installer to
+remove the server again.
+
 ## Hooks
 
 The wrappers in `shared/hooks/` run checks without blocking the agent:
