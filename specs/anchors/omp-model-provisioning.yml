@@ -1,0 +1,39 @@
+# Spec anchors — omp-model-provisioning capability
+# (openspec/specs/omp-model-provisioning/spec.md)
+
+omp-model-provisioning.roles:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^omp_set_model_role$' }
+  files: [lib/common.sh]
+
+omp-model-provisioning.providers:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^omp_register_provider$' }
+  files: [lib/common.sh]
+
+omp-model-provisioning.keys:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^ensure_omp_provider_key$' }
+  files: [lib/common.sh]
+
+omp-model-provisioning.flow:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^configure_omp_models$' }
+  files: [lib/common.sh]
+
+# The installer's own wiring: the guarded call that runs model setup only for
+# a machine-level (non-project) install.
+omp-model-provisioning.installer:
+  language: bash
+  rule:
+    kind: command
+    pattern: configure_omp_models "$OMP_DIR"
+  files: [install_pi.sh]

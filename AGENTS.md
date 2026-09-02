@@ -24,6 +24,7 @@ Start at the source that owns the requested behaviour:
 | Shared agent instructions | `shared/steering/base.md` | render/verify the affected tool |
 | Tool-specific steering wording | `shared/steering/tools/<tool>.json` | render/verify that tool |
 | MCP registration | `shared/mcp-config.json`, then `lib/common.sh` when wiring changes | installer verifier + relevant spec anchor |
+| omp model/provider setup | `configure_omp_models` and friends in `lib/common.sh` | scratch-`$HOME` run of `install_pi.sh --models-only` + installer verifier |
 | Lifecycle or quality hook | `shared/hooks/`, `shared/post_*_checks.sh` | targeted hook check + installer verifier |
 | Tool installation behaviour | `install_<tool>.sh` and shared helpers in `lib/common.sh` | `bash -n` + installer verifier |
 | Full machine setup | `machine-setup/` | syntax check + platform-specific smoke test |
@@ -64,6 +65,15 @@ Edit the single source, never the rendered output:
   (`ensure_brave_api_key` prompts for it, honours `$BRAVE_API_KEY`, writes mode
   600). The key path in that JSON and `BRAVE_KEY_FILE` in `lib/common.sh` must
   stay in sync.
+- **omp models:** no file under `shared/` — the config is per-machine, so
+  `configure_omp_models` in `lib/common.sh` asks at install time and merges the
+  answers into `~/.omp/agent/models.yml` (providers) and
+  `~/.omp/agent/config.yml` (`modelRoles.default` / `modelRoles.plan`). Both
+  files are user-owned: merge, never overwrite. Keys go to
+  `~/.config/macols/omp-<provider>-api-key` mode 600 and are referenced as
+  `!cat '<path>'` — never inlined. The YAML readers/writers run on Bun, which
+  omp already requires as its runtime. Unattended callers use
+  `OMP_MODELS_CONFIG` / `OMP_DEFAULT_MODEL` / `OMP_PLAN_MODEL`.
 - **Hooks:** `shared/hooks/*` (post-code, post-task, pre-deploy),
   referenced in place, wired by `write_*_hooks` in `lib/common.sh`.
 - **Machine setup:** `machine-setup/` (macOS + Ubuntu 24/26). The herdr script
