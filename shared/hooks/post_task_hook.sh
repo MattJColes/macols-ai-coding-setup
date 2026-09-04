@@ -11,6 +11,9 @@
 #   never blocks the stop. Per-edit checks already run via the post-code hook;
 #   a hard block re-runs the full suite and traps on pre-existing failures in
 #   code you never touched. Reporting keeps the signal without the friction.
+# - pytest is SCOPED to the tests the changed files reach (changed test files
+#   plus test_<module>.py for each changed module). The full suite is the
+#   pre-push hook's job. MACOLS_PYTEST_SCOPE=full|changed|off overrides.
 #
 # This script is referenced in place from the repo (it is not copied), so the
 # shared library sits one directory up. Override with MACOLS_SHARED_DIR.
