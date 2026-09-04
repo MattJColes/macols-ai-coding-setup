@@ -102,6 +102,9 @@ jobs:
       - name: Drift gate self-test
         run: ./tests/test_spec_drift_gate.sh
 
+      - name: Scoped turn-end pytest self-test
+        run: ./tests/test_scoped_pytest.sh
+
       - name: Drift gate vs merge-base (advisory, PR only)
         if: github.event_name == 'pull_request'
         run: ./scripts/spec_drift_gate.sh --github --base "origin/${GITHUB_BASE_REF}"
