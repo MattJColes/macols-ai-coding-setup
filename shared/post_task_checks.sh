@@ -83,9 +83,29 @@ report_check_result() {
     fi
 }
 
-# Run Python tests — monorepo-aware: runs pytest from each sub-project directory
+# Run Python tests — monorepo-aware: runs pytest from each sub-project directory.
+#
+# Scoped by default: a Stop hook fires on every code-touching turn, and in a
+# large monorepo a full suite there costs minutes and gigabytes per turn while
+# adding no gate — pre-commit runs the impacted subset and pre-push the full
+# suite. So MACOLS_PYTEST_SCOPE decides what runs:
+#   changed (default) — the changed test files plus test_<module>.py for each
+#                       changed module (sibling, tests/ or test/); nothing when
+#                       no test matches
+#   full              — the whole suite, as before
+#   off               — skip the step
 run_python_tests() {
     local root_dir="$PWD"
+    local scope="${MACOLS_PYTEST_SCOPE:-changed}"
+    case "$scope" in
+        full|changed) ;;
+        off)
+            add_warning "Python tests: skipped (MACOLS_PYTEST_SCOPE=off)"
+            return 0 ;;
+        *)
+            add_warning "Python tests: unknown MACOLS_PYTEST_SCOPE='$scope' - treating as 'changed'"
+            scope="changed" ;;
+    esac
 
     local -a projects
     read -ra projects <<< "$(find_python_projects)"
@@ -116,8 +136,19 @@ run_python_tests() {
             fi
         fi
 
-        local test_output
         local pytest_cmd="${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME }$pytest_bin -v --tb=short"
+        if [ "$scope" = "changed" ]; then
+            local targets
+            targets=$(impacted_test_files "$(pwd)")
+            if [ -z "$targets" ]; then
+                add_warning "Python tests ($label): no impacted tests found for changed files; full suite runs at pre-push"
+                cd "$root_dir" || return
+                continue
+            fi
+            pytest_cmd="${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME }$pytest_bin -q --tb=short -p no:cacheprovider$targets"
+        fi
+
+        local test_output
         if test_output=$(eval "$pytest_cmd" 2>&1); then
             add_warning "Python tests ($label): PASSED"
         else
@@ -139,6 +170,34 @@ run_python_tests() {
     if [ "$any_failed" = true ]; then
         return 1
     fi
+}
+
+# The test files this turn's changes reach, inside one project directory, as a
+# shell-quoted, space-prefixed list (empty when nothing matches). Changed test
+# files count as themselves; a changed module pulls in test_<module>.py from
+# its own directory, tests/ or test/. Deliberately name-based: an import-graph
+# walk is the pre-commit hook's job, and a turn-end battery that tries to be
+# clever is one that runs the whole suite by accident.
+impacted_test_files() {
+    local project_abs="$1"
+    local f base stem d cand out="" seen=$'\n'
+    while IFS= read -r f; do
+        [ -z "$f" ] && continue
+        case "$f" in "$project_abs"/*.py) ;; *) continue ;; esac
+        base="$(basename "$f")"
+        case "$base" in
+            test_*.py|*_test.py)
+                case "$seen" in *$'\n'"$f"$'\n'*) ;; *) seen+="$f"$'\n'; out+=" $(printf '%q' "$f")" ;; esac ;;
+            *)
+                stem="${base%.py}"
+                for d in "$(dirname "$f")" "$project_abs/tests" "$project_abs/test"; do
+                    cand="$d/test_${stem}.py"
+                    [ -f "$cand" ] || continue
+                    case "$seen" in *$'\n'"$cand"$'\n'*) ;; *) seen+="$cand"$'\n'; out+=" $(printf '%q' "$cand")" ;; esac
+                done ;;
+        esac
+    done <<< "$(changed_code_files)"
+    printf '%s' "$out"
 }
 
 # Run Node.js tests (Jest or Mocha)
