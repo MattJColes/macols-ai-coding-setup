@@ -60,7 +60,7 @@ Model setup always registers vllm-lan at http://exodus:8000/v1 for both agents
 with ukisai/Swift-Qwen3.8-27B-NVFP4 (reasoning, 262144 context, zero cost).
 The LAN endpoint requires no API key.
 Existing selections of the old unsloth model migrate to Swift.
-Swift is selected as omp's default and vision model on every model setup.
+Swift with medium reasoning is selected for omp's default and vision roles.
 The plan role uses Swift with xhigh reasoning.
 Explicit role answers or OMP_DEFAULT_MODEL / OMP_PLAN_MODEL can override these.
 It also asks which model omp starts on (the 'default' role) and which it

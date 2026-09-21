@@ -10,6 +10,7 @@
 - [x] 2.3 Provide a standalone bootstrap that downloads main and reuses the CLI/model helpers; verify Bash syntax and ShellCheck.
 - [x] 2.4 Select Swift as omp's default and vision model with image inputs enabled; verify existing-role replacement, fresh configuration and repeat-install idempotency.
 - [x] 2.5 Select Swift with xhigh reasoning for omp's plan role; verify the native omp role resolver, unrelated-role preservation and repeat-install idempotency.
+- [x] 2.6 Set medium reasoning for Swift's default and vision roles, retaining xhigh for plan; verify native role resolution and repeat installs.
 
 ## 3. Final verification
 

@@ -69,8 +69,8 @@ const pi = JSON.parse(readFileSync(`${home}/.pi/agent/settings.json`, "utf8"));
 assert.equal(pi.defaultModel, id);
 assert.equal(pi.theme, "keep");
 const omp = YAML.parse(readFileSync(`${home}/.omp/agent/config.yaml`, "utf8"));
-assert.equal(omp.modelRoles.default, `vllm-lan/${id}`);
-assert.equal(omp.modelRoles.vision, `vllm-lan/${id}`);
+assert.equal(omp.modelRoles.default, `vllm-lan/${id}:medium`);
+assert.equal(omp.modelRoles.vision, `vllm-lan/${id}:medium`);
 assert.equal(omp.modelRoles.plan, `vllm-lan/${id}:xhigh`);
 assert.equal(omp.modelRoles.slow, "other/slow");
 assert.equal(omp.theme, "keep");
@@ -102,9 +102,9 @@ TEST_HOME="$TEST_HOME" bun -e '
 import assert from "node:assert/strict";
 import { YAML } from "bun";
 const config = YAML.parse(await Bun.file(`${process.env.TEST_HOME}/.omp/agent/config.yml`).text());
-assert.equal(config.modelRoles.default, "vllm-lan/ukisai/Swift-Qwen3.8-27B-NVFP4");
+assert.equal(config.modelRoles.default, "vllm-lan/ukisai/Swift-Qwen3.8-27B-NVFP4:medium");
 assert.equal(config.modelRoles.vision, config.modelRoles.default);
-assert.equal(config.modelRoles.plan, `${config.modelRoles.default}:xhigh`);
+assert.equal(config.modelRoles.plan, "vllm-lan/ukisai/Swift-Qwen3.8-27B-NVFP4:xhigh");
 '
 
 # Verify the component guards without touching the real home.

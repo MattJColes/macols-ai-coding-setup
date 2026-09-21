@@ -1094,7 +1094,7 @@ for (const [dir, omp] of [[process.env.PI_MODELS_DIR, false], [process.env.OMP_M
         }
         settings.modelRoles = {
             ...settings.modelRoles,
-            default: `vllm-lan/${id}`, vision: `vllm-lan/${id}`, plan: `vllm-lan/${id}:xhigh`
+            default: `vllm-lan/${id}:medium`, vision: `vllm-lan/${id}:medium`, plan: `vllm-lan/${id}:xhigh`
         };
         changed = true;
     } else if (settings.defaultProvider === "vllm-lan" && settings.defaultModel === oldId) {
