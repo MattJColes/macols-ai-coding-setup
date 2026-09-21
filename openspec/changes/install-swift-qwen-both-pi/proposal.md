@@ -7,7 +7,7 @@ The installer configures custom models only for omp. Both agents should receive 
 - Register `vllm-lan` at `http://exodus:8000/v1` for both pi and omp whenever model setup runs, including unattended installs and reruns.
 - Set the model ID to `ukisai/Swift-Qwen3.8-27B-NVFP4`, with `openai-completions`, reasoning enabled, a 262144-token context, and all four costs zero.
 - Configure the LAN endpoint without credentials: omp uses `auth: none`; Pi uses the non-secret placeholder required by its schema. Remove the obsolete key-file reference.
-- Replace the old unsloth entry under this provider while preserving unrelated models, providers and settings. Migrate selections referencing that old provider/model pair. Select Swift for omp's default and vision roles, with text and image inputs enabled; retain explicit default-role overrides.
+- Replace the old unsloth entry under this provider while preserving unrelated models, providers and settings. Migrate selections referencing that old provider/model pair. Select Swift for omp's default and vision roles and its plan role with `:xhigh` reasoning, with text and image inputs enabled; retain explicit role overrides.
 - Keep `--no-models`, component-only installs and `--project` exclusions intact. Update help and verification for both agents.
 - Provide `scripts/install_swift_pi.sh` as a standalone bootstrap for another machine with Node.js 24+ and npm. Install both CLIs and register the model using the same shared helpers.
 

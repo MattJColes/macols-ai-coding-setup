@@ -4,13 +4,13 @@
 
 Whenever model setup runs, the installer SHALL merge `vllm-lan` into both agents' native provider configurations with base URL `http://exodus:8000/v1`, API `openai-completions`, model ID `ukisai/Swift-Qwen3.8-27B-NVFP4`, reasoning enabled, context window 262144, and input, output, cacheRead and cacheWrite costs zero. The endpoint SHALL require no credentials: omp SHALL use `auth: none` without `apiKey`; Pi SHALL use the non-secret `unused` placeholder required by its schema. No key file SHALL be required or created.
 
-It SHALL replace `unsloth/Qwen3.8-27B-NVFP4` only under `vllm-lan` and migrate selections of that provider/model pair. It SHALL enable text and image inputs and select Swift for omp's default and vision roles on each model setup. Other providers, models and roles SHALL survive. Explicit default-role answers and environment overrides SHALL still apply afterwards. Repeated installs SHALL produce exactly one Swift entry. Malformed user configuration SHALL fail without being overwritten.
+It SHALL replace `unsloth/Qwen3.8-27B-NVFP4` only under `vllm-lan` and migrate selections of that provider/model pair. It SHALL enable text and image inputs and select Swift for omp's default and vision roles, plus `vllm-lan/ukisai/Swift-Qwen3.8-27B-NVFP4:xhigh` for the plan role, on each model setup. Other providers, models and roles SHALL survive. Explicit role answers and environment overrides SHALL still apply afterwards. Repeated installs SHALL produce exactly one Swift entry. Malformed user configuration SHALL fail without being overwritten.
 <!-- anchor: omp-model-provisioning.lan -->
 
 #### Scenario: Unattended installation
 
 - **WHEN** model setup runs without a tty or model environment variables
-- **THEN** both agents receive the Swift provider registration and omp uses Swift for its default and vision roles
+- **THEN** both agents receive the Swift provider registration and omp uses Swift for its default and vision roles and Swift with xhigh reasoning for its plan role
 
 #### Scenario: Existing old model and unrelated settings
 
@@ -42,4 +42,4 @@ It SHALL replace `unsloth/Qwen3.8-27B-NVFP4` only under `vllm-lan` and migrate s
 #### Scenario: Existing omp default
 
 - **WHEN** a full install runs with an existing unrelated omp default
-- **THEN** both agents receive the LAN provider and omp selects Swift for its default and vision roles
+- **THEN** both agents receive the LAN provider and omp selects Swift for its default and vision roles and Swift with xhigh reasoning for its plan role
