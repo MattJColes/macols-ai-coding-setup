@@ -1075,7 +1075,7 @@ for (const [dir, omp] of [[process.env.PI_MODELS_DIR, false], [process.env.OMP_M
         delete provider.auth;
     }
     provider.models = [...(provider.models ?? []).filter(m => m.id !== oldId && m.id !== id), {
-        id, reasoning: true, contextWindow: 262144,
+        id, reasoning: true, input: ["text", "image"], contextWindow: 262144,
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }
     }];
     writes.push([file, doc, omp]);
@@ -1092,6 +1092,8 @@ for (const [dir, omp] of [[process.env.PI_MODELS_DIR, false], [process.env.OMP_M
                 changed = true;
             }
         }
+        settings.modelRoles = { ...settings.modelRoles, default: `vllm-lan/${id}`, vision: `vllm-lan/${id}` };
+        changed = true;
     } else if (settings.defaultProvider === "vllm-lan" && settings.defaultModel === oldId) {
         settings.defaultModel = id;
         changed = true;

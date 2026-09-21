@@ -27,7 +27,7 @@ writeFileSync(join(home, ".pi/agent/settings.json"), JSON.stringify({
     defaultProvider: "vllm-lan", defaultModel: "unsloth/Qwen3.8-27B-NVFP4", theme: "keep"
 }));
 writeFileSync(join(home, ".omp/agent/config.yaml"), YAML.stringify({
-    modelRoles: { default: "vllm-lan/unsloth/Qwen3.8-27B-NVFP4", plan: "other/model" }, theme: "keep"
+    modelRoles: { default: "other/default", vision: "other/vision", plan: "other/model" }, theme: "keep"
 }));
 '
 
@@ -54,7 +54,7 @@ for (const file of [".pi/agent/models.json", ".omp/agent/models.yaml"]) {
     assert.equal(provider.api, "openai-completions");
     assert.equal(provider.models.length, 2);
     assert.deepEqual(provider.models.find(m => m.id === id), {
-        id, reasoning: true, contextWindow: 262144,
+        id, reasoning: true, input: ["text", "image"], contextWindow: 262144,
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }
     });
     assert.equal(doc.providers.other.baseUrl, "http://other/v1");
@@ -70,6 +70,7 @@ assert.equal(pi.defaultModel, id);
 assert.equal(pi.theme, "keep");
 const omp = YAML.parse(readFileSync(`${home}/.omp/agent/config.yaml`, "utf8"));
 assert.equal(omp.modelRoles.default, `vllm-lan/${id}`);
+assert.equal(omp.modelRoles.vision, `vllm-lan/${id}`);
 assert.equal(omp.modelRoles.plan, "other/model");
 assert.equal(omp.theme, "keep");
 '
@@ -96,6 +97,13 @@ cp "$FIXTURE/once/.pi/agent/models.json" "$TEST_HOME/.omp/agent/models.json"
 run_models
 test -f "$TEST_HOME/.omp/agent/models.yml"
 grep -q 'keep-me' "$TEST_HOME/.omp/agent/models.yml"
+TEST_HOME="$TEST_HOME" bun -e '
+import assert from "node:assert/strict";
+import { YAML } from "bun";
+const config = YAML.parse(await Bun.file(`${process.env.TEST_HOME}/.omp/agent/config.yml`).text());
+assert.equal(config.modelRoles.default, "vllm-lan/ukisai/Swift-Qwen3.8-27B-NVFP4");
+assert.equal(config.modelRoles.vision, config.modelRoles.default);
+'
 
 # Verify the component guards without touching the real home.
 mkdir -p "$FIXTURE/empty" "$FIXTURE/project"

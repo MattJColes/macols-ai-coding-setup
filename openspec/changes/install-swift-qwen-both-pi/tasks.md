@@ -8,6 +8,7 @@
 - [x] 2.1 Wire registration into `install_pi.sh`, update help and retain component guards; verify `bash -n` and model-only execution for both agents.
 - [x] 2.2 Extend the installer verifier for the two native model files; run model setup twice in a scratch home and check one Swift entry, preserved unrelated settings, migrated old selections and native config loading.
 - [x] 2.3 Provide a standalone bootstrap that downloads main and reuses the CLI/model helpers; verify Bash syntax and ShellCheck.
+- [x] 2.4 Select Swift as omp's default and vision model with image inputs enabled; verify existing-role replacement, fresh configuration and repeat-install idempotency.
 
 ## 3. Final verification
 
