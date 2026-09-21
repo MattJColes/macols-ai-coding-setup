@@ -31,6 +31,13 @@ omp-model-provisioning.flow:
 
 # The installer's own wiring: the guarded call that runs model setup only for
 # a machine-level (non-project) install.
+omp-model-provisioning.lan:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^configure_pi_lan_models$' }
+  files: [lib/common.sh]
+
 omp-model-provisioning.installer:
   language: bash
   rule:

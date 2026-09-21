@@ -158,9 +158,16 @@ verify_pi() {
                 "! jq -e '.mcpServers[\"brave-search\"]' '$omp_d/mcp.json' >/dev/null"
         fi
     fi
-    # Model/provider setup is opt-in — `install_pi.sh` only asks interactively,
-    # or reads OMP_MODELS_CONFIG / OMP_DEFAULT_MODEL / OMP_PLAN_MODEL. Assert
-    # the written shape when it happened; say so plainly when it did not.
+    if has_bun; then
+        local model_file
+        for model_file in "$HOME/.pi/agent/models.json" "$omp_d/models.yml"; do
+            if [ "$model_file" = "$omp_d/models.yml" ] && [ ! -f "$model_file" ]; then
+                model_file="$omp_d/models.yaml"
+            fi
+            pass "$model_file registers the Swift LAN model" \
+                "omp_yaml_has '$model_file' 'doc.providers?.[\"vllm-lan\"]?.models?.filter(m => m.id === \"ukisai/Swift-Qwen3.8-27B-NVFP4\").length === 1'"
+        done
+    fi
     if [ -f "$omp_d/models.yml" ] || [ -f "$omp_d/config.yml" ]; then
         if has_bun; then
             [ -f "$omp_d/models.yml" ] && pass "omp models.yml parses with a non-empty providers map" \

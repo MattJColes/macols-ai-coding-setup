@@ -14,7 +14,7 @@
 #
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
 source "$SCRIPT_DIR/lib/common.sh"
 
@@ -51,12 +51,16 @@ usage() {
 Usage: $0 [OPTIONS]
 
 Installs (and, unless told otherwise, both agent binaries) Agent Skills, the
-system AGENTS.md, MCP servers (omp only), omp's default/planning models, the
+system AGENTS.md, MCP servers (omp only), model providers for both agents, the
 pi-checks extension and each agent's packages from shared/. Registering MCP
 servers also asks for a Brave Search API key (blank to skip); set
 BRAVE_API_KEY in the environment to supply it non-interactively.
 
-Model setup asks which model omp starts on (the 'default' role) and which it
+Model setup always registers vllm-lan at http://exodus:8000/v1 for both agents
+with ukisai/Swift-Qwen3.8-27B-NVFP4 (reasoning, 262144 context, zero cost).
+The LAN endpoint requires no API key.
+Existing selections of the old unsloth model migrate to Swift.
+It also asks which model omp starts on (the 'default' role) and which it
 plans with (the 'plan' role) — either a provider omp already knows (Claude,
 GPT, GLM, Gemini, ...) or an OpenAI-compatible endpoint of your own (vLLM,
 Ollama, LM Studio, LiteLLM). It only asks once; --models-only re-asks. To
@@ -71,10 +75,10 @@ Options:
     --hooks-only      Install only the pi-checks extension (both agents)
     --packages-only   Install only the agent packages
     --mcps-only       Install only omp MCP servers (~/.omp/agent/mcp.json; asks for the Brave Search API key)
-    --models-only     Only (re-)ask for omp's default and planning models
+    --models-only     Register LAN models for both agents and reconfigure omp roles
     --no-pi           Skip installing/upgrading the pi and omp binaries
     --no-packages     Skip installing agent packages
-    --no-models       Skip omp model setup
+    --no-models       Skip model setup for both agents
     -p, --project     Install skills to ./.pi/skills and ./.omp/skills and AGENTS.md to ./AGENTS.md (implies --no-pi)
     --list            List available personas and exit
 EOF
@@ -171,8 +175,12 @@ if [ "$DO_MCPS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     register_mcps_pi "$OMP_DIR" || printf "${YELLOW}⚠ MCP registration skipped/failed${NC}\n"; echo ""
 fi
 if [ "$DO_MODELS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
-    # omp-only: plain pi has no provider/role config of its own.
-    configure_omp_models "$OMP_DIR" || printf "${YELLOW}⚠ omp model setup skipped/failed${NC}\n"; echo ""
+    if configure_pi_lan_models "$PI_AGENT_DIR" "$OMP_DIR"; then
+        configure_omp_models "$OMP_DIR" || printf "${YELLOW}⚠ omp model setup skipped/failed${NC}\n"
+    else
+        printf "${YELLOW}⚠ LAN model setup failed; existing role configuration left unchanged${NC}\n"
+    fi
+    echo ""
 fi
 if [ "$DO_HOOKS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     install_pi_extension "$PI_AGENT_DIR/extensions"
@@ -188,6 +196,7 @@ echo "  • The pi-checks extension runs tests/lint/security advisories after ed
 echo "    and a cdk deploy/destroy confirmation guard"
 echo "  • MCP servers are configured in $OMP_DIR/mcp.json (omp only; aws-* MCPs need ~/.aws/credentials)"
 echo "  • omp providers live in $OMP_DIR/models.yml and model roles in $OMP_DIR/config.yml"
+echo "  • pi providers live in $PI_AGENT_DIR/models.json; both agents receive the Swift Qwen LAN model"
 echo "      change them with './install_pi.sh --models-only', or from inside omp with /model"
 if [ -s "$BRAVE_KEY_FILE" ]; then
     echo "  • omp web search runs through the brave-search MCP (key in $BRAVE_KEY_FILE); plain pi has no MCP support"

@@ -1035,6 +1035,78 @@ omp_configure_role() {
     omp_set_model_role "$dir" "$role" "$provider/$model_id"
 }
 
+# configure_pi_lan_models <pi_dir> <omp_dir> — register the shared LAN model.
+configure_pi_lan_models() {
+    require_bun || return 1
+    PI_MODELS_DIR="$1" OMP_MODELS_DIR="$2" bun -e '
+import { YAML, JSONC } from "bun";
+import * as fs from "node:fs";
+import * as path from "node:path";
+const oldId = "unsloth/Qwen3.8-27B-NVFP4";
+const id = "ukisai/Swift-Qwen3.8-27B-NVFP4";
+const yamlFile = (dir, stem) => {
+    const yml = path.join(dir, stem + ".yml");
+    const yaml = path.join(dir, stem + ".yaml");
+    return fs.existsSync(yml) || !fs.existsSync(yaml) ? yml : yaml;
+};
+const read = file => {
+    if (!fs.existsSync(file)) return {};
+    const text = fs.readFileSync(file, "utf8");
+    const doc = file.endsWith(".json") ? JSONC.parse(text) : YAML.parse(text);
+    if (!doc || typeof doc !== "object" || Array.isArray(doc)) throw new Error(`Invalid configuration object: ${file}`);
+    return doc;
+};
+const writes = [];
+for (const [dir, omp] of [[process.env.PI_MODELS_DIR, false], [process.env.OMP_MODELS_DIR, true]]) {
+    const file = omp ? yamlFile(dir, "models") : path.join(dir, "models.json");
+    const legacy = path.join(dir, "models.json");
+    const doc = read(omp && !fs.existsSync(file) && fs.existsSync(legacy) ? legacy : file);
+    doc.providers ??= {};
+    if (typeof doc.providers !== "object" || Array.isArray(doc.providers)) throw new Error(`Invalid providers: ${file}`);
+    const provider = (doc.providers["vllm-lan"] ??= {});
+    if (typeof provider !== "object" || Array.isArray(provider)) throw new Error(`Invalid vllm-lan provider: ${file}`);
+    Object.assign(provider, { baseUrl: "http://exodus:8000/v1", api: "openai-completions" });
+    if (omp) {
+        provider.auth = "none";
+        delete provider.apiKey;
+    } else {
+        // Pi requires a non-empty apiKey even for unauthenticated endpoints.
+        provider.apiKey = "unused";
+        delete provider.auth;
+    }
+    provider.models = [...(provider.models ?? []).filter(m => m.id !== oldId && m.id !== id), {
+        id, reasoning: true, contextWindow: 262144,
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }
+    }];
+    writes.push([file, doc, omp]);
+    const settingsFile = omp ? yamlFile(dir, "config") : path.join(dir, "settings.json");
+    const settings = read(settingsFile);
+    let changed = false;
+    if (omp) {
+        if (settings.modelRoles != null && (typeof settings.modelRoles !== "object" || Array.isArray(settings.modelRoles))) {
+            throw new Error(`Invalid modelRoles: ${settingsFile}`);
+        }
+        for (const [role, model] of Object.entries(settings.modelRoles ?? {})) {
+            if (model === `vllm-lan/${oldId}`) {
+                settings.modelRoles[role] = `vllm-lan/${id}`;
+                changed = true;
+            }
+        }
+    } else if (settings.defaultProvider === "vllm-lan" && settings.defaultModel === oldId) {
+        settings.defaultModel = id;
+        changed = true;
+    }
+    if (changed) writes.push([settingsFile, settings, omp]);
+}
+// Parse all user files before writing so malformed config is never replaced.
+for (const [file, doc, omp] of writes) {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, (omp ? YAML.stringify(doc, null, 2) : JSON.stringify(doc, null, 2)) + "\n");
+}
+' || return 1
+    printf "${GREEN}✓ Swift Qwen LAN model registered for pi and omp${NC}\n"
+}
+
 # configure_omp_models <agent_dir> — set omp's default and planning models.
 #
 # Interactive by default. Unattended callers get the same result without
