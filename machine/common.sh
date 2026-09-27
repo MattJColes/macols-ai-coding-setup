@@ -72,9 +72,13 @@ ensure_homebrew() {
             apt_update
             sudo apt-get install -y build-essential procps curl file git
         fi
-        NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
+            || warn "the Homebrew installer failed"
         brew_bin=$(_brew_bin || true)
-        [ -n "$brew_bin" ] || { warn "Homebrew install failed"; return 1; }
+    fi
+    if [ -z "$brew_bin" ] || ! "$brew_bin" --version &>/dev/null; then
+        warn "Homebrew is not usable; Brewfile packages are skipped. Fix it, then re-run."
+        return 0
     fi
     eval "$("$brew_bin" shellenv)"
     local line="eval \"\$($brew_bin shellenv)\"" rc
@@ -89,6 +93,7 @@ ensure_homebrew() {
 # brew_bundle — install everything in machine/Brewfile. Non-fatal per
 # package: `brew bundle` keeps going and reports what failed.
 brew_bundle() {
+    command -v brew &>/dev/null || { warn "no Homebrew; skipping machine/Brewfile"; return 0; }
     echo "Installing packages from machine/Brewfile..."
     brew bundle --file="$MACHINE_DIR/Brewfile" || warn "some Brewfile entries failed; re-run 'brew bundle --file=$MACHINE_DIR/Brewfile' to see which"
 }
@@ -98,7 +103,7 @@ brew_bundle() {
 # install_python — Python from uv (managed, per-user, never touches the system
 # python3 that apt depends on), plus the dev tools the agent hooks call.
 install_python() {
-    command -v uv &>/dev/null || { warn "uv missing (brew bundle failed?); skipping Python"; return 1; }
+    command -v uv &>/dev/null || { warn "uv missing (brew bundle failed?); skipping Python"; return 0; }
     echo "Installing Python 3.14 with uv..."
     uv python install 3.14
     # Also expose `python` / `python3` / `python3.14` in ~/.local/bin.
@@ -170,7 +175,7 @@ install_lazyvim() {
 # setup_prompt — starship in zsh and bash. Retires Powerlevel10k from earlier
 # installs: theme cleared, instant-prompt and ~/.p10k.zsh lines removed.
 setup_prompt() {
-    command -v starship &>/dev/null || { warn "starship missing (brew bundle failed?)"; return 1; }
+    command -v starship &>/dev/null || { warn "starship missing (brew bundle failed?); prompt unchanged"; return 0; }
     local zshrc="$HOME/.zshrc"
     if [ -f "$zshrc" ] && grep -q 'p10k\|powerlevel10k' "$zshrc"; then
         echo "Removing Powerlevel10k from $zshrc..."
