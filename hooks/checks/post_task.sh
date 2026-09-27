@@ -257,6 +257,9 @@ run_ruff_check() {
 _typecheck_project() {
     local label="$1"; shift 2
     local out ec=0
+    # mypy imports configured plugins (repo code); untrusted projects get
+    # pyright only.
+    if ! project_trusted && ! command -v pyright &>/dev/null; then return 0; fi
     if [ -f pyrightconfig.json ] || { [ -f pyproject.toml ] && grep -q '\[tool\.pyright\]' pyproject.toml; }; then
         local bin
         bin=$(find_venv_bin pyright)
@@ -264,7 +267,7 @@ _typecheck_project() {
         if [ -z "$bin" ]; then add_warning "pyright configured but not installed ($label)"; return 0; fi
         out=$(${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME} "$bin" "$@" 2>&1) || ec=$?
         report_check_result "pyright ($label)" "$ec" "$out" " - error:" "type errors"
-    elif [ -f pyproject.toml ] && grep -q '\[tool\.mypy\]' pyproject.toml; then
+    elif [ -f pyproject.toml ] && grep -q '\[tool\.mypy\]' pyproject.toml && project_trusted; then
         local bin
         bin=$(find_venv_bin mypy)
         [ -z "$bin" ] && return 0
@@ -296,7 +299,7 @@ run_import_linter() {
 # ── JavaScript / TypeScript ──────────────────────────────────────────────────
 
 _node_bin() {
-    if [ -x "node_modules/.bin/$1" ]; then
+    if [ -x "node_modules/.bin/$1" ] && project_trusted; then
         echo "node_modules/.bin/$1"
     elif command -v "$1" &> /dev/null; then
         echo "$1"
@@ -645,6 +648,20 @@ run_post_task_checks() {
     fi
     [ "$has_go" = "true" ] && checks+=(run_go_checks)
     checks+=(run_shellcheck run_duplication_check run_file_length_check run_semgrep_scan)
+
+    # Untrusted project: keep only the checks that read files without running
+    # repo code (see project_trusted in common.sh).
+    if ! project_trusted; then
+        local -a safe=()
+        for check in "${checks[@]}"; do
+            case "$check" in
+                run_ruff_check|run_python_typecheck|run_shellcheck|run_duplication_check|run_file_length_check) safe+=("$check") ;;
+            esac
+        done
+        checks=("${safe[@]}")
+        # shellcheck disable=SC2034  # read by post_task_hook.sh
+        UNTRUSTED_SKIPPED=1
+    fi
 
     # Warm the shared discovery caches in the parent so every fanned-out
     # subshell inherits them instead of re-walking the tree / re-running git.

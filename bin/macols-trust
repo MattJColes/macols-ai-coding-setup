@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+#
+# macols-trust — let the agent hooks run this project's own code (tests,
+# eslint/tsc from node_modules, .venv tools, cdk synth, go test). Without it
+# the hooks only run checks that read files. See docs/hooks.md.
+#
+# Usage: macols-trust [path]     trust a repo (default: the current one)
+#        macols-trust --list     show trusted entries
+#        macols-trust --remove [path]
+set -euo pipefail
+
+TRUST_FILE="${MACOLS_TRUST_FILE:-$HOME/.config/macols/trusted-projects}"
+mkdir -p "$(dirname "$TRUST_FILE")"
+touch "$TRUST_FILE"
+
+root_of() {
+    (cd "${1:-.}" && { git rev-parse --show-toplevel 2>/dev/null || pwd -P; })
+}
+
+case "${1:-}" in
+    --list) cat "$TRUST_FILE" ;;
+    --remove)
+        root=$(root_of "${2:-.}")
+        grep -vxF "$root" "$TRUST_FILE" > "$TRUST_FILE.tmp" || true
+        mv "$TRUST_FILE.tmp" "$TRUST_FILE"
+        echo "Untrusted $root" ;;
+    -h|--help) sed -n '2,10p' "$0" ;;
+    *)
+        root=$(root_of "${1:-.}")
+        if grep -qxF "$root" "$TRUST_FILE"; then
+            echo "Already trusted: $root"
+        else
+            echo "$root" >> "$TRUST_FILE"
+            echo "Trusted $root"
+        fi ;;
+esac

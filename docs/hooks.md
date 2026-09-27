@@ -40,6 +40,26 @@ not per turn. `MACOLS_SEMGREP=1` turns local semgrep back on.
 Codex only runs hooks you have trusted, so approve them in Codex after
 installing (and again after they change).
 
+## Trusted Projects
+
+Tests, cdk synth, and tools the repo ships or configures in code (`.venv/bin`,
+`node_modules/.bin`, `eslint.config.js`, `.dependency-cruiser.cjs`, mypy and
+analyser plugins) run code the repository controls. The hooks only run them in
+projects you have trusted, so opening a cloned repo or reviewing a PR doesn't
+execute its tests just because the agent edited a file. Untrusted projects
+still get ruff and pyright from your PATH, shellcheck, gofmt, jscpd and the
+file-length limit, and the agent is told which checks were skipped.
+
+```bash
+bin/macols-trust              # trust the repo you're in
+bin/macols-trust --list       # show trusted entries
+bin/macols-trust --remove     # stop trusting the current repo
+```
+
+Entries live in `~/.config/macols/trusted-projects`, one path per line; a glob
+such as `~/code/*` trusts everything under it. `MACOLS_TRUST_ALL=1` trusts every
+project.
+
 ## Thresholds
 
 The thresholds come from each project's own config. The `quality` persona

@@ -130,3 +130,20 @@ stop after findings the agent did not act on, do not re-run it or loop.
 
 - **WHEN** the Stop hook fires twice with no edits in between
 - **THEN** the second run prints nothing and exits 0
+
+### Requirement: Repo code only runs in trusted projects
+The hook batteries SHALL run checks that execute repository-controlled code
+(tests, cdk synth, go checks, eslint, tsc, dependency-cruiser, import-linter,
+mypy, dart analyze, and any tool resolved from `.venv/bin` or
+`node_modules/.bin`) only when `project_trusted` accepts the project root,
+from `~/.config/macols/trusted-projects` (paths or globs, managed by
+`bin/macols-trust`) or `MACOLS_TRUST_ALL=1`. Untrusted projects SHALL still get
+the read-only checks (ruff and pyright from PATH, shellcheck, gofmt, jscpd,
+file length), and the skipped checks SHALL be named to the agent with the
+trust instruction.
+<!-- anchor: hook-wiring.project-trust -->
+
+#### Scenario: A cloned repo ships a malicious test
+
+- **WHEN** the agent edits a file in a repo that is not trusted
+- **THEN** the turn-end hook does not run pytest, go test or any repo binary

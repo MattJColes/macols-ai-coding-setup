@@ -107,7 +107,7 @@ run_python_typecheck() {
         report_check_result "pyright" "$ec" "$out" " - error:" "type errors" " - error:"
         return 0
     fi
-    if [ -n "$proj_cfg" ] && grep -q '\[tool\.mypy\]' "$proj_cfg"; then
+    if [ -n "$proj_cfg" ] && grep -q '\[tool\.mypy\]' "$proj_cfg" && project_trusted; then
         local mypy_bin
         mypy_bin=$(find_venv_bin mypy)
         [ -z "$mypy_bin" ] && return 0
@@ -120,6 +120,8 @@ run_python_typecheck() {
 # Resolve an ESLint binary, preferring the project-local one over npx (npx
 # resolution costs hundreds of ms per edit). Echoes nothing when unavailable.
 eslint_bin() {
+    # eslint.config.js is executable config: trusted projects only.
+    project_trusted || return 0
     if [ -x "node_modules/.bin/eslint" ]; then
         echo "node_modules/.bin/eslint"
     elif command -v eslint &> /dev/null; then
@@ -172,7 +174,8 @@ run_post_code_checks() {
             run_eslint_check || true
             ;;
         *.dart)
-            run_dart_analyze || true
+            # Analyzer plugins are repo code: trusted projects only.
+            project_trusted && { run_dart_analyze || true; }
             ;;
         *.go)
             run_gofmt_check || true

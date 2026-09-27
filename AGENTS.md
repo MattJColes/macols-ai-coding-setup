@@ -89,6 +89,8 @@ Edit the single source, never the rendered output:
   invisible to Claude Code, Codex and ZCode, so never rely on it. The
   checks live in `hooks/checks/post_code.sh` / `post_task.sh`; gate
   configs for projects ship in `config/personas/quality/references/`.
+  Anything that runs repo-controlled code (tests, repo-local binaries,
+  executable configs) is gated by `project_trusted`; keep new checks behind it.
 - **Machine setup:** `machine/` (macOS + Ubuntu 24/26). The herdr script
   also installs the herdr-plus/herdr-reviewr/herdr-browser plugins, their
   Claude+yazi project/worktree layouts, and herdr-browser's prerequisites

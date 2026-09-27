@@ -49,6 +49,15 @@ emit_post_tool_context() {
     esac
 }
 
+# emit_user_notice <format> <text> — a message for the person, not the model
+# (Claude Code and Codex show systemMessage to the user). Other formats print
+# nothing: their text channel feeds the model and would start a turn.
+emit_user_notice() {
+    case "$1" in
+        claude|codex) printf '{"systemMessage":%s}\n' "$(printf '%s' "$2" | _json_string)" ;;
+    esac
+}
+
 # emit_stop_feedback <format> <text> — Stop: ask for one more model step with
 # the findings. Loop safety is the caller's job (stop_hook_active + the change
 # fingerprint); Claude Code, ZCode and omp also cap repeated continuations.

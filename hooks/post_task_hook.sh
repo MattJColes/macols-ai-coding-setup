@@ -32,6 +32,7 @@
 set -eo pipefail
 
 HOOKS_DIR="${MACOLS_HOOKS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+SHARED_HOOKS_ROOT="$HOOKS_DIR"
 # shellcheck source=adapters/hook_output.sh
 source "$HOOKS_DIR/adapters/hook_output.sh"
 
@@ -72,12 +73,26 @@ if [ "${MACOLS_CHECKS_VERBOSE:-0}" = "1" ] && [ ${#WARNINGS[@]} -gt 0 ]; then
     printf '  - %s\n' "${WARNINGS[@]}" >&2
 fi
 
-[ ${#CRITICAL_ISSUES[@]} -eq 0 ] && exit 0
+TRUST_NOTE=""
+if [ "${UNTRUSTED_SKIPPED:-0}" = "1" ]; then
+    TRUST_NOTE="Tests, eslint, tsc, mypy, cdk synth, go and layer checks were skipped: $(project_root) is not a trusted project, and those run code the repo controls. To enable them, run $(dirname "$SHARED_HOOKS_ROOT")/bin/macols-trust in the repo, or add its path to $MACOLS_TRUST_FILE."
+fi
+
+if [ ${#CRITICAL_ISSUES[@]} -eq 0 ]; then
+    # Tell the person once per repo why most checks did not run.
+    notice_file="$(git rev-parse --git-dir 2>/dev/null)/macols-untrusted-notice"
+    if [ -n "$TRUST_NOTE" ] && [ ! -f "$notice_file" ]; then
+        : > "$notice_file" 2>/dev/null || true
+        emit_user_notice "$FORMAT" "$TRUST_NOTE"
+    fi
+    exit 0
+fi
 
 REPORT="Turn-end checks found problems in your changes. Fix them, re-run the failing check, then finish:"$'\n'
 for issue in "${CRITICAL_ISSUES[@]}"; do
     REPORT+="- $issue"$'\n'
 done
+[ -n "$TRUST_NOTE" ] && REPORT+="Note: $TRUST_NOTE"$'\n'
 
 emit_stop_feedback "$FORMAT" "$REPORT"
 exit 0

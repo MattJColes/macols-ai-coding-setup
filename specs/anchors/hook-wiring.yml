@@ -42,3 +42,10 @@ hook-wiring.turn-end-gate:
     kind: function_definition
     has: { field: name, regex: '^changes_since_last_check$' }
   files: [hooks/checks/common.sh]
+
+hook-wiring.project-trust:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^project_trusted$' }
+  files: [hooks/checks/common.sh]

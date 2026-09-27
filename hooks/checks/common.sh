@@ -151,10 +151,58 @@ detect_project_type() {
     echo "$_PROJECT_TYPE_CACHE"
 }
 
-# Find a tool binary from a virtualenv, walking up to repo root.
+# ── Project trust ────────────────────────────────────────────────────────────
+# Tests, cdk synth, and anything resolved from the repo (.venv/bin,
+# node_modules/.bin) or configured in executable config (eslint.config.js,
+# .dependency-cruiser.cjs, mypy plugins, analyzer/linter plugins) run code the
+# repository controls. A cloned or reviewed repo must not get that just
+# because the agent edited a file in it, so those checks only run in trusted
+# projects. Untrusted projects still get the checks that only read files:
+# ruff and pyright from PATH, shellcheck, gofmt, jscpd and the file-length
+# limit.
+#
+# Trust a project by adding its root (or a glob such as ~/code/*) to
+# MACOLS_TRUST_FILE, one per line; `bin/macols-trust` does it for the current
+# repo. MACOLS_TRUST_ALL=1 trusts everything.
+MACOLS_TRUST_FILE="${MACOLS_TRUST_FILE:-$HOME/.config/macols/trusted-projects}"
+
+project_root() {
+    git rev-parse --show-toplevel 2>/dev/null || pwd -P
+}
+
+project_trusted() {
+    if [ -n "${_PROJECT_TRUSTED_CACHE:-}" ]; then
+        [ "$_PROJECT_TRUSTED_CACHE" = yes ]; return
+    fi
+    _PROJECT_TRUSTED_CACHE=no
+    if [ "${MACOLS_TRUST_ALL:-0}" = "1" ]; then
+        _PROJECT_TRUSTED_CACHE=yes
+    elif [ -f "$MACOLS_TRUST_FILE" ]; then
+        local root line
+        root=$(project_root)
+        while IFS= read -r line || [ -n "$line" ]; do
+            line="${line%%#*}"
+            line="${line#"${line%%[![:space:]]*}"}"
+            line="${line%"${line##*[![:space:]]}"}"
+            [ -z "$line" ] && continue
+            line="${line/#\~/$HOME}"
+            # shellcheck disable=SC2053  # the entry is a glob on purpose
+            if [[ "$root" == $line ]]; then _PROJECT_TRUSTED_CACHE=yes; break; fi
+        done < "$MACOLS_TRUST_FILE"
+    fi
+    [ "$_PROJECT_TRUSTED_CACHE" = yes ]
+}
+
+# Find a tool binary from a virtualenv, walking up to repo root. In an
+# untrusted project only PATH is searched: a repo-shipped .venv/bin/<tool> is
+# repo code.
 # Usage: find_venv_bin <tool_name>  e.g. find_venv_bin pytest
 find_venv_bin() {
     local tool="$1"
+    if ! project_trusted; then
+        command -v "$tool" &> /dev/null && echo "$tool" || echo ""
+        return 0
+    fi
     # Check cwd first
     for venv_dir in .venv venv env; do
         if [ -f "$venv_dir/bin/$tool" ]; then
