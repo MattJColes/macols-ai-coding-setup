@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034  # layout/colour variables here are read by the lib/*.sh modules and installers
 #
 # Shared install library for the macols-ai-coding-setup installers.
 #
