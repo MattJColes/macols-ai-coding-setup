@@ -33,6 +33,8 @@ Options:
     --agents-only     Install only agents (and system AGENTS.md)
     --skills-only     Install only skills
     --mcps-only       Install only MCP servers (asks for the Brave Search API key)
+    --aws-mcp         Also register the AWS MCP servers (remembered; or MACOLS_AWS_MCP=1)
+    --no-aws-mcp      Remove the AWS MCP servers and stop asking
     --hooks-only      Install only the post-code plugin
     --no-cli          Skip installing Homebrew / the opencode CLI
     -p, --project     Install agents & skills to ./.opencode (implies --no-cli)

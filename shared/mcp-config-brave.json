@@ -1,11 +1,11 @@
 {
-  "_comment": "Brave Search MCP — registered for OpenCode and Oh My Pi only, and only when a key file exists. The BRAVE_API_KEY_FILE path must stay in sync with BRAVE_KEY_FILE in lib/common.sh. Needs Node 22+.",
+  "_comment": "Brave Search MCP - registered for OpenCode and Oh My Pi only, and only when a key file exists. The BRAVE_API_KEY_FILE path must stay in sync with BRAVE_KEY_FILE in lib/common.sh. Needs Node 22+. Version pinned - bump it deliberately.",
   "mcpServers": {
     "brave-search": {
       "command": "npx",
       "args": [
         "-y",
-        "@brave/brave-search-mcp-server",
+        "@brave/brave-search-mcp-server@2.1.4",
         "--transport",
         "stdio"
       ],

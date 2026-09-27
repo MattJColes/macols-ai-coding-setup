@@ -3,23 +3,17 @@
   "ASSISTANT_NOUN": "OpenCode assistant",
   "PLAN_MODE_CLAUSE": "",
   "TRACK_CHUNK": "Track each chunk as you work through it.",
-  "MATCH_SPECIALIST": "Pull in the agent or skill that fits each chunk.",
+  "MATCH_SPECIALIST": "Specialist knowledge (python, react, cdk, go, ship, ...) loads on demand through the skill tool.",
   "COLLAB_SECTION": [
-    "## Agents & Skills",
+    "## Agents",
     "",
-    "- Specialist personas are installed as skills (loaded on-demand via the skill tool) and, where the persona ships one, as agents (invoked via the Task tool).",
-    "- Reach for the persona that matches the work: `python` for Python services, `react` for React/TypeScript UI, `cdk` for infrastructure, `test` for tests, `review` before finishing, etc.",
-    "- Give each agent a clear, self-contained prompt with all the context it needs — file paths, requirements, constraints, and expected output. Agents do not share context with each other.",
-    "- When work splits into independent pieces, delegate each to the matching agent. Do not over-decompose tightly-coupled work — sequential execution is fine."
+    "- Use agents (via the Task tool) to isolate context: `research`, `review`, `debug` and `test`. Agents share no context, so give each a self-contained prompt (paths, constraints, expected output). Tightly coupled work stays sequential."
   ],
   "EXTRA_SECTION": [
     "",
     "",
     "## Web Search",
     "",
-    "- When a task needs current information from the web, use the `brave-search` MCP",
-    "  server. It is registered in `~/.config/opencode/opencode.json` when a Brave",
-    "  Search API key is configured; if it is missing, say so rather than guessing at",
-    "  facts you cannot check."
+    "- For current information use the `brave-search` MCP server, registered in `~/.config/opencode/opencode.json` when a Brave Search API key is configured. If it is missing, say so rather than guessing."
   ]
 }

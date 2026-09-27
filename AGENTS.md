@@ -23,7 +23,7 @@ Start at the source that owns the requested behaviour:
 | Persona, skill or specialist agent | `shared/personas/<name>/SKILL.md` | Persona bundle check + `./tests/verify_install.sh <tool>` |
 | Shared agent instructions | `shared/steering/base.md` | render/verify the affected tool |
 | Tool-specific steering wording | `shared/steering/tools/<tool>.json` | render/verify that tool |
-| MCP registration | `shared/mcp-config.json`, then `lib/common.sh` when wiring changes | installer verifier + relevant spec anchor |
+| MCP registration | `shared/mcp-config*.json`, then `lib/common.sh` when wiring changes | installer verifier + relevant spec anchor |
 | omp model/provider setup | `configure_omp_models` and friends in `lib/common.sh` | scratch-`$HOME` run of `install_pi.sh --models-only` + installer verifier |
 | Lifecycle or quality hook | `shared/hooks/`, `shared/post_*_checks.sh` | targeted hook check + installer verifier |
 | Tool installation behaviour | `install_<tool>.sh` and shared helpers in `lib/common.sh` | `bash -n` + installer verifier |
@@ -55,11 +55,15 @@ Edit the single source, never the rendered output:
   Edit it once; changing it means regenerating the bundle. It governs chat
   replies only — never widen it to authored content, or it breaks the
   `editor`/`docs`/`messages` personas and the review checklists.
-- **MCP servers:** `shared/mcp-config.json` (filesystem, puppeteer,
-  playwright, context7, dart, aws-mcp, aws-iac). Registered for Claude Code,
-  Codex, OpenCode, Oh My Pi (written to `~/.omp/agent/mcp.json`) and ZCode
-  (written to `~/.zcode/cli/config.json`). Plain pi has no MCP support.
-  `shared/mcp-config-brave.json` is a second, opt-in source holding
+- **MCP servers:** `shared/mcp-config.json` (playwright, context7, dart,
+  gopls; versions pinned; a `requires` key registers a server only when that
+  binary is on PATH). Registered for Claude Code, Codex, OpenCode, Oh My Pi
+  (written to `~/.omp/agent/mcp.json`) and ZCode (written to
+  `~/.zcode/cli/config.json`), all through `mcp_resolve`; writers merge and
+  remove only stale servers this repo owns. Plain pi has no MCP support.
+  `shared/mcp-config-aws.json` (aws-mcp, aws-iac) is opt-in for every tool
+  (`--aws-mcp` / `MACOLS_AWS_MCP=1`, remembered in `~/.config/macols/aws-mcp`).
+  `shared/mcp-config-brave.json` is a third, opt-in source holding
   `brave-search`; only `register_mcps_opencode` and `register_mcps_pi` merge it,
   and only when `~/.config/macols/brave-api-key` holds a key
   (`ensure_brave_api_key` prompts for it, honours `$BRAVE_API_KEY`, writes mode

@@ -1,0 +1,19 @@
+{
+  "_comment": "AWS MCP servers - opt-in for every tool (--aws-mcp or MACOLS_AWS_MCP=1; the choice is remembered in the file named by AWS_MCP_CHOICE_FILE in lib/common.sh). Needs uv (uvx) and AWS credentials in ~/.aws. Versions are pinned - bump them deliberately.",
+  "mcpServers": {
+    "aws-mcp": {
+      "command": "uvx",
+      "args": [
+        "mcp-proxy-for-aws@1.7.0",
+        "https://aws-mcp.us-east-1.api.aws/mcp"
+      ]
+    },
+    "aws-iac": {
+      "command": "uvx",
+      "args": ["awslabs.aws-iac-mcp-server@1.0.26"],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      }
+    }
+  }
+}

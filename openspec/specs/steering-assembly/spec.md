@@ -39,6 +39,22 @@ specs, PR and commit bodies, code) to its own conventions.
 - **WHEN** steering is assembled for every tool (claudecode, codex, opencode, pi, zcode)
 - **THEN** each rendered document contains exactly one `## Response Format` section
 
+### Requirement: Rendered steering stays short
+
+The always-loaded steering SHALL hold only rules that apply to every session,
+and every rendered document (response format and per-tool sections included)
+SHALL stay under about 80 lines. Procedures belong in lazily loaded skills
+(OpenSpec in the `/opsx:*` skills, spec anchors in `anchors`, git, worktree,
+commit and stacked-PR flow in `ship`), and anything a tool can check
+deterministically (complexity, length, duplication, types) belongs in the
+turn-end hook and CI, not in prose. Emphasis SHALL be plain wording with a
+reason, not ALL-CAPS.
+
+#### Scenario: Rendering every tool
+
+- **WHEN** `assemble_steering` renders claudecode, codex, opencode, pi and zcode
+- **THEN** each document is at most 80 lines and points to the `anchors` and `ship` skills instead of inlining their procedures
+
 ### Requirement: Ponytail ruleset merge is marker-delimited and idempotent
 `append_ponytail_ruleset <agents_md>` SHALL merge the vendored ruleset
 (`shared/steering/ponytail.AGENTS.md`) into the target file inside

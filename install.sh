@@ -32,6 +32,9 @@ Options:
     -h, --help    Show this help message
     --env         Run the machine setup first
                   (Homebrew/apt, Python, Node, Podman, etc.) for this OS
+    --aws-mcp     Also register the AWS MCP servers for every tool
+                  (remembered; or MACOLS_AWS_MCP=1). Off unless asked.
+    --no-aws-mcp  Remove the AWS MCP servers and stop asking
 
 Examples:
     ./install.sh                     Install and configure all five tools
@@ -53,6 +56,8 @@ TOOLS=()
 while [ $# -gt 0 ]; do
     case "$1" in
         -h|--help) usage; exit 0 ;;
+        --aws-mcp)    export MACOLS_AWS_MCP=1 ;;
+        --no-aws-mcp) export MACOLS_AWS_MCP=0 ;;
         --env) RUN_ENV=true ;;
         claudecode|codex|opencode|pi|zcode) TOOLS+=("$1") ;;
         *) printf "${RED}Unknown argument: %s${NC}\n" "$1"; usage; exit 1 ;;

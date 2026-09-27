@@ -39,6 +39,8 @@ Options:
     --commands-only     Install only slash commands (~/.zcode/commands/*.md)
     --instructions-only Install only the system AGENTS.md
     --mcps-only         Install only MCP servers
+    --aws-mcp           Also register the AWS MCP servers (remembered; or MACOLS_AWS_MCP=1)
+    --no-aws-mcp        Remove the AWS MCP servers and stop asking
     --hooks-only        Install only lifecycle hooks
     --no-cli            Skip the ZCode app check
     -p, --project       Install skills/commands to ./.zcode and AGENTS.md to ./AGENTS.md (implies --no-cli)
@@ -119,5 +121,5 @@ echo "Next steps:"
 echo "  • Restart ZCode to load the new configuration"
 echo "  • Skills load automatically when their description matches the work"
 echo "  • Commands are available as slash commands (e.g. /python, /review)"
-echo "  • MCP servers and hooks live in $CONFIG_JSON (aws-* MCPs need ~/.aws/credentials)"
+echo "  • MCP servers and hooks live in $CONFIG_JSON$(aws_mcp_enabled && echo ' (aws-* MCPs need ~/.aws/credentials)')"
 echo ""

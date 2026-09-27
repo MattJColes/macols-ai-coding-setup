@@ -3,32 +3,19 @@
   "ASSISTANT_NOUN": "Pi coding-agent assistant",
   "PLAN_MODE_CLAUSE": "",
   "TRACK_CHUNK": "Track each chunk with the plan (`update_plan`).",
-  "MATCH_SPECIALIST": "Pull in the `/skill:<name>` that fits each chunk.",
+  "MATCH_SPECIALIST": "Specialist knowledge loads as Agent Skills, automatically from their description or explicitly with `/skill:<name>` (e.g. `/skill:python`, `/skill:go`, `/skill:ship`).",
   "COLLAB_SECTION": [
-    "## Agent Skills",
+    "## Subagents",
     "",
-    "- Specialist personas are installed as Agent Skills, invoked as `/skill:<name>` (e.g. `/skill:python`, `/skill:review`, `/skill:ship`), and can also load automatically from their description.",
-    "- Reach for the skill that matches the work: `/skill:python` for Python services, `/skill:react` for React/TypeScript UI, `/skill:cdk` for infrastructure, `/skill:test` for tests, `/skill:review` before finishing, etc.",
-    "- Give each invocation a clear, self-contained instruction with the context it needs — file paths, requirements, constraints, and expected output.",
-    "- When work splits into independent pieces, sequence them through the plan (use the `pi-subagents` package to delegate to parallel/chained subagents). Do not over-decompose tightly-coupled work — sequential execution is fine."
+    "- Use subagents (the `pi-subagents` package) to isolate context for research, review, debugging and running tests. Give each a self-contained instruction (paths, constraints, expected output). Tightly coupled work stays sequential."
   ],
   "EXTRA_SECTION": [
     "",
     "",
-    "## Pi Agents (pi / omp): Skills & Tools",
+    "## Pi Agents (pi / omp)",
     "",
-    "- This install ships specialist personas as Agent Skills for both agents. Invoke one",
-    "  with `/skill:<name>` (e.g. `/skill:python`, `/skill:review`) when a",
-    "  task matches its specialism, and follow the loaded SKILL.md instructions.",
-    "- MCP servers are configured in `~/.omp/agent/mcp.json` (Oh My Pi only — the plain",
-    "  `pi` agent has no MCP support). For one-off external capabilities, a well-documented",
-    "  CLI tool (with a README the agent can read), a Skill, or a package via",
-    "  `omp install <pkg>` is still often simpler.",
-    "- When a task needs current information from the web, use the `brave-search` MCP",
-    "  server (omp only, and only when a Brave Search API key is configured). If it is",
-    "  missing, say so rather than guessing at facts you cannot check.",
-    "- A `pi-checks` extension runs tests, lint, type-checks and security scans after",
-    "  file edits and at the end of a turn. Its output is advisory — read the",
-    "  findings and fix real issues, but it will not block you."
+    "- MCP servers live in `~/.omp/agent/mcp.json` (omp only; plain `pi` has no MCP support). For one-off capabilities a documented CLI, a skill or `omp install <pkg>` is often simpler.",
+    "- For current information use the `brave-search` MCP server (omp only, when a Brave Search API key is configured). If it is missing, say so rather than guessing.",
+    "- The `pi-checks` extension runs tests, lint and type-checks after edits and at turn end. It does not block, so read its findings and fix real issues."
   ]
 }
