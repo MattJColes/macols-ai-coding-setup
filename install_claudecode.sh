@@ -30,6 +30,8 @@ Options:
     --agents-only     Install only agents (and system CLAUDE.md)
     --skills-only     Install only skills
     --mcps-only       Install only MCP servers
+    --aws-mcp         Also register the AWS MCP servers (remembered; or MACOLS_AWS_MCP=1)
+    --no-aws-mcp      Remove the AWS MCP servers and stop asking
     --hooks-only      Install only hooks
     --no-cli          Skip installing Homebrew / the claude CLI
     -p, --project     Install agents & skills to ./.claude (implies --no-cli)
@@ -105,5 +107,5 @@ echo "  • Restart Claude Code to load the new configuration"
 echo "  • Agents run automatically or via 'Use the <agent> agent ...'"
 echo "  • Skills are available as slash commands (e.g. /python)"
 echo "  • Ponytail is installed as a plugin (run '/plugin' in Claude Code to inspect)"
-[ "$DO_MCPS" = true ] && echo "  • Configure AWS credentials (~/.aws/credentials) for the aws-* MCPs"
+[ "$DO_MCPS" = true ] && aws_mcp_enabled && echo "  • Configure AWS credentials (~/.aws/credentials) for the aws-* MCPs"
 echo ""

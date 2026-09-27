@@ -78,6 +78,8 @@ Options:
     --hooks-only      Install only the pi-checks extension (both agents)
     --packages-only   Install only the agent packages
     --mcps-only       Install only omp MCP servers (~/.omp/agent/mcp.json; asks for the Brave Search API key)
+    --aws-mcp         Also register the AWS MCP servers (remembered; or MACOLS_AWS_MCP=1)
+    --no-aws-mcp      Remove the AWS MCP servers and stop asking
     --models-only     Register LAN models for both agents and reconfigure omp roles
     --no-pi           Skip installing/upgrading the pi and omp binaries
     --no-packages     Skip installing agent packages
@@ -126,6 +128,8 @@ set_subset() { if [ "$SUBSET" = false ]; then DO_SKILLS=false; DO_CONTEXT=false;
 while [ $# -gt 0 ]; do
     case "$1" in
         -h|--help) usage; exit 0 ;;
+        --aws-mcp)    export MACOLS_AWS_MCP=1 ;;
+        --no-aws-mcp) export MACOLS_AWS_MCP=0 ;;
         --list) list_personas pi; exit 0 ;;
         --skills-only)   set_subset; DO_SKILLS=true ;;
         --context-only)  set_subset; DO_CONTEXT=true ;;
@@ -197,7 +201,7 @@ echo "  • Run 'pi' or 'omp' to start either agent (or '/reload' inside either 
 echo "  • Skills are available as /skill:<name> (e.g. /skill:python)"
 echo "  • The pi-checks extension runs tests/lint/security advisories after edits and turns,"
 echo "    and a cdk deploy/destroy confirmation guard"
-echo "  • MCP servers are configured in $OMP_DIR/mcp.json (omp only; aws-* MCPs need ~/.aws/credentials)"
+echo "  • MCP servers are configured in $OMP_DIR/mcp.json (omp only$(aws_mcp_enabled && echo '; aws-* MCPs need ~/.aws/credentials'))"
 echo "  • omp providers live in $OMP_DIR/models.yml and model roles in $OMP_DIR/config.yml"
 echo "  • pi providers live in $PI_AGENT_DIR/models.json; both agents receive the Swift Qwen LAN model"
 echo "      change them with './install_pi.sh --models-only', or from inside omp with /model"

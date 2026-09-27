@@ -42,3 +42,24 @@ mcp-registration.brave-key:
     kind: function_definition
     has: { field: name, regex: '^ensure_brave_api_key$' }
   files: [lib/common.sh]
+
+mcp-registration.resolve:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^mcp_resolve$' }
+  files: [lib/common.sh]
+
+mcp-registration.aws-choice:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^ensure_aws_mcp_choice$' }
+  files: [lib/common.sh]
+
+mcp-registration.merge:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^mcp_merge_json$' }
+  files: [lib/common.sh]

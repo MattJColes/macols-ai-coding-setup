@@ -115,7 +115,7 @@ macols-ai-coding-setup/
 ├── shared/                 # ── single sources of truth ──
 │   ├── personas/<name>/SKILL.md   # specialist personas (agents/skills)
 │   ├── steering/base.md + tools/  # system steering, tokenised per tool
-│   ├── mcp-config.json            # MCP server definitions
+│   ├── mcp-config*.json           # MCP servers (default, opt-in aws, brave)
 │   ├── hooks/                     # post-code / post-task / pre-deploy + plugins
 │   ├── checks_common.sh          # shared check helpers (discovery, gate, timeout)
 │   ├── post_code_checks.sh        # per-edit lint/type-check battery
@@ -152,6 +152,8 @@ the config this repo provides.
 `--no-cli` and `--no-pi` skip the binary install or upgrade (for the Pi
 installer that means both the `pi` and `omp` binaries). They don't remove
 anything. MCP registration still needs the tool's CLI on your `PATH`.
+Every installer (and `install.sh`) also takes `--aws-mcp` / `--no-aws-mcp`
+to opt in to or out of the AWS MCP servers (see [MCP servers](#mcp-servers)).
 
 ### Machine setup
 
@@ -206,7 +208,10 @@ steering and the pi-checks extension into both, and installs the Bun runtime
 omp needs. omp also gets its model choices written to `~/.omp/agent/models.yml`
 and `~/.omp/agent/config.yml` (see [Models (omp)](#models-omp)). Codex removed custom prompts (`~/.codex/prompts/`) upstream
 in favour of Agent Skills; the installer cleans up prompts left by earlier
-versions of this repo.
+versions of this repo. Codex still loads user skills from `~/.codex/skills/`
+(upstream now marks it deprecated in favour of `~/.agents/skills/`); the
+installer stays there because pi and OpenCode also scan `~/.agents/skills/`
+and would warn about a duplicate of every persona.
 
 ### Git worktree workflow
 
@@ -324,10 +329,37 @@ missing or stale:
 
 ## MCP servers
 
-The MCP list lives in `shared/mcp-config.json`: **filesystem**, **puppeteer**,
-**playwright**, **context7**, **dart**, **aws-mcp** and **aws-iac**. The Claude
-Code, Codex, OpenCode, Pi (omp) and ZCode installers register them in their
-own config formats.
+The default list lives in `shared/mcp-config.json`: **playwright**,
+**context7**, **dart** and **gopls** (`gopls mcp`). The Claude Code, Codex,
+OpenCode, Pi (omp) and ZCode installers register them in their own config
+formats, all from one resolver (`mcp_resolve` in `lib/common.sh`).
+
+- Package versions are pinned (no `@latest`), so a server only changes when
+  this repo bumps it.
+- **dart** and **gopls** carry a `requires` key and are registered only when
+  that binary is on `PATH`. Re-run the installer after installing Dart or Go
+  tools to pick them up.
+- Re-runs merge rather than overwrite: your own servers in `opencode.json`,
+  `mcp.json` or ZCode's `config.json` survive, and only servers this repo
+  owns are updated or removed.
+- **filesystem** and **puppeteer** were retired. A re-run removes them when the
+  entry still runs the `@modelcontextprotocol/server-*` package this repo
+  installed, and leaves a server of your own with the same name alone.
+
+### AWS (opt-in, every tool)
+
+`shared/mcp-config-aws.json` holds the two AWS servers. They need AWS
+credentials and `uvx`, so they are off unless you ask for them:
+
+```bash
+./install.sh --aws-mcp                        # every tool; or MACOLS_AWS_MCP=1
+./install_claudecode.sh --mcps-only --aws-mcp # one tool
+./install.sh --no-aws-mcp                     # remove them again
+```
+
+Interactive installs ask once (y/N). The answer is remembered in
+`~/.config/macols/aws-mcp`, so the other installers and later re-runs follow
+it; an unattended install with no answer leaves them off.
 
 - **aws-mcp:** the managed [AWS MCP Server](https://aws.amazon.com/blogs/aws/the-aws-mcp-server-is-now-generally-available/)
   (Agent Toolkit for AWS), reached through the `mcp-proxy-for-aws` package,
@@ -466,7 +498,7 @@ file owns each part of the setup.
 ## Post-installation
 
 ```bash
-aws configure                                   # AWS credentials for aws-* MCPs
+aws configure                                   # AWS credentials (only with --aws-mcp)
 podman machine init && podman machine start     # containers (macOS)
 claude --version && codex --version             # sanity check
 pi --version && omp --version                   # pi agents

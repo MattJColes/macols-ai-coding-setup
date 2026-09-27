@@ -17,6 +17,12 @@ source "$SCRIPT_DIR/lib/common.sh"
 
 CODEX_DIR="$HOME/.codex"
 LEGACY_PROMPTS_DIR="$CODEX_DIR/prompts"
+# Codex still scans $CODEX_HOME/skills for user skills (kept for backward
+# compatibility, marked deprecated upstream in codex-rs/ext/skills/src/host_roots.rs)
+# alongside ~/.agents/skills. We stay on ~/.codex/skills because pi and
+# OpenCode also scan ~/.agents/skills, and a second copy of every persona there
+# would give them duplicate-name warnings. Project installs use ./.codex/skills,
+# which Codex loads from the project's .codex layer whether or not it is trusted.
 SKILLS_DIR="$CODEX_DIR/skills"
 AGENTS_DIR="$CODEX_DIR/agents"
 AGENTS_FILE="$CODEX_DIR/AGENTS.md"
@@ -36,6 +42,8 @@ Options:
     --agents-only       Install only custom agents (~/.codex/agents/*.toml)
     --instructions-only Install only the system AGENTS.md
     --mcps-only         Install only MCP servers
+    --aws-mcp           Also register the AWS MCP servers (remembered; or MACOLS_AWS_MCP=1)
+    --no-aws-mcp        Remove the AWS MCP servers and stop asking
     --hooks-only        Install only lifecycle hooks
     --no-cli            Skip installing the codex CLI
     -p, --project       Install skills/agents to ./.codex and AGENTS.md to ./AGENTS.md (implies --no-cli)
@@ -123,5 +131,5 @@ echo "  • Restart Codex to load the new configuration"
 echo "  • Skills load on demand — run /skills or mention one with \$<name>"
 echo "  • Agents live in ~/.codex/agents/*.toml — ask Codex to delegate to one by name"
 echo "  • Run 'codex mcp list' to inspect registered MCP servers"
-[ "$DO_MCPS" = true ] && echo "  • Configure AWS credentials (~/.aws/credentials) for the aws-* MCPs"
+[ "$DO_MCPS" = true ] && aws_mcp_enabled && echo "  • Configure AWS credentials (~/.aws/credentials) for the aws-* MCPs"
 echo ""

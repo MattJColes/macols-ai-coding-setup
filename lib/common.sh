@@ -36,6 +36,11 @@ MCP_CONFIG_FILE="$SHARED_DIR/mcp-config.json"
 # Keep BRAVE_KEY_FILE in sync with the path in mcp-config-brave.json.
 BRAVE_MCP_CONFIG_FILE="$SHARED_DIR/mcp-config-brave.json"
 BRAVE_KEY_FILE="$HOME/.config/macols/brave-api-key"
+# AWS MCP servers (aws-mcp, aws-iac) — a third, opt-in source registered for
+# every tool, but only when the user opts in (--aws-mcp or MACOLS_AWS_MCP=1).
+# The answer is remembered in AWS_MCP_CHOICE_FILE ("on"/"off").
+AWS_MCP_CONFIG_FILE="$SHARED_DIR/mcp-config-aws.json"
+AWS_MCP_CHOICE_FILE="$HOME/.config/macols/aws-mcp"
 
 # ── Pinned versions ──────────────────────────────────────────────────────────
 # Ponytail (https://github.com/DietrichGebert/ponytail) — installed for every
@@ -89,7 +94,8 @@ require_node() {
     fi
 }
 
-# Install jq + uv, which the MCP registration needs.
+# Install jq, which the Claude Code / Codex MCP registration needs. uv (for the
+# uvx-based AWS servers) is installed by ensure_aws_mcp_choice only on opt-in.
 ensure_mcp_prereqs() {
     if ! command -v jq &> /dev/null; then
         printf "${YELLOW}jq not found. Installing...${NC}\n"
@@ -101,11 +107,6 @@ ensure_mcp_prereqs() {
             printf "${RED}Please install jq manually: https://jqlang.github.io/jq/${NC}\n"
             return 1
         fi
-    fi
-    if ! command -v uv &> /dev/null; then
-        printf "${YELLOW}uv not found. Installing (needed for uvx-based MCPs)...${NC}\n"
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
     fi
 }
 
@@ -302,7 +303,8 @@ ensure_cli() {
 }
 
 # handle_common_install_flag — process flags shared by every install_<tool>.sh.
-# Returns 0 when it consumed the flag (-h/--help, --no-cli, -p/--project), else 1
+# Returns 0 when it consumed the flag (-h/--help, --no-cli, -p/--project,
+# --aws-mcp/--no-aws-mcp, which export MACOLS_AWS_MCP), else 1
 # so the caller's loop handles its tool-specific flags. Relies on the caller
 # having defined `usage` and the DO_CLI / PROJECT_INSTALL vars before parsing.
 # shellcheck disable=SC2034  # DO_CLI/PROJECT_INSTALL are consumed by the install scripts that source this
@@ -311,6 +313,8 @@ handle_common_install_flag() {
         -h|--help)     usage; exit 0 ;;
         --no-cli)      DO_CLI=false; return 0 ;;
         -p|--project)  PROJECT_INSTALL=true; DO_CLI=false; return 0 ;;
+        --aws-mcp)     export MACOLS_AWS_MCP=1; return 0 ;;
+        --no-aws-mcp)  export MACOLS_AWS_MCP=0; return 0 ;;
         *)             return 1 ;;
     esac
 }
@@ -636,37 +640,137 @@ ensure_brave_api_key() {
     printf "${GREEN}✓ Brave Search API key saved to %s (mode 600)${NC}\n" "$BRAVE_KEY_FILE"
 }
 
-# brave_mcp_source — echo the Brave MCP config path when a key is configured,
-# nothing otherwise. The OpenCode and omp writers pass the result through as
-# SRC_EXTRA, so brave-search is registered only when it can actually work.
-brave_mcp_source() {
-    if [ -s "$BRAVE_KEY_FILE" ] && [ -f "$BRAVE_MCP_CONFIG_FILE" ]; then
-        printf '%s' "$BRAVE_MCP_CONFIG_FILE"
+# ── AWS MCP opt-in ───────────────────────────────────────────────────────────
+
+# ensure_aws_mcp_choice — decide whether the opt-in AWS MCP servers
+# (shared/mcp-config-aws.json) are registered, and remember the answer so the
+# other installers (and re-runs) do not ask again.
+#
+# Order: MACOLS_AWS_MCP from the environment (the --aws-mcp / --no-aws-mcp
+# flags set it), then the remembered choice in $AWS_MCP_CHOICE_FILE, then a
+# y/N prompt when stdin is a tty. A non-interactive install with nothing set
+# defaults to off without recording anything. Returns 0 when AWS is on (after
+# making sure uv/uvx is available), 1 when off — callers treat 1 as non-fatal.
+ensure_aws_mcp_choice() {
+    local choice=""
+    case "${MACOLS_AWS_MCP:-}" in
+        1|y|Y|yes|true|on)  choice=on ;;
+        0|n|N|no|false|off) choice=off ;;
+    esac
+    if [ -z "$choice" ] && [ -s "$AWS_MCP_CHOICE_FILE" ]; then
+        choice="$(tr -d '[:space:]' < "$AWS_MCP_CHOICE_FILE")"
+    elif [ -z "$choice" ] && [ -t 0 ]; then
+        local ans=""
+        read -rp "$(printf "${YELLOW}Register the AWS MCP servers (aws-mcp, aws-iac; need ~/.aws credentials)? [y/N] ${NC}")" ans
+        case "$ans" in y|Y|yes|YES) choice=on ;; *) choice=off ;; esac
     fi
+    if [ -n "$choice" ] && [ "$(cat "$AWS_MCP_CHOICE_FILE" 2>/dev/null)" != "$choice" ]; then
+        mkdir -p "$(dirname "$AWS_MCP_CHOICE_FILE")"
+        printf '%s\n' "$choice" > "$AWS_MCP_CHOICE_FILE"
+    fi
+    [ "$choice" = on ] || return 1
+    if ! command -v uvx &> /dev/null; then
+        printf "${YELLOW}uv not found. Installing (the AWS MCP servers run through uvx)...${NC}\n"
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+        command -v uvx &> /dev/null \
+            || printf "${YELLOW}⚠ uv install failed — the aws-* MCPs are registered but need uvx on PATH to start${NC}\n"
+    fi
+    return 0
 }
 
-# ── MCP registration (single source: shared/mcp-config.json) ──────────────────
+# aws_mcp_enabled — true when the AWS MCP servers should be registered. Reads
+# the same inputs as ensure_aws_mcp_choice without prompting.
+aws_mcp_enabled() {
+    case "${MACOLS_AWS_MCP:-}" in
+        1|y|Y|yes|true|on)  return 0 ;;
+        0|n|N|no|false|off) return 1 ;;
+    esac
+    [ -s "$AWS_MCP_CHOICE_FILE" ] && [ "$(tr -d '[:space:]' < "$AWS_MCP_CHOICE_FILE")" = on ]
+}
+
+# ── MCP registration (sources: shared/mcp-config*.json) ──────────────────────
+
+# mcp_resolve <tool> — print the servers this repo wants registered for <tool>
+# as {"servers": {...}, "stale": {...}}, with $HOME expanded.
+#
+#   servers  the default list, plus the AWS servers when opted in, plus
+#            brave-search for opencode/pi when a Brave key is configured. A
+#            server whose `requires` binary is not on PATH (dart, gopls) is left
+#            out; the `requires` key itself is dropped.
+#   stale    names this repo owns that must not stay registered: servers left
+#            out above, and retired ones. The value is null (remove outright) or
+#            a package string the entry must still contain before it is removed,
+#            so a user's own server of the same name survives.
+#
+# Every writer consumes this, so all five tools see the same list.
+mcp_resolve() {
+    require_node || return 1
+    local tool="$1" brave=0 aws=0 brave_src=""
+    [ -f "$MCP_CONFIG_FILE" ] || { printf "${RED}MCP config not found: %s${NC}\n" "$MCP_CONFIG_FILE" >&2; return 1; }
+    aws_mcp_enabled && aws=1
+    case "$tool" in
+        opencode|pi) brave_src="$BRAVE_MCP_CONFIG_FILE"; [ -s "$BRAVE_KEY_FILE" ] && brave=1 ;;
+    esac
+    SRC="$MCP_CONFIG_FILE" SRC_AWS="$AWS_MCP_CONFIG_FILE" AWS_ON="$aws" \
+    SRC_BRAVE="$brave_src" BRAVE_ON="$brave" HOME_DIR="$HOME" node -e '
+const fs = require("fs"), path = require("path"), e = process.env;
+const read = (p) => (p && fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")).mcpServers || {} : {});
+const onPath = (bin) => (e.PATH || "").split(path.delimiter).some((d) => {
+    try { fs.accessSync(path.join(d, bin), fs.constants.X_OK); return true; } catch (err) { return false; }
+});
+const expand = (s) => String(s).split("$HOME").join(e.HOME_DIR);
+const servers = {};
+// Retired servers: removed only while the entry still runs the package this repo installed.
+const stale = {
+    filesystem: "@modelcontextprotocol/server-filesystem",
+    puppeteer: "@modelcontextprotocol/server-puppeteer",
+};
+for (const [src, on] of [[e.SRC, true], [e.SRC_AWS, e.AWS_ON === "1"], [e.SRC_BRAVE, e.BRAVE_ON === "1"]]) {
+    for (const [name, s] of Object.entries(read(src))) {
+        if (!on || (s.requires && !onPath(s.requires))) { stale[name] = null; continue; }
+        const entry = { command: expand(s.command), args: (s.args || []).map(expand) };
+        if (s.env) entry.env = Object.fromEntries(Object.entries(s.env).map(([k, v]) => [k, expand(v)]));
+        servers[name] = entry;
+    }
+}
+process.stdout.write(JSON.stringify({ servers, stale }));
+'
+}
+
+# mcp_remove_stale_cli <claude|codex> <resolved_json> — unregister the stale
+# names from mcp_resolve through the tool's CLI, honouring the package check.
+mcp_remove_stale_cli() {
+    local cli="$1" resolved="$2" name marker
+    while IFS=$'\t' read -r name marker; do
+        [ -n "$name" ] || continue
+        "$cli" mcp get "$name" > /dev/null 2>&1 || continue
+        if [ -n "$marker" ] && ! "$cli" mcp get "$name" 2>/dev/null | grep -qF -- "$marker"; then
+            continue
+        fi
+        "$cli" mcp remove "$name" > /dev/null 2>&1 && printf "  ${YELLOW}✓ removed stale %s${NC}\n" "$name"
+    done < <(jq -r '.stale | to_entries[] | "\(.key)\t\(.value // "")"' <<< "$resolved")
+}
 
 # register_mcps_claude — register every server at user scope via the claude CLI.
 register_mcps_claude() {
     printf "${BLUE}Registering MCP servers (Claude Code)...${NC}\n"
     command -v claude &> /dev/null || { printf "${RED}claude CLI not found${NC}\n"; return 1; }
     ensure_mcp_prereqs || return 1
-    [ -f "$MCP_CONFIG_FILE" ] || { printf "${RED}MCP config not found: %s${NC}\n" "$MCP_CONFIG_FILE"; return 1; }
+    ensure_aws_mcp_choice || true
+    local resolved name
+    resolved="$(mcp_resolve claudecode)" || return 1
 
-    local name server_json
-    for name in $(jq -r '.mcpServers | keys[]' "$MCP_CONFIG_FILE"); do
+    for name in $(jq -r '.servers | keys[]' <<< "$resolved"); do
         printf "${BLUE}→ %s${NC}\n" "$name"
-        server_json=$(jq --arg name "$name" --arg home "$HOME" \
-            '.mcpServers[$name] | walk(if type == "string" then gsub("\\$HOME"; $home) else . end)' \
-            "$MCP_CONFIG_FILE")
         claude mcp remove "$name" >/dev/null 2>&1 || true
-        if claude mcp add-json -s user "$name" "$server_json" >/dev/null 2>&1; then
+        if claude mcp add-json -s user "$name" "$(jq -c --arg n "$name" '.servers[$n]' <<< "$resolved")" >/dev/null 2>&1; then
             printf "  ${GREEN}✓ registered${NC}\n"
         else
             printf "  ${RED}✗ failed to register${NC}\n"
         fi
     done
+    mcp_remove_stale_cli claude "$resolved"
     printf "${GREEN}✓ MCP servers registered (run 'claude mcp list' to inspect)${NC}\n"
 }
 
@@ -675,17 +779,17 @@ register_mcps_codex() {
     printf "${BLUE}Registering MCP servers (Codex)...${NC}\n"
     command -v codex &> /dev/null || { printf "${RED}codex CLI not found${NC}\n"; return 1; }
     ensure_mcp_prereqs || return 1
-    [ -f "$MCP_CONFIG_FILE" ] || { printf "${RED}MCP config not found: %s${NC}\n" "$MCP_CONFIG_FILE"; return 1; }
+    ensure_aws_mcp_choice || true
+    local resolved name command_bin
+    resolved="$(mcp_resolve codex)" || return 1
 
-    local name command_bin
-    for name in $(jq -r '.mcpServers | keys[]' "$MCP_CONFIG_FILE"); do
+    for name in $(jq -r '.servers | keys[]' <<< "$resolved"); do
         printf "${BLUE}→ %s${NC}\n" "$name"
         local env_flags=() args=()
-        while IFS= read -r kv; do [ -z "$kv" ] && continue; env_flags+=(--env "$kv"); done < <(jq -r --arg home "$HOME" --arg name "$name" \
-            '.mcpServers[$name].env // {} | to_entries[] | "\(.key)=\(.value | gsub("\\$HOME"; $home))"' "$MCP_CONFIG_FILE")
-        command_bin=$(jq -r --arg name "$name" '.mcpServers[$name].command' "$MCP_CONFIG_FILE")
-        while IFS= read -r a; do args+=("$a"); done < <(jq -r --arg home "$HOME" --arg name "$name" \
-            '.mcpServers[$name].args // [] | .[] | gsub("\\$HOME"; $home)' "$MCP_CONFIG_FILE")
+        while IFS= read -r kv; do [ -z "$kv" ] && continue; env_flags+=(--env "$kv"); done < <(jq -r --arg n "$name" \
+            '.servers[$n].env // {} | to_entries[] | "\(.key)=\(.value)"' <<< "$resolved")
+        command_bin=$(jq -r --arg n "$name" '.servers[$n].command' <<< "$resolved")
+        while IFS= read -r a; do args+=("$a"); done < <(jq -r --arg n "$name" '.servers[$n].args[]' <<< "$resolved")
         codex mcp remove "$name" >/dev/null 2>&1 || true
         if codex mcp add "$name" "${env_flags[@]+"${env_flags[@]}"}" -- "$command_bin" "${args[@]+"${args[@]}"}" >/dev/null 2>&1; then
             printf "  ${GREEN}✓ registered${NC}\n"
@@ -693,98 +797,89 @@ register_mcps_codex() {
             printf "  ${RED}✗ failed to register${NC}\n"
         fi
     done
+    mcp_remove_stale_cli codex "$resolved"
     printf "${GREEN}✓ MCP servers registered (run 'codex mcp list' to inspect)${NC}\n"
 }
 
-# register_mcps_opencode — write the "mcp" key into ~/.config/opencode/opencode.json
-# (OpenCode reads MCP only from opencode.json; a standalone mcp.json is ignored).
-# The optional brave-search server is merged in on top of the shared config
-# when a Brave API key is configured (see brave_mcp_source).
-register_mcps_opencode() {
-    printf "${BLUE}Writing MCP config into opencode.json...${NC}\n"
+# mcp_merge_json <opencode|pi|zcode> <dest> <resolved_json> — merge the resolved
+# servers into a user-owned JSON config in that tool's shape. Entries this repo
+# does not own survive; stale owned entries are deleted; every other key in the
+# file is preserved. Idempotent. A file that does not parse is left untouched
+# and the call fails, rather than overwriting the user's config.
+mcp_merge_json() {
     require_node || return 1
-    [ -f "$MCP_CONFIG_FILE" ] || { printf "${RED}MCP config not found: %s${NC}\n" "$MCP_CONFIG_FILE"; return 1; }
-    local config_dir="$HOME/.config/opencode"
-    mkdir -p "$config_dir"
-    SRC="$MCP_CONFIG_FILE" SRC_EXTRA="$(brave_mcp_source)" OPENCODE_JSON="$config_dir/opencode.json" HOME_DIR="$HOME" node -e '
-const fs = require("fs");
-const read = (p) => JSON.parse(fs.readFileSync(p, "utf8")).mcpServers || {};
-const src = { ...read(process.env.SRC), ...(process.env.SRC_EXTRA ? read(process.env.SRC_EXTRA) : {}) };
-const dest = process.env.OPENCODE_JSON;
+    mkdir -p "$(dirname "$2")"
+    SHAPE="$1" DEST="$2" RESOLVED="$3" node -e '
+const fs = require("fs"), e = process.env;
+const { servers, stale } = JSON.parse(e.RESOLVED);
 let cfg = {};
-if (fs.existsSync(dest)) { try { cfg = JSON.parse(fs.readFileSync(dest, "utf8")); } catch (e) {} }
-const expand = (s) => String(s).split("$HOME").join(process.env.HOME_DIR);
-const mcp = {};
-for (const [name, s] of Object.entries(src)) {
-    const entry = { type: "local", command: [expand(s.command), ...(s.args || []).map(expand)], enabled: true };
-    if (s.env) { entry.environment = {}; for (const [k, v] of Object.entries(s.env)) entry.environment[k] = expand(v); }
-    mcp[name] = entry;
+if (fs.existsSync(e.DEST)) {
+    try { cfg = JSON.parse(fs.readFileSync(e.DEST, "utf8")); }
+    catch (err) { console.error(`${e.DEST} is not valid JSON (${err.message}) - left untouched`); process.exit(1); }
 }
-cfg["$schema"] = cfg["$schema"] || "https://opencode.ai/config.json";
-cfg.mcp = mcp;
-fs.writeFileSync(dest, JSON.stringify(cfg, null, 2) + "\n");
+const shapes = {
+    // OpenCode: {"mcp": {name: {type: "local", command: [cmd, ...args], environment, enabled}}}
+    opencode: {
+        map: (c) => { c["$schema"] = c["$schema"] || "https://opencode.ai/config.json"; return (c.mcp = c.mcp || {}); },
+        entry: (s) => Object.assign({ type: "local", command: [s.command, ...s.args], enabled: true }, s.env ? { environment: s.env } : {}),
+    },
+    // Oh My Pi: {"mcpServers": {name: {command, args, env}}}, the Claude shape.
+    pi: {
+        map: (c) => (c.mcpServers = c.mcpServers || {}),
+        entry: (s) => Object.assign({ command: s.command, args: s.args }, s.env ? { env: s.env } : {}),
+    },
+    // ZCode: {"mcp": {"servers": {...}}}. Its schema is strict - an unknown key
+    // silently drops the whole server - so each entry carries only these keys.
+    zcode: {
+        map: (c) => { c.mcp = c.mcp || {}; return (c.mcp.servers = c.mcp.servers || {}); },
+        entry: (s) => Object.assign({ type: "stdio", command: s.command, args: s.args, enabled: true }, s.env ? { env: s.env } : {}),
+    },
+};
+const shape = shapes[e.SHAPE];
+const map = shape.map(cfg);
+for (const [name, marker] of Object.entries(stale)) {
+    if (name in map && (marker === null || JSON.stringify(map[name]).includes(marker))) delete map[name];
+}
+for (const [name, s] of Object.entries(servers)) map[name] = shape.entry(s);
+fs.writeFileSync(e.DEST, JSON.stringify(cfg, null, 2) + "\n");
 '
-    printf "${GREEN}✓ MCP servers written to %s${NC}\n" "$config_dir/opencode.json"
 }
 
-# register_mcps_pi <agent_dir> — write the "mcpServers" key into <agent_dir>/mcp.json.
-# Oh My Pi reads MCP config from ~/.omp/agent/mcp.json in the same
-# {"mcpServers": {...}} shape as shared/mcp-config.json; other keys in the
-# file (e.g. disabledServers) are preserved. The optional brave-search server
-# is merged in when a Brave API key is configured (see brave_mcp_source).
+# register_mcps_opencode — merge the servers into the "mcp" key of
+# ~/.config/opencode/opencode.json (OpenCode reads MCP only from opencode.json;
+# a standalone mcp.json is ignored). brave-search is included when a Brave API
+# key is configured.
+register_mcps_opencode() {
+    printf "${BLUE}Writing MCP config into opencode.json...${NC}\n"
+    ensure_aws_mcp_choice || true
+    local resolved dest="$HOME/.config/opencode/opencode.json"
+    resolved="$(mcp_resolve opencode)" || return 1
+    mcp_merge_json opencode "$dest" "$resolved" || return 1
+    printf "${GREEN}✓ MCP servers written to %s${NC}\n" "$dest"
+}
+
+# register_mcps_pi <agent_dir> — merge the servers into the "mcpServers" key of
+# <agent_dir>/mcp.json. Oh My Pi reads MCP config from ~/.omp/agent/mcp.json;
+# other keys in the file (e.g. disabledServers) are preserved. brave-search is
+# included when a Brave API key is configured.
 register_mcps_pi() {
     printf "${BLUE}Writing MCP config into mcp.json...${NC}\n"
-    require_node || return 1
-    [ -f "$MCP_CONFIG_FILE" ] || { printf "${RED}MCP config not found: %s${NC}\n" "$MCP_CONFIG_FILE"; return 1; }
-    mkdir -p "$1"
-    SRC="$MCP_CONFIG_FILE" SRC_EXTRA="$(brave_mcp_source)" PI_MCP_JSON="$1/mcp.json" HOME_DIR="$HOME" node -e '
-const fs = require("fs");
-const read = (p) => JSON.parse(fs.readFileSync(p, "utf8")).mcpServers || {};
-const src = { ...read(process.env.SRC), ...(process.env.SRC_EXTRA ? read(process.env.SRC_EXTRA) : {}) };
-const dest = process.env.PI_MCP_JSON;
-let cfg = {};
-if (fs.existsSync(dest)) { try { cfg = JSON.parse(fs.readFileSync(dest, "utf8")); } catch (e) {} }
-const expand = (s) => String(s).split("$HOME").join(process.env.HOME_DIR);
-const servers = {};
-for (const [name, s] of Object.entries(src)) {
-    const entry = { command: expand(s.command), args: (s.args || []).map(expand) };
-    if (s.env) { entry.env = {}; for (const [k, v] of Object.entries(s.env)) entry.env[k] = expand(v); }
-    servers[name] = entry;
-}
-cfg.mcpServers = servers;
-fs.writeFileSync(dest, JSON.stringify(cfg, null, 2) + "\n");
-'
+    ensure_aws_mcp_choice || true
+    local resolved
+    resolved="$(mcp_resolve pi)" || return 1
+    mcp_merge_json pi "$1/mcp.json" "$resolved" || return 1
     printf "${GREEN}✓ MCP servers written to %s${NC}\n" "$1/mcp.json"
 }
 
 # register_mcps_zcode — merge the servers into the "mcp.servers" key of
-# ~/.zcode/cli/config.json. ZCode's per-server schema is strict (an unknown
-# key silently drops the whole server), so each entry carries only
-# type/command/args/env/enabled. All other keys in an existing config
-# (hooks, plugins, …) survive.
+# ~/.zcode/cli/config.json, using ZCode's strict per-server schema. All other
+# keys in an existing config (hooks, plugins, …) survive.
 register_mcps_zcode() {
     printf "${BLUE}Writing MCP config into ZCode config.json...${NC}\n"
-    require_node || return 1
-    [ -f "$MCP_CONFIG_FILE" ] || { printf "${RED}MCP config not found: %s${NC}\n" "$MCP_CONFIG_FILE"; return 1; }
-    local config_file="$HOME/.zcode/cli/config.json"
-    mkdir -p "$(dirname "$config_file")"
-    SRC="$MCP_CONFIG_FILE" ZCODE_JSON="$config_file" HOME_DIR="$HOME" node -e '
-const fs = require("fs");
-const src = JSON.parse(fs.readFileSync(process.env.SRC, "utf8")).mcpServers || {};
-const dest = process.env.ZCODE_JSON;
-let cfg = {};
-if (fs.existsSync(dest)) { try { cfg = JSON.parse(fs.readFileSync(dest, "utf8")); } catch (e) {} }
-const expand = (s) => String(s).split("$HOME").join(process.env.HOME_DIR);
-const servers = {};
-for (const [name, s] of Object.entries(src)) {
-    const entry = { type: "stdio", command: expand(s.command), args: (s.args || []).map(expand), enabled: true };
-    if (s.env) { entry.env = {}; for (const [k, v] of Object.entries(s.env)) entry.env[k] = expand(v); }
-    servers[name] = entry;
-}
-cfg.mcp = cfg.mcp || {};
-cfg.mcp.servers = Object.assign({}, cfg.mcp.servers, servers);
-fs.writeFileSync(dest, JSON.stringify(cfg, null, 2) + "\n");
-'
+    ensure_aws_mcp_choice || true
+    local resolved config_file="$HOME/.zcode/cli/config.json"
+    resolved="$(mcp_resolve zcode)" || return 1
+    mcp_merge_json zcode "$config_file" "$resolved" || return 1
     printf "${GREEN}✓ MCP servers written to %s${NC}\n" "$config_file"
 }
 

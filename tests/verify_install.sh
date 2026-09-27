@@ -43,6 +43,33 @@ has_ponytail_block() { grep -q 'ponytail:ruleset:start' "$1" 2>/dev/null; }
 # brave-search is registered for OpenCode/omp only, and only when a key file
 # exists — so assert its presence or its absence, whichever the key implies.
 has_brave_key() { [ -s "$HOME/.config/macols/brave-api-key" ]; }
+# The AWS servers are opt-in for every tool; mirrors aws_mcp_enabled in lib/common.sh.
+aws_on() {
+    case "${MACOLS_AWS_MCP:-}" in
+        1|y|Y|yes|true|on)  return 0 ;;
+        0|n|N|no|false|off) return 1 ;;
+    esac
+    [ -s "$HOME/.config/macols/aws-mcp" ] && [ "$(tr -d '[:space:]' < "$HOME/.config/macols/aws-mcp")" = on ]
+}
+
+# mcp_checks <jq path to the server map> <file> <label> — the shared server
+# list is present, retired servers are gone, and the opt-in / on-PATH servers
+# appear exactly when they should.
+mcp_checks() {
+    local m="$1" f="$2" l="$3"
+    pass "$l has context7 + playwright MCPs" "jq -e '$m | .context7 and .playwright' '$f' >/dev/null 2>&1"
+    pass "$l has no retired filesystem/puppeteer MCP" "! jq -e '$m | (.filesystem // .puppeteer)' '$f' >/dev/null 2>&1"
+    if aws_on; then
+        pass "$l has the aws-* MCPs (opted in)" "jq -e '$m | .\"aws-mcp\" and .\"aws-iac\"' '$f' >/dev/null 2>&1"
+    else
+        pass "$l omits the aws-* MCPs (not opted in)" "! jq -e '$m | (.\"aws-mcp\" // .\"aws-iac\")' '$f' >/dev/null 2>&1"
+    fi
+    if command -v gopls >/dev/null 2>&1; then
+        pass "$l has gopls MCP (gopls on PATH)" "jq -e '$m.gopls' '$f' >/dev/null 2>&1"
+    else
+        pass "$l omits gopls MCP (gopls not on PATH)" "! jq -e '$m.gopls' '$f' >/dev/null 2>&1"
+    fi
+}
 
 # The shared response-format block lands in the steering doc exactly once...
 rf_once() { [ "$(grep -c '^## Response Format' "$1" 2>/dev/null)" = 1 ]; }
@@ -67,7 +94,7 @@ verify_claudecode() {
     pass "~/.claude/bin/claude-launch is executable" "[ -x '$d/bin/claude-launch' ]"
     if has_jq; then
         pass "settings.json has PostToolUse hook"  "jq -e '.hooks.PostToolUse[0].hooks[0].command' '$d/settings.json' >/dev/null"
-        pass "~/.claude.json has filesystem MCP"    "jq -e '.mcpServers.filesystem' '$HOME/.claude.json' >/dev/null 2>&1"
+        mcp_checks '.mcpServers' "$HOME/.claude.json" '~/.claude.json'
     else
         warn "jq not available — skipping JSON assertions"
     fi
@@ -79,7 +106,7 @@ verify_claudecode() {
     soft "openspec CLI installed" "command -v openspec >/dev/null && openspec --version >/dev/null 2>&1"
     soft "ast-grep CLI installed" "command -v ast-grep >/dev/null && ast-grep --version >/dev/null 2>&1"
     soft "yq CLI installed" "command -v yq >/dev/null 2>&1"
-    soft "claude mcp list shows filesystem" "command -v claude >/dev/null && claude mcp list 2>/dev/null | grep -q filesystem"
+    soft "claude mcp list shows context7" "command -v claude >/dev/null && claude mcp list 2>/dev/null | grep -q context7"
 }
 
 verify_codex() {
@@ -99,7 +126,7 @@ verify_codex() {
         pass "hooks.json has PostToolUse hook"     "jq -e '.hooks.PostToolUse[0].hooks[0].command' '$d/hooks.json' >/dev/null"
         pass "hooks.json Stop runs post-task battery" "jq -e '.hooks.Stop[0].hooks[0].command | test(\"post_task\")' '$d/hooks.json' >/dev/null"
     fi
-    soft "codex mcp list shows filesystem" "command -v codex >/dev/null && codex mcp list 2>/dev/null | grep -q filesystem"
+    soft "codex mcp list shows context7" "command -v codex >/dev/null && codex mcp list 2>/dev/null | grep -q context7"
 }
 
 verify_opencode() {
@@ -117,7 +144,7 @@ verify_opencode() {
     pass "plugin placeholders substituted" "! grep -q '__.*_PATH__' '$d/plugins/post_code_hook_plugin.js'"
     pass "plugin wires pre-deploy check" "grep -q 'pre_deploy_check.sh' '$d/plugins/post_code_hook_plugin.js'"
     if has_jq; then
-        pass "opencode.json has filesystem MCP under .mcp" "jq -e '.mcp.filesystem' '$d/opencode.json' >/dev/null"
+        mcp_checks '.mcp' "$d/opencode.json" 'opencode.json .mcp'
         if has_brave_key; then
             pass "opencode.json has brave-search MCP reading the key file" \
                 "jq -e '.mcp[\"brave-search\"].environment.BRAVE_API_KEY_FILE' '$d/opencode.json' >/dev/null"
@@ -149,7 +176,7 @@ verify_pi() {
     verify_pi_layout "$HOME/.pi/agent" "~/.pi/agent"
     verify_pi_layout "$omp_d" "~/.omp/agent"
     if has_jq; then
-        pass "omp mcp.json has filesystem MCP under .mcpServers" "jq -e '.mcpServers.filesystem' '$omp_d/mcp.json' >/dev/null"
+        mcp_checks '.mcpServers' "$omp_d/mcp.json" 'omp mcp.json .mcpServers'
         if has_brave_key; then
             pass "omp mcp.json has brave-search MCP reading the key file" \
                 "jq -e '.mcpServers[\"brave-search\"].env.BRAVE_API_KEY_FILE' '$omp_d/mcp.json' >/dev/null"
@@ -199,7 +226,7 @@ verify_zcode() {
         pass "config.json hooks are enabled" "jq -e '.hooks.enabled == true' '$d/cli/config.json' >/dev/null"
         pass "config.json has PostToolUse hook" "jq -e '.hooks.events.PostToolUse[0].hooks[0].command' '$d/cli/config.json' >/dev/null"
         pass "config.json Stop runs post-task battery" "jq -e '.hooks.events.Stop[0].hooks[0].command | test(\"post_task\")' '$d/cli/config.json' >/dev/null"
-        pass "config.json has filesystem MCP under .mcp.servers" "jq -e '.mcp.servers.filesystem' '$d/cli/config.json' >/dev/null"
+        mcp_checks '.mcp.servers' "$d/cli/config.json" 'config.json .mcp.servers'
     fi
 }
 
