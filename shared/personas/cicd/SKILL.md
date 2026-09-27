@@ -62,7 +62,7 @@ the merge, not a quarterly audit.
 | Secret detection | **GitHub secret scanning** + gitleaks | push + PR |
 | SAST (code) | **semgrep** (multi-language; `p/python`, `p/javascript`, `p/typescript`) | `check` job |
 | Container CVEs | **Trivy** | after build, before push |
-| Dependency audit | `uv pip audit` / `npm audit` / `pip-audit` | `check` job |
+| Dependency audit | `pip-audit` / `npm audit` / `govulncheck` | `check` job |
 
 Run Trivy on the built image before push with `severity: CRITICAL,HIGH` and
 `exit-code: 1`, so HIGH+ findings fail the build rather than land in a

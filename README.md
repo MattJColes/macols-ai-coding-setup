@@ -297,7 +297,7 @@ with `{{include: _shared/<file>.md}}` — the renderer inlines it into every
 output, and `_`-prefixed directories under `shared/personas/` hold partials,
 not personas.
 
-- **Build:** python, react, flutter, data, cdk, cicd
+- **Build:** python, go, react, flutter, data, cdk, cicd
 - **Design:** architecture, ui-ux
 - **Quality:** review (code + security audit), debug, test
 - **Delivery:** product
