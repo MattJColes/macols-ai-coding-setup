@@ -129,6 +129,13 @@ macols-ai-coding-setup/
 Tool-specific differences live in `shared/steering/tools/` and the matching
 `install_<tool>.sh`. Shared behaviour stays under `shared/`.
 
+The rendered steering is deliberately short (under ~80 lines per tool): every
+agent reads it on every turn, and adherence drops as it grows. It keeps only
+rules that apply to every session and points to skills for procedures
+(`/opsx:*` for OpenSpec, `anchors` for spec anchors, `ship` for git, worktrees,
+commits and stacked PRs). Quality limits a tool can check are left to the
+turn-end hook and CI rather than written as prose.
+
 ## Per-tool option reference
 
 Each tool has its own installer. With no flags it installs the CLI and all of
@@ -204,14 +211,15 @@ versions of this repo.
 ### Git worktree workflow
 
 The generated instructions use one branch per change and small conventional
-commits. Parallel agents get separate worktrees, created with
+commits; the `ship` skill holds the full commit, push and PR flow. Parallel
+agents get separate worktrees, created with
 `git worktree add ../repo-task -b feat/task`. Use
 `git log --oneline --graph --all` to see them together.
 
 In herdr, `Ctrl+b` `Shift+g` creates a worktree. The wildcard layout opens
 Claude Code beside yazi.
 
-For a chain of related changes the instructions reach for GitHub's stacked
+For a chain of related changes the `ship` skill reaches for GitHub's stacked
 pull requests instead of one long branch: `gh stack init` / `add` / `submit`
 to build and publish the chain, `gh stack sync` to cascade rebase when the base
 moves, and `gh stack merge` bottom-up. The machine setup installs the

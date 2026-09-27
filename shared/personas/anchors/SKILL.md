@@ -18,7 +18,13 @@ patched after it. The convention:
 [coles.codes/posts/anchoring-specs-to-code-with-ast-grep](https://coles.codes/posts/anchoring-specs-to-code-with-ast-grep/).
 
 **Gate**: if the repo has no `specs/anchors/*.yml`, it is not using spec
-anchors — say so and stop.
+anchors - say so and stop.
+
+Rules live in sidecar YAML under `specs/anchors/`, keyed by spec-section id;
+each rule pins one section to the one code site that implements it. Spec
+sections carry their id as an invisible HTML comment
+(`<!-- anchor: <id> -->`, dotted lowercase ids such as `billing.refund`), so
+the docs render unchanged.
 
 ## Before a change (context, not ceremony)
 

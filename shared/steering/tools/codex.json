@@ -3,14 +3,11 @@
   "ASSISTANT_NOUN": "Codex assistant",
   "PLAN_MODE_CLAUSE": "",
   "TRACK_CHUNK": "Track each chunk with the plan (`update_plan`).",
-  "MATCH_SPECIALIST": "Pull in the skill or agent that fits each chunk.",
+  "MATCH_SPECIALIST": "Specialist knowledge (python, react, cdk, go, ship, ...) loads as Agent Skills on demand: run `/skills` to list them or mention one with `$<name>`.",
   "COLLAB_SECTION": [
-    "## Agent Skills & Custom Agents",
+    "## Custom Agents",
     "",
-    "- Specialist personas are installed as Agent Skills in `~/.codex/skills/` (loaded on demand — run `/skills` to list, or mention one by name) and as custom agents in `~/.codex/agents/` that Codex can delegate to.",
-    "- Reach for the persona that matches the work: `python` for Python services, `react` for React/TypeScript UI, `cdk` for infrastructure, `test` for tests, `review` before finishing, etc.",
-    "- Give each invocation a clear, self-contained instruction with the context it needs — file paths, requirements, constraints, and expected output.",
-    "- When work splits into independent pieces, sequence them through the plan and pull in the matching skill or agent for each piece. Do not over-decompose tightly-coupled work — sequential execution is fine."
+    "- Delegate to a custom agent (`~/.codex/agents/`) to isolate context: `research`, `review`, `debug` and `test`. Give each a self-contained instruction (paths, constraints, expected output). Tightly coupled work stays sequential."
   ],
   "EXTRA_SECTION": ""
 }
