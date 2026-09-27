@@ -14,7 +14,10 @@ five tools.
 
 The verifier SHALL exit non-zero when any hard check fails (rendered
 agents/skills present, steering title rendered, hooks wired, exactly one
-ponytail block for AGENTS.md tools) and SHALL exit zero when only soft checks
+ponytail block for AGENTS.md tools, and the persona contract: skills carry
+their `references/`, no rendered file carries `tier:`, tiers render as Claude
+`effort` / Codex `model_reasoning_effort` on `audit`, and no retired persona
+such as `review` or `debug` remains) and SHALL exit zero when only soft checks
 fail (CLI versions, openspec/ast-grep/yq presence, MCP listing).
 
 #### Scenario: Offline verification
