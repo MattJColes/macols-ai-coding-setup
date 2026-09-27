@@ -26,7 +26,7 @@ The shared prose voice and AI-tell rules below apply in full to every document. 
 
 ## Critical Rules
 
-**Rule 1: Narrative Form** - Amazon narratives MUST be written in full sentences and paragraphs, NOT bullet points or tables. Bullets/tables ONLY in appendices. "Full sentences are harder to write. They have verbs. The paragraphs have topic sentences." - Jeff Bezos
+**Rule 1: Narrative Form** - Amazon narratives are written in full sentences and paragraphs, not bullet points or tables, because bullets let the writer skip the reasoning that connects the points. Bullets and tables belong in appendices. "Full sentences are harder to write. They have verbs. The paragraphs have topic sentences." - Jeff Bezos
 
 **Rule 2: Data over weasel words** - Replace "significant growth" with "23% growth from $100M to $123M". Every claim needs a number or a source.
 
@@ -118,7 +118,7 @@ Written document for decision-making. 40% planning, 20% drafting, 40% editing. S
 6-page Working Backwards document. Press Release (1 page max) + FAQ. Answer first: Who is the customer? What's the problem? What's the key benefit? How do you know? What's the experience?
 
 ### COE/RCA
-Systematic process improvement using 5 Whys. NOT punitive - focuses on mechanisms, not blame. "We" not "they". Facts not feelings. For the full operational postmortem/COE template (roles, severity, action tracking), use sre - that persona owns it; this one owns the writing style around it.
+Systematic process improvement using 5 Whys. Not punitive - focuses on mechanisms, not blame. "We" not "they". Facts not feelings. For the full operational postmortem/COE template (roles, severity, action tracking), use sre - that persona owns it; this one owns the writing style around it.
 
 ### Tenets
 Principles for team alignment. Numbered, 7 or fewer, opinionated (not "Who Doesn't Do That?"), memorable, positive language. Must be tie-breakers for real decisions.

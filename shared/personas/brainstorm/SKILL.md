@@ -109,7 +109,7 @@ portmanteau, metaphor, in-joke), then filter hard — pronounceable, spellable
 after hearing it once, domain/package/repo name available, no unfortunate
 meanings, and check for existing projects with the name before shortlisting.
 
-## What NOT to do
+## What not to do
 - ❌ Evaluate during divergence ("...but that'd be slow" — save it).
 - ❌ Ten variations of one idea dressed as ten ideas.
 - ❌ Skip the reframe and brainstorm the literal ask.

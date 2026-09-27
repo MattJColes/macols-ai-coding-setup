@@ -119,7 +119,7 @@ Confidence: high/medium/low — <why: source quality, agreement, recency>
 - When the user's question mutates mid-research (it will), log the pivot and
   mark orphaned questions dropped rather than silently abandoning them.
 
-## What NOT to do
+## What not to do
 - ❌ Search before writing down the questions and expected answers.
 - ❌ Cite an aggregator when the primary source is one click away.
 - ❌ Present a synthesis with no confidence levels or dissenting sources.
