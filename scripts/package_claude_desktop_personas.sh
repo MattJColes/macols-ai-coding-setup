@@ -42,9 +42,20 @@ package_personas() {
         # "_"-prefixed dirs hold shared partials, not personas.
         [[ "$(basename "$persona_dir")" == _* ]] && continue
         [[ -f "$persona_dir/SKILL.md" ]] || die "missing SKILL.md in $persona_dir"
-        local dest
+        local dest bundled
         dest="$plugin_root/skills/$(basename "$persona_dir")"
-        cp -R "$persona_dir" "$dest"
+        mkdir -p "$dest"
+        cp "$persona_dir/SKILL.md" "$dest/SKILL.md"
+        # Mirror generate_personas: references/ and scripts/ travel beside
+        # SKILL.md; anything else in the persona dir stays behind.
+        for bundled in references scripts; do
+            if [[ -d "$persona_dir/$bundled" ]]; then
+                cp -R "$persona_dir/$bundled" "$dest/$bundled"
+            fi
+        done
+        # tier is a renderer hint (mapped to effort only where a target
+        # clearly supports it); Claude Desktop gets neither.
+        perl -0pi -e 's/\A(---\n.*?)^tier:[^\n]*\n(.*?^---\n)/$1$2/ms' "$dest/SKILL.md"
         # Mirror generate_personas: inline {{include: ...}} partials so the
         # bundled skill is self-contained, then append the shared response
         # format so Claude Desktop matches every other surface.

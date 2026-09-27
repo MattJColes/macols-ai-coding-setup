@@ -330,6 +330,15 @@ handle_common_install_flag() {
 # (paths relative to shared/personas/). Partials are inlined before emission so
 # every rendered form — skill, command or agent, any tool — is self-contained.
 # Directories starting with "_" hold partials, not personas, and need no SKILL.md.
+#
+# Bundled files: a persona's references/ and scripts/ subdirectories are copied
+# next to SKILL.md in every skill output. Single-file outputs (agents, ZCode
+# commands) cannot carry folders, so their contents are inlined at the end of
+# the body instead — always correct, whatever subset of forms is installed.
+#
+# tier: light|standard|deep maps to an effort setting where the target has one
+# (Claude skill/agent `effort: low|medium|high`, Codex agent TOML
+# `model_reasoning_effort`) and is dropped everywhere else. Never a model.
 read -r -d '' PERSONA_GEN_JS <<'PERSONA_EOF' || true
 const fs = require("fs"), path = require("path");
 const mode = process.env.MODE, tool = process.env.TOOL;
@@ -338,6 +347,48 @@ const pdir = process.env.PERSONAS_DIR, tdir = process.env.TARGET_DIR;
 // rules as the assembled steering. Source: shared/steering/response-format.md.
 const RESPONSE_FORMAT = fs.readFileSync(process.env.RESPONSE_FORMAT_FILE, "utf8").trim();
 const DEFAULT_TOOLS = ["Read", "Write", "Edit", "Bash", "Grep", "Glob"];
+const BUNDLED_DIRS = ["references", "scripts"];
+const EFFORT = { light: "low", standard: "medium", deep: "high" };
+
+function effortOf(data, name) {
+  if (data.tier === undefined) return undefined;
+  if (!EFFORT[data.tier]) throw new Error(name + ": unknown tier '" + data.tier + "' (light|standard|deep)");
+  return EFFORT[data.tier];
+}
+
+function listFiles(dir, rel) {
+  let out = [];
+  for (const e of fs.readdirSync(path.join(dir, rel), { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    const r = path.join(rel, e.name);
+    if (e.isDirectory()) out = out.concat(listFiles(dir, r));
+    else if (e.name !== ".DS_Store") out.push(r);
+  }
+  return out;
+}
+
+// Copy references/ and scripts/ beside a rendered SKILL.md (replacing any
+// previous copy so removed files do not linger).
+function copyBundled(srcDir, destDir) {
+  for (const d of BUNDLED_DIRS) {
+    const to = path.join(destDir, d);
+    fs.rmSync(to, { recursive: true, force: true });
+    const from = path.join(srcDir, d);
+    if (fs.existsSync(from)) fs.cpSync(from, to, { recursive: true });
+  }
+}
+
+// Inline references/ and scripts/ for single-file outputs.
+function inlineBundled(srcDir) {
+  const files = [];
+  for (const d of BUNDLED_DIRS) if (fs.existsSync(path.join(srcDir, d))) files.push(...listFiles(srcDir, d));
+  if (!files.length) return "";
+  let o = "\n## Bundled files\n\nThe skill form ships these beside SKILL.md; they are inlined here because this form is a single file.\n";
+  for (const f of files) {
+    const c = fs.readFileSync(path.join(srcDir, f), "utf8").trimEnd();
+    o += "\n### " + f + "\n\n" + (f.endsWith(".md") ? c : "```" + (path.extname(f).slice(1) || "text") + "\n" + c + "\n```") + "\n";
+  }
+  return o;
+}
 
 function applyIncludes(body) {
   return body.replace(/\{\{include:\s*([^}\s]+)\s*\}\}/g, (_, rel) => {
@@ -370,10 +421,11 @@ function fmList(key, items) {
   return o;
 }
 
-function writeDir(dir, name, content) {
+function writeDir(dir, name, content, srcDir) {
   const dest = path.join(dir, name);
   fs.mkdirSync(dest, { recursive: true });
   fs.writeFileSync(path.join(dest, "SKILL.md"), content);
+  copyBundled(srcDir, dest);
 }
 
 let count = 0;
@@ -383,7 +435,13 @@ for (const name of fs.readdirSync(pdir).sort()) {
   if (!fs.existsSync(src)) continue;
   const parsed = parse(fs.readFileSync(src, "utf8"));
   const data = parsed.data;
-  const body = applyIncludes(parsed.body).trimEnd() + "\n\n" + RESPONSE_FORMAT + "\n";
+  const srcDir = path.join(pdir, name);
+  const own = applyIncludes(parsed.body).trimEnd();
+  const body = own + "\n\n" + RESPONSE_FORMAT + "\n";
+  // Single-file forms carry the bundled files inline (see header comment),
+  // ahead of the response-format block so that block stays last.
+  const flatBody = () => own + "\n" + inlineBundled(srcDir) + "\n" + RESPONSE_FORMAT + "\n";
+  const effort = effortOf(data, name);
   const pname = data.name || name;
   let label = name;
 
@@ -394,7 +452,7 @@ for (const name of fs.readdirSync(pdir).sort()) {
     if (data.description) fm += "description: " + data.description + "\n";
     fm += "argument-hint: \"[task or context]\"\n";
     fm += "---\n";
-    fs.writeFileSync(path.join(tdir, name + ".md"), fm + body);
+    fs.writeFileSync(path.join(tdir, name + ".md"), fm + flatBody());
     console.log("  ✓ /" + name);
     count++;
   } else if (mode === "skill") {
@@ -405,7 +463,7 @@ for (const name of fs.readdirSync(pdir).sort()) {
       fm += "name: " + pname + "\n";
       if (data.description) fm += "description: " + data.description + "\n";
       fm += "---\n";
-      writeDir(tdir, name, fm + body);
+      writeDir(tdir, name, fm + body, srcDir);
     } else if (tool === "zcode") {
       // ZCode Agent Skill (~/.zcode/skills/<name>/SKILL.md): name +
       // description only — both are required or ZCode drops the skill, and
@@ -413,20 +471,21 @@ for (const name of fs.readdirSync(pdir).sort()) {
       fm += "name: " + pname + "\n";
       if (data.description) fm += "description: " + data.description + "\n";
       fm += "---\n";
-      writeDir(tdir, name, fm + body);
+      writeDir(tdir, name, fm + body, srcDir);
     } else if (tool === "opencode") {
       if (data.name) fm += "name: " + data.name + "\n";
       if (data.description) fm += "description: " + data.description + "\n";
       fm += "compatibility: opencode\n---\n";
-      writeDir(tdir, name, fm + body);
+      writeDir(tdir, name, fm + body, srcDir);
     } else {
       // claudecode / pi Agent Skill.
       fm += "name: " + pname + "\n";
       if (data.description) fm += "description: " + data.description + "\n";
       if (data["allowed-tools"] && data["allowed-tools"].length) fm += fmList("allowed-tools", data["allowed-tools"]);
       if (tool === "claudecode" && data["user-invocable"] !== undefined) fm += "user-invocable: " + data["user-invocable"] + "\n";
+      if (tool === "claudecode" && effort) fm += "effort: " + effort + "\n";
       fm += "---\n";
-      writeDir(tdir, name, fm + body);
+      writeDir(tdir, name, fm + body, srcDir);
       if (tool === "pi") label = "/skill:" + pname;
     }
     console.log("  ✓ " + label);
@@ -441,9 +500,11 @@ for (const name of fs.readdirSync(pdir).sort()) {
       // inherit the parent session's model. Instructions use a TOML
       // literal block (no escape processing); fall back to an escaped basic
       // string if the body ever contains the ''' delimiter.
-      const b = body.endsWith("\n") ? body : body + "\n";
+      const flat = flatBody();
+      const b = flat.endsWith("\n") ? flat : flat + "\n";
       let doc = "name = " + JSON.stringify(pname) + "\n";
       doc += "description = " + JSON.stringify(data.description || "") + "\n";
+      if (effort) doc += "model_reasoning_effort = " + JSON.stringify(effort) + "\n";
       if (b.includes("'''")) doc += "developer_instructions = " + JSON.stringify(b) + "\n";
       else doc += "developer_instructions = '''\n" + b + "'''\n";
       fs.writeFileSync(path.join(tdir, pname + ".toml"), doc);
@@ -452,14 +513,16 @@ for (const name of fs.readdirSync(pdir).sort()) {
       // boolean tool map is deprecated in OpenCode; the default toolset
       // applies, and per-tool restrictions belong in `permission` config.
       fm += "description: " + (data.description || "") + "\n---\n";
-      fs.writeFileSync(path.join(tdir, name + ".md"), fm + body);
+      fs.writeFileSync(path.join(tdir, name + ".md"), fm + flatBody());
     } else {
       // claudecode agent.
       const tools = (data["allowed-tools"] && data["allowed-tools"].length) ? data["allowed-tools"] : DEFAULT_TOOLS;
       fm += "name: " + pname + "\n";
       fm += "description: " + data.description + "\n";
-      fm += "tools: " + tools.join(", ") + "\n---\n";
-      fs.writeFileSync(path.join(tdir, pname + ".md"), fm + body);
+      fm += "tools: " + tools.join(", ") + "\n";
+      if (effort) fm += "effort: " + effort + "\n";
+      fm += "---\n";
+      fs.writeFileSync(path.join(tdir, pname + ".md"), fm + flatBody());
     }
     console.log("  ✓ " + pname);
     count++;

@@ -18,6 +18,8 @@ agent, `user-invocable: true` emits a Claude skill, and `allowed-tools` lists
 the tool allowlist (default Read/Write/Edit/Bash/Grep/Glob for agents).
 Personas SHALL NOT carry a `model` key — rendering is model-agnostic and
 every rendered agent inherits its tool's session/default model.
+Only personas worth running in a separate context carry `agent: true`
+(review, research, debug, test); every other persona is a skill only.
 
 #### Scenario: One persona is both agent and skill
 
@@ -41,6 +43,39 @@ missing include target SHALL fail the render.
 - **WHEN** `editor/SKILL.md` contains `{{include: _shared/voice.md}}`
 - **THEN** every rendered form of `editor` carries the partial's contents in place of the marker, and the `_shared` directory itself produces no rendered persona
 
+### Requirement: Bundled references and scripts travel with every skill
+
+A persona directory MAY hold `references/` and `scripts/` subdirectories next
+to `SKILL.md`. Skill mode SHALL copy both, recursively, beside the rendered
+`SKILL.md` for every tool (Claude Code, Codex, OpenCode, Pi/omp, ZCode),
+replacing any earlier copy so removed files do not linger. Single-file forms
+(agents for any tool, ZCode slash commands) cannot carry folders, so the
+generator SHALL inline every bundled file at the end of the persona body
+under a `## Bundled files` heading (Markdown inlined as-is, other files
+fenced), ahead of the response-format block. Inlining was chosen over
+pointing at the skill's installed path because installers can emit agents
+without the matching skill (subset and project installs), and an inlined copy
+is correct in every case.
+
+#### Scenario: Writing persona with references
+
+- **WHEN** `editor/references/voice-checks.md` exists
+- **THEN** every rendered `editor/SKILL.md` has `references/voice-checks.md` beside it, and the ZCode `/editor` command carries its contents inline
+
+### Requirement: Tier maps to effort only where the target supports it
+
+Every persona SHALL declare `tier: light | standard | deep` in frontmatter.
+The generator SHALL map it to `low | medium | high` as `effort:` on Claude
+Code skills and agents and as `model_reasoning_effort` in Codex agent TOML,
+and SHALL omit it from every other output (Codex/OpenCode/Pi/ZCode skills,
+OpenCode agents, ZCode commands) because those formats have no effort field.
+An unknown tier value SHALL fail the render. Tier never selects a model.
+
+#### Scenario: Deep persona rendered for Claude and Codex
+
+- **WHEN** `review` has `tier: deep`
+- **THEN** its Claude skill and agent carry `effort: high`, its Codex agent TOML carries `model_reasoning_effort = "high"`, and no other output mentions a tier
+
 ### Requirement: Generation emits each tool's native format from the same body
 `generate_personas <tool> <skill|command|agent> <target_dir>` SHALL render
 every persona through the embedded Node generator and set `PERSONA_COUNT` to
@@ -63,7 +98,7 @@ Codex) inherits the parent session's model.
 
 #### Scenario: Skill-only persona in agent mode
 
-- **WHEN** agent mode renders a persona without `agent: true` (e.g. ship, ponytail)
+- **WHEN** agent mode renders a persona without `agent: true` (e.g. ship, python)
 - **THEN** it is skipped and does not count toward `PERSONA_COUNT`
 
 ### Requirement: Every rendered persona carries the shared response-format block

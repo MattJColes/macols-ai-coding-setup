@@ -13,6 +13,17 @@ the bundle as `macols-personas`.
 - **WHEN** a maintainer runs the persona packaging script
 - **THEN** the checked-in bundle is replaced with a Claude plugin ZIP containing every current persona
 
+### Requirement: Bundled skills carry their references and scripts
+Each packaged skill SHALL contain the persona's `SKILL.md` plus its
+`references/` and `scripts/` subdirectories when present, mirroring the skill
+output of `generate_personas`; other files in the persona directory are not
+packaged. The `tier` frontmatter key SHALL be stripped, because Claude Desktop
+is not a target with a documented effort field.
+
+#### Scenario: Persona with a references folder
+- **WHEN** a persona has `references/*.md`
+- **THEN** the unpacked bundle has the same files under `skills/<name>/references/`
+
 ### Requirement: Bundled skills carry the shared response-format block
 The packaging script SHALL fail when `shared/steering/response-format.md` is
 missing and SHALL append its contents to every packaged `SKILL.md`, mirroring
