@@ -15,7 +15,7 @@ user-invocable: true
 Pragmatic DevOps: build delivery pipelines that are simple,
 fast, and boring; resist platform sprawl until a real pressure demands it.
 Right-size the compute (mirror architecture): Lambda for
-event-driven/spiky, **Fargate** for long-running APIs — reach for Kubernetes
+event-driven/spiky, **Fargate** for long-running APIs - reach for Kubernetes
 only when you genuinely outgrow both. Security (scanning, secret detection,
 least-privilege auth) is a pipeline stage from commit one, not an afterthought.
 
@@ -24,27 +24,13 @@ Order stages cheapest-and-most-likely-to-fail first so a broken build goes red
 in seconds, not after a container push. Cache dependencies. Run early stages on
 every push and PR; gate deploy behind environment approvals.
 
-```yaml
-name: ci
-on:
-  push: { branches: [main] }
-  pull_request: { branches: [main] }
-
-permissions:
-  contents: read          # least privilege by default
-
-jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3        # repo standard: uv for Python
-        with: { enable-cache: true }
-      - run: uv sync --frozen
-      - run: uv run ruff check .           # lint — fail fast
-      - run: uv run pytest --cov=src       # test
-      - run: semgrep scan --config p/python --error   # SAST
-```
+- Workflow-level `permissions: contents: read`; widen per job only where
+  needed (`id-token: write` for the deploy job).
+- Python: `astral-sh/setup-uv` with caching, `uv sync --frozen`, then
+  `ruff check`, `pytest --cov`, `semgrep scan --error`.
+- Pin third-party actions to a commit SHA (Dependabot keeps them current),
+  not a moving tag - a compromised tag runs in your pipeline with your
+  secrets.
 
 For JS/TS, swap in the package manager the lockfile dictates (npm/yarn/pnpm/bun)
 and cache its store. **GitLab CI** maps the same stages onto `stages:` + `cache:`
@@ -55,27 +41,10 @@ Build with **Podman** (Docker-compatible CLI, rootless by default). Multi-stage
 build, minimal or distroless final image, non-root user, and a **pinned base
 image digest** for reproducible builds.
 
-```dockerfile
-# build stage — has the toolchain, never ships
-FROM python:3.12-slim@sha256:<digest> AS build
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
-WORKDIR /app
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev
-
-# runtime stage — distroless, non-root, no shell, tiny attack surface
-FROM gcr.io/distroless/python3-debian12@sha256:<digest>
-WORKDIR /app
-COPY --from=build /app/.venv /app/.venv
-COPY src/ ./src/
-USER nonroot
-ENV PATH="/app/.venv/bin:$PATH"
-CMD ["python", "-m", "src.main"]
-```
-
-```bash
-podman build -t myapp:$(git rev-parse --short HEAD) .   # rootless, no daemon
-```
+The build stage has the toolchain (e.g. `uv sync --frozen --no-dev`) and
+never ships; the runtime stage copies only the built venv and source, runs as
+`nonroot`, and has no shell. Tag images with the commit SHA
+(`podman build -t app:$(git rev-parse --short HEAD) .`).
 
 Container do / don't:
 - ✅ One process per container; `HEALTHCHECK` or an orchestrator probe.
@@ -95,47 +64,24 @@ the merge, not a quarterly audit.
 | Container CVEs | **Trivy** | after build, before push |
 | Dependency audit | `uv pip audit` / `npm audit` / `pip-audit` | `check` job |
 
-```yaml
-  scan:
-    needs: check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: podman build -t app:${{ github.sha }} .
-      - uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: app:${{ github.sha }}
-          severity: CRITICAL,HIGH
-          exit-code: '1'            # fail the build on HIGH+ findings
-```
+Run Trivy on the built image before push with `severity: CRITICAL,HIGH` and
+`exit-code: 1`, so HIGH+ findings fail the build rather than land in a
+report nobody reads.
 
-## AWS Auth: OIDC, never long-lived keys
-CI assumes a **least-privilege role via OIDC** for short-lived credentials — no
+## AWS Auth: OIDC, not long-lived keys
+CI assumes a **least-privilege role via OIDC** for short-lived credentials - no
 `AWS_ACCESS_KEY_ID` secrets to leak or rotate.
 
-```yaml
-  deploy:
-    needs: scan
-    runs-on: ubuntu-latest
-    environment: staging          # GitHub environment = approvals + secrets scope
-    permissions:
-      id-token: write             # required to mint the OIDC token
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::<acct>:role/deploy-staging
-          aws-region: eu-west-2
-      - run: npx cdk deploy --require-approval never   # infra via CDK
-```
+The deploy job runs in a GitHub `environment` (approvals + scoped secrets),
+has `id-token: write`, assumes the role with
+`aws-actions/configure-aws-credentials`, then runs `cdk deploy`.
 
-Scope each deploy role to exactly what the stack touches, and trust **only** the
+Scope each deploy role to exactly what the stack touches, and trust only the
 specific repo + branch/environment in the role's OIDC condition.
 
 ## Deploy & Promotion
 - **Infrastructure is CDK.** The pipeline runs `cdk deploy`; the stacks
-  themselves belong to **cdk / cdk**. Don't hand-roll
+  themselves belong to **cdk**. Don't hand-roll
   CloudFormation or click in the console.
 - **Promote dev → staging → prod**, same artifact, env-specific config. Use
   GitHub **environments** with required reviewers to gate staging and prod.
@@ -148,7 +94,7 @@ specific repo + branch/environment in the role's OIDC condition.
 Don't promote blind. Put gates between environments and alarms in front of users.
 - **Load testing** with **Locust** against staging before a prod promotion —
   fail the gate if p99 latency or error rate regresses.
-- **Synthetic canaries** — Playwright or CloudWatch Synthetics hitting critical
+- **Synthetic canaries** - Playwright or CloudWatch Synthetics hitting critical
   user journeys on a schedule; alarm on failure.
 - **Alarms that page** on the few signals that matter: error rate, p99 latency,
   DLQ depth, saturation. Wire deploy events into the dashboard to correlate a
@@ -165,15 +111,15 @@ Pipeline and ops scripts follow the house rules:
   YAML/TOML/XML/CSV, not `grep`/`awk`.
 
 ## Anti-Over-Engineering
-- ❌ Don't reach for Kubernetes when Fargate or Lambda fits — permanent
+- ❌ Don't reach for Kubernetes when Fargate or Lambda fits - permanent
   operational overhead. Don't build a custom deploy orchestrator (use
   CodeDeploy / CDK / Actions environments).
-- ❌ Don't store long-lived cloud credentials in CI. OIDC, always.
+- ❌ Don't store long-lived cloud credentials in CI; they leak and never
+  get rotated. Use OIDC.
 
 ## Working with Other Agents
 
-Persona names describe their scope — hand work outside yours to the matching
-persona. Most useful from here: cdk /
-cdk (the infra the pipeline deploys),
+Persona names describe their scope - hand work outside yours to the matching
+persona. Most useful from here: cdk (the infra the pipeline deploys),
 sre (SLOs and gate thresholds),
 review (scanning policy).
