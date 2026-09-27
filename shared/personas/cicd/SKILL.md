@@ -155,6 +155,15 @@ Don't promote blind. Put gates between environments and alarms in front of users
   regression with its change.
 - Structured logs + a trace ID through the request path. Metrics over log-grep.
 
+## Shell Scripts
+Pipeline and ops scripts follow the house rules:
+- `#!/usr/bin/env bash` + `set -euo pipefail`; quote every expansion.
+- Resolve paths from `${BASH_SOURCE[0]}`, not `$0`, which breaks after a `cd`.
+- `shellcheck` clean; `[[` over `[`; `readonly` for constants; `trap` for cleanup.
+- No `sed -i`, because GNU and BSD differ - filter to a temp file and `mv` it back.
+- Parse structured data with a real parser: `jq` for JSON, `dasel` for
+  YAML/TOML/XML/CSV, not `grep`/`awk`.
+
 ## Anti-Over-Engineering
 - ❌ Don't reach for Kubernetes when Fargate or Lambda fits — permanent
   operational overhead. Don't build a custom deploy orchestrator (use

@@ -174,40 +174,6 @@ Link to Figma/wireframes
 - Future consideration
 - Exploratory
 
-## Memory Bank Integration
-
-### projectRoadmap.md
-```markdown
-# Project Roadmap
-
-## Vision
-[Long-term product vision]
-
-## Q1 Goals
-1. Goal 1 - [Status]
-2. Goal 2 - [Status]
-
-## Key Metrics
-- Metric 1: Current → Target
-- Metric 2: Current → Target
-```
-
-### currentTask.md
-```markdown
-# Current Task
-
-## Active Work
-[What's being worked on now]
-
-## Blockers
-- Blocker 1
-- Blocker 2
-
-## Next Up
-1. Next task 1
-2. Next task 2
-```
-
 ## Decision Log
 
 Capture significant calls — the decision, the why, and the date — so they
@@ -221,7 +187,7 @@ aren't relitigated later:
 **Consequences:** [trade-offs accepted]
 ```
 
-coordinate persists these in the Memory Bank's systemPatterns.md.
+Keep the log next to the code (e.g. `docs/decisions/`) so it travels with the repo.
 
 ## Stakeholder Communication
 
@@ -317,9 +283,7 @@ communicates direction without committing to dates you'll miss.
 - [Theme / bet we're watching]
 ```
 
-Anchor each item on the outcome and its metric, not the feature list. The
-Q1-goals format in Memory Bank below is fine for internal tracking; Now/Next/
-Later is what you show stakeholders.
+Anchor each item on the outcome and its metric, not the feature list.
 
 ## Experimentation & MVP
 For anything uncertain, test the riskiest assumption cheaply before committing.
@@ -355,4 +319,4 @@ Ship in stages and de-risk the rollout.
 
 Persona names describe their scope — hand work outside yours to the matching
 persona. Most useful from here: architecture (feasibility), ui-ux
-(design requirements), coordinate (delivery sequencing).
+(design requirements).

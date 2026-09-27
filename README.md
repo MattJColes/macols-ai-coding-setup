@@ -232,6 +232,10 @@ rules. Each tool loads it differently:
   `<!-- ponytail:ruleset:start/end -->` marker comments. Re-runs replace the
   block. Re-vendor the file to pick up upstream changes.
 
+There is deliberately no ponytail persona: each tool gets the rules once,
+from the upstream plugin/package or the appended ruleset. Claude Desktop is
+the exception - add the upstream plugin there by hand if you want it.
+
 Ponytail's hooks need `node` on the non-interactive PATH. The installers link
 `node`/`npm`/`npx` into `~/.local/bin`.
 
@@ -279,19 +283,19 @@ Each persona is one file: `shared/personas/<name>/SKILL.md`. Its frontmatter
 (`agent: true`, `allowed-tools:`, `user-invocable:`) drives how each installer renders it.
 Add or edit a persona once and every tool picks it up on the next install.
 
-Personas with `agent: true` also render as subagents (16 of the 25); the rest
+Personas with `agent: true` also render as subagents (13 of the 22); the rest
 are user-invocable skills only. A persona body may pull in a shared partial
 with `{{include: _shared/<file>.md}}` — the renderer inlines it into every
 output, and `_`-prefixed directories under `shared/personas/` hold partials,
 not personas.
 
-- **Build:** python, react, flutter, data, cdk, cicd, linux
+- **Build:** python, react, flutter, data, cdk, cicd
 - **Design:** architecture, ui-ux
 - **Quality:** review (code + security audit), debug, test
-- **Delivery:** product, coordinate
+- **Delivery:** product
 - **Research:** research, brainstorm
 - **Writing (skills only):** interview, editor, docs, messages
-- **Workflow (skills only):** ship, explain, ponytail, anchors
+- **Workflow (skills only):** ship, explain, anchors
 
 ### Claude Desktop bulk upload
 
