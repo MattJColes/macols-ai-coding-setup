@@ -8,9 +8,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 readonly REPO_ROOT
-readonly PERSONAS_DIR="$REPO_ROOT/shared/personas"
-readonly RESPONSE_FORMAT_FILE="$REPO_ROOT/shared/steering/response-format.md"
-readonly BUNDLE_PATH="$REPO_ROOT/bundles/macols-personas-claude-plugin.zip"
+readonly PERSONAS_DIR="$REPO_ROOT/config/personas"
+readonly RESPONSE_FORMAT_FILE="$REPO_ROOT/config/steering/response-format.md"
+readonly BUNDLE_PATH="$REPO_ROOT/dist/macols-personas-claude-plugin.zip"
 readonly PLUGIN_NAME="macols-personas"
 
 PACKAGE_TEMP_DIR=""

@@ -1,7 +1,7 @@
 ---
 name: explain
 tier: light
-description: Explains what a codebase, module or document is actually doing, in Matt Coles' plain-prose voice, kept simple. Use to build a mental model of an unfamiliar repo, understand how the pieces fit together, trace how data flows, or review a document for flow, clarity and whether it builds a coherent mental model in the reader. Triggers on "explain this codebase", "how does this work", "build a mental model", "walk me through this", "what is this code doing", "review this doc for clarity", "does this document flow".
+description: Explains what a codebase, module or document is actually doing, in Matt Coles' plain-prose voice, kept simple. Use to build a mental model of an unfamiliar repo, understand how the pieces fit together, trace how data flows, review a document for flow, clarity and whether it builds a coherent mental model in the reader, or walk through a diff before reading it (changes grouped by intent, a Mermaid call-flow diagram, the three riskiest spots). Triggers on "explain this codebase", "walk me through this diff", "what did the agent just change", "summarise this PR before I read it", "how does this work", "build a mental model", "walk me through this", "what is this code doing", "review this doc for clarity", "does this document flow".
 allowed-tools:
   - Read
   - Write
@@ -22,6 +22,13 @@ a good mental model in the reader's head, does it flow, and is it clear?
 
 Your output is a mental model, not a file tour. The reader should understand the
 mechanism and the reasoning, not just get a list of what lives where.
+
+## Walking Through a Diff
+
+When asked to walk through a diff, a PR or "what just changed", follow
+`references/diff-walkthrough.md`: intent groups, a Mermaid call-flow diagram,
+the riskiest three spots, and a reading order. It is a map for the reader, not
+a review; hand real review work to `audit`.
 
 ## How to read the code first
 

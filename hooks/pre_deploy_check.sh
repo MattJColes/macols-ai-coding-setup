@@ -4,7 +4,7 @@
 # deploy/destroy guard, shared by every tool's pre-tool wiring:
 #
 #   • pre_deploy_hook.sh          (Claude Code / Codex PreToolUse JSON protocol)
-#   • opencode_post_code_plugin.mjs (OpenCode tool.execute.before)
+#   • adapters/opencode_plugin.mjs (OpenCode tool.execute.before)
 #   • pi-checks.ts                (omp tool_call event)
 #
 # Prints the confirmation reason to stdout when the command is a

@@ -4,14 +4,14 @@
 #
 # Ensures Homebrew + the `opencode` CLI, then installs agents, skills, the
 # system AGENTS.md, MCP servers (into opencode.json) and the post-code plugin —
-# all from the single sources of truth under shared/. With no options it
-# installs everything. (LM Studio / GLM setup lives in machine-setup/configure_lmstudio.sh.)
+# all from the single sources of truth under config/ and hooks/. With no options it
+# installs everything. (LM Studio / GLM setup lives in machine/configure_lmstudio.sh.)
 #
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-# shellcheck source=lib/common.sh
-source "$SCRIPT_DIR/lib/common.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "$(dirname "$SCRIPT_DIR")/lib/common.sh"
 
 CONFIG_DIR="$HOME/.config/opencode"
 AGENTS_DIR="$CONFIG_DIR/agents"
@@ -21,10 +21,10 @@ AGENTS_MD="$CONFIG_DIR/AGENTS.md"
 
 usage() {
     cat << EOF
-Usage: $0 [OPTIONS]
+Usage: ./install.sh opencode [OPTIONS]
 
 Installs (and, unless told otherwise, the OpenCode CLI itself) agents, skills,
-the system AGENTS.md, MCP servers and the post-code plugin from shared/.
+the system AGENTS.md, MCP servers and the post-code plugin from config/ and hooks/.
 Registering MCP servers also asks for a Brave Search API key (blank to skip);
 set BRAVE_API_KEY in the environment to supply it non-interactively.
 
@@ -115,8 +115,8 @@ if [ "$DO_MCPS" = true ]; then
         echo "  • Web search runs through the brave-search MCP (key in $BRAVE_KEY_FILE)"
     else
         echo "  • For web search, get a Brave key (https://brave.com/search/api/) then run:"
-        echo "      BRAVE_API_KEY=<key> ./install_opencode.sh --mcps-only"
+        echo "      BRAVE_API_KEY=<key> ./install.sh opencode --mcps-only"
     fi
 fi
-echo "  • Run machine-setup/configure_lmstudio.sh to set up a local model via LM Studio"
+echo "  • Run machine/configure_lmstudio.sh to set up a local model via LM Studio"
 echo ""

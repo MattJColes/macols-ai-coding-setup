@@ -18,7 +18,7 @@
 //                        re-runs when the tree changed since its last run, and
 //                        both agents cap continuations, so it cannot loop.
 //
-// install_pi.sh substitutes HOOKS_DIR (the repo's shared/hooks, referenced in
+// installers/pi.sh substitutes HOOKS_DIR (the repo's hooks/ dir, referenced in
 // place) and FLAVOUR (pi | omp).
 
 const HOOKS_DIR = "__PI_HOOKS_DIR__";

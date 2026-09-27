@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Personas are authored exactly once as `shared/personas/<name>/SKILL.md` and
+Personas are authored exactly once as `config/personas/<name>/SKILL.md` and
 rendered into each tool's native persona format at install time. The rendered
 output (`~/.claude/agents/*`, `~/.claude/skills/*`, Codex skills/agents,
 OpenCode agents/skills, Pi skills, ZCode skills/commands) is generated, never
@@ -12,7 +12,7 @@ hand-edited.
 
 ### Requirement: Personas are authored once with frontmatter as the rendering contract
 
-Each persona SHALL live at `shared/personas/<name>/SKILL.md` with YAML
+Each persona SHALL live at `config/personas/<name>/SKILL.md` with YAML
 frontmatter driving how it renders: `agent: true` also emits a Claude/OpenCode
 agent, `user-invocable: true` emits a Claude skill, and `allowed-tools` lists
 the tool allowlist (default Read/Write/Edit/Bash/Grep/Glob for agents).
@@ -32,13 +32,13 @@ Codex's and OpenCode's built-in `/review` all shadow a skill of that name) and
 
 ### Requirement: Persona bodies may inline shared partials
 
-A persona body MAY reference partials under `shared/personas/_*/` with
+A persona body MAY reference partials under `config/personas/_*/` with
 `{{include: _shared/<file>.md}}` markers (paths relative to
-`shared/personas/`). `generate_personas` and the Claude Desktop packaging
+`config/personas/`). `generate_personas` and the Claude Desktop packaging
 script SHALL inline each marker with the partial's contents before emission,
 so every rendered form — skill, command or agent, any tool — is self-contained and no
 rendered copy of a partial is hand-maintained. Directories under
-`shared/personas/` whose name starts with `_` hold partials and SHALL NOT be
+`config/personas/` whose name starts with `_` hold partials and SHALL NOT be
 treated as personas (no `SKILL.md` required, never rendered or listed). A
 missing include target SHALL fail the render.
 
@@ -117,12 +117,12 @@ appended response-format block so a user's own same-named skill survives.
 
 ### Requirement: Every rendered persona carries the shared response-format block
 
-`generate_personas` SHALL fail when `shared/steering/response-format.md` is
+`generate_personas` SHALL fail when `config/steering/response-format.md` is
 missing and SHALL append its contents to each persona body in every mode
 (`skill`, `command`, `agent`), because an agent or skill carries its own system
 prompt and would otherwise miss the response rules the assembled steering
 applies to the main loop. The block is appended at render time — persona
-sources under `shared/personas/` SHALL NOT carry their own copy — and rendered
+sources under `config/personas/` SHALL NOT carry their own copy — and rendered
 output is rewritten on every run, so no marker delimiters are needed.
 
 #### Scenario: Response format survives Codex TOML quoting

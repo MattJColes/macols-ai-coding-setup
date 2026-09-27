@@ -5,7 +5,7 @@ TBD - created by archiving change package-claude-desktop-personas. Update Purpos
 ## Requirements
 ### Requirement: All personas are packaged as one Claude plugin
 The repository SHALL provide a deterministic ZIP archive whose plugin contains
-every directory under `shared/personas/` as a skill and whose manifest identifies
+every directory under `config/personas/` as a skill and whose manifest identifies
 the bundle as `macols-personas`.
 <!-- anchor: claude-desktop-persona-bundle.package -->
 
@@ -25,7 +25,7 @@ is not a target with a documented effort field.
 - **THEN** the unpacked bundle has the same files under `skills/<name>/references/`
 
 ### Requirement: Bundled skills carry the shared response-format block
-The packaging script SHALL fail when `shared/steering/response-format.md` is
+The packaging script SHALL fail when `config/steering/response-format.md` is
 missing and SHALL append its contents to every packaged `SKILL.md`, mirroring
 `generate_personas`, so Claude Desktop matches the CLI surfaces. The appended
 block feeds the bundle revision cksum, so a change to it requires regenerating

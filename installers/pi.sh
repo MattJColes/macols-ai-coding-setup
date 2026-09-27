@@ -15,8 +15,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=lib/common.sh
-source "$SCRIPT_DIR/lib/common.sh"
+# shellcheck source=../lib/common.sh
+source "$(dirname "$SCRIPT_DIR")/lib/common.sh"
 
 # PI_CODING_AGENT_DIR still overrides the omp agent dir for back-compat. Note
 # that an exported PI_CODING_AGENT_DIR also redirects the `pi` binary itself
@@ -48,11 +48,11 @@ OMP_PACKAGES="github:$PONYTAIL_REPO"
 
 usage() {
     cat << EOF
-Usage: $0 [OPTIONS]
+Usage: ./install.sh pi [OPTIONS]
 
 Installs (and, unless told otherwise, both agent binaries) Agent Skills, the
 system AGENTS.md, MCP servers (omp only), model providers for both agents, the
-pi-checks extension and each agent's packages from shared/. Registering MCP
+pi-checks extension and each agent's packages from config/ and hooks/. Registering MCP
 servers also asks for a Brave Search API key (blank to skip); set
 BRAVE_API_KEY in the environment to supply it non-interactively.
 
@@ -205,11 +205,11 @@ echo "    and a cdk deploy/destroy confirmation guard"
 echo "  • MCP servers are configured in $OMP_DIR/mcp.json (omp only$(aws_mcp_enabled && echo '; aws-* MCPs need ~/.aws/credentials'))"
 echo "  • omp providers live in $OMP_DIR/models.yml and model roles in $OMP_DIR/config.yml"
 echo "  • pi providers live in $PI_AGENT_DIR/models.json; both agents receive the Swift Qwen LAN model"
-echo "      change them with './install_pi.sh --models-only', or from inside omp with /model"
+echo "      change them with './install.sh pi --models-only', or from inside omp with /model"
 if [ -s "$BRAVE_KEY_FILE" ]; then
     echo "  • omp web search runs through the brave-search MCP (key in $BRAVE_KEY_FILE); plain pi has no MCP support"
 else
     echo "  • For omp web search, get a Brave key (https://brave.com/search/api/) then run:"
-    echo "      BRAVE_API_KEY=<key> ./install_pi.sh --mcps-only"
+    echo "      BRAVE_API_KEY=<key> ./install.sh pi --mcps-only"
 fi
 echo ""

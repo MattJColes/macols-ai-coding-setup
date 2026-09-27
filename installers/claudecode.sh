@@ -4,13 +4,13 @@
 #
 # Ensures Homebrew + the `claude` CLI, then installs agents, skills, the
 # system CLAUDE.md, MCP servers and hooks — all generated from the single
-# sources of truth under shared/. With no options it installs everything.
+# sources of truth under config/ and hooks/. With no options it installs everything.
 #
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-# shellcheck source=lib/common.sh
-source "$SCRIPT_DIR/lib/common.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "$(dirname "$SCRIPT_DIR")/lib/common.sh"
 
 CLAUDE_DIR="$HOME/.claude"
 AGENTS_DIR="$CLAUDE_DIR/agents"
@@ -20,10 +20,10 @@ SETTINGS_FILE="$CLAUDE_DIR/settings.json"
 
 usage() {
     cat << EOF
-Usage: $0 [OPTIONS]
+Usage: ./install.sh claudecode [OPTIONS]
 
 Installs (and, unless told otherwise, the Claude Code CLI itself) agents,
-skills, the system CLAUDE.md, MCP servers and hooks from shared/.
+skills, the system CLAUDE.md, MCP servers and hooks from config/ and hooks/.
 
 Options:
     -h, --help        Show this help message

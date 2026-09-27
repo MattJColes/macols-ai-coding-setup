@@ -2,7 +2,7 @@
 #
 # Shared post-task hook (Stop / turn-end) — used by every CLI.
 #
-# Runs the turn-end battery in shared/post_task_checks.sh and, when it finds
+# Runs the turn-end battery in hooks/checks/post_task.sh and, when it finds
 # problems, hands them back to the MODEL as one more step of work.
 #
 # Usage: post_task_hook.sh [--format claude|codex|zcode|text]
@@ -25,14 +25,15 @@
 # model; notes such as "pytest not installed" print only with
 # MACOLS_CHECKS_VERBOSE=1.
 #
-# Referenced in place from the repo (not copied), so the shared library sits
-# one directory up. Override with MACOLS_SHARED_DIR.
+# Referenced in place from the repo (not copied); the check libraries sit in
+# hooks/checks/ and the output adapters in hooks/adapters/ next to this file.
+# Override with MACOLS_HOOKS_DIR.
 #
 set -eo pipefail
 
-SHARED_DIR="${MACOLS_SHARED_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-# shellcheck source=hook_output.sh
-source "$SHARED_DIR/hooks/hook_output.sh"
+HOOKS_DIR="${MACOLS_HOOKS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+# shellcheck source=adapters/hook_output.sh
+source "$HOOKS_DIR/adapters/hook_output.sh"
 
 FORMAT="text"
 while [ $# -gt 0 ]; do
@@ -56,7 +57,8 @@ if [ -n "$HOOK_INPUT" ] && command -v jq &> /dev/null; then
     fi
 fi
 
-source "$SHARED_DIR/post_task_checks.sh"
+# shellcheck source=checks/post_task.sh
+source "$HOOKS_DIR/checks/post_task.sh"
 
 # Change gates: code must have changed, and changed since the last run.
 code_changed || exit 0

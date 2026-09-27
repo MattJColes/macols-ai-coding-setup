@@ -56,10 +56,14 @@ __pycache__/
 build/
 develop-eggs/
 dist/
+# The repo's own dist/ holds the committed Claude Desktop persona bundle.
+!/dist/
 downloads/
 eggs/
 .eggs/
 lib/*
+# ...but not the repo's own shell library.
+!/lib/*.sh
 !lib/common.sh
 lib64/
 parts/

@@ -5,14 +5,14 @@
 Oh My Pi decides which model runs from two user-owned YAML files in its agent
 dir: `models.yml` holds `providers` (base URL, wire protocol, API key,
 model definitions) and `config.yml` holds `modelRoles` (`default` is the model
-a session starts on, `plan` is the one it plans with). `install_pi.sh` asks for
+a session starts on, `plan` is the one it plans with). `installers/pi.sh` asks for
 both at install time so a machine comes up on the models its owner wants rather
 than on omp's built-in priority list.
 
 The answer to either question is a provider omp already ships (`anthropic`,
 `openai`, `zai`, …) or an OpenAI-compatible endpoint the user describes — vLLM,
 Ollama, LM Studio, LiteLLM, any gateway. There is no source file for this under
-`shared/`: the config is per-machine, not repo-wide.
+`config/`: the config is per-machine, not repo-wide.
 
 Plain `pi` has no provider or role config, so this capability is omp-only.
 
@@ -91,11 +91,11 @@ and return success — an unanswered model question is not an install failure.
 
 #### Scenario: Re-running a full install
 
-- **WHEN** `install_pi.sh` runs again on a machine whose `modelRoles.default` is set
+- **WHEN** `installers/pi.sh` runs again on a machine whose `modelRoles.default` is set
 - **THEN** it reports the models as already configured and asks nothing
 
 ### Requirement: Model setup is a selectable, skippable component
-`install_pi.sh` SHALL run model setup as part of a default install, expose it
+`installers/pi.sh` SHALL run model setup as part of a default install, expose it
 alone as `--models-only` (which also forces the re-ask), and let a full install
 skip it with `--no-models`. It SHALL be omp-only and SHALL NOT run under
 `--project`, which provisions per-project skills and steering rather than the
@@ -104,5 +104,5 @@ machine's agent config. Failure SHALL be non-fatal.
 
 #### Scenario: Project install
 
-- **WHEN** `install_pi.sh --project` runs
+- **WHEN** `installers/pi.sh --project` runs
 - **THEN** no model or provider config is written

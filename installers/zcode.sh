@@ -6,7 +6,7 @@
 # the app is present (a non-fatal warning when it isn't — nothing is
 # downloaded) and writes its configuration — Agent Skills, slash commands,
 # the system AGENTS.md, MCP servers and lifecycle hooks — from the single
-# sources of truth under shared/. ZCode has no user-defined subagents, so
+# sources of truth under config/ and hooks/. ZCode has no user-defined subagents, so
 # personas render as skills and slash commands only.
 #
 # ZCode reads user-scope config from ~/.zcode: skills in ~/.zcode/skills,
@@ -15,9 +15,9 @@
 #
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-# shellcheck source=lib/common.sh
-source "$SCRIPT_DIR/lib/common.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "$(dirname "$SCRIPT_DIR")/lib/common.sh"
 
 ZCODE_DIR="$HOME/.zcode"
 SKILLS_DIR="$ZCODE_DIR/skills"
@@ -27,10 +27,10 @@ CONFIG_JSON="$ZCODE_DIR/cli/config.json"
 
 usage() {
     cat << EOF
-Usage: $0 [OPTIONS]
+Usage: ./install.sh zcode [OPTIONS]
 
 Installs Agent Skills, slash commands, the system AGENTS.md, MCP servers and
-lifecycle hooks for ZCode from shared/ (and verifies the ZCode app is
+lifecycle hooks for ZCode from config/ and hooks/ (and verifies the ZCode app is
 installed unless --no-cli is given).
 
 Options:

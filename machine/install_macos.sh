@@ -121,10 +121,13 @@ uv tool install commitizen
 
 # Install the agentic coding CLIs and their configuration. Each CLI binary and
 # its agents/skills/prompts, steering, MCPs and hooks come from the per-tool
-# installers, driven by the single sources of truth under ../shared.
-echo "Installing agentic coding CLIs and configs..."
-CONFIGS_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-"$CONFIGS_ROOT/install.sh"
+# installers, driven by the single sources of truth under ../config.
+# Skipped when ./install.sh --machine called us: it installs the tools next.
+if [ "${MACOLS_FROM_INSTALL:-0}" != "1" ]; then
+    echo "Installing agentic coding CLIs and configs..."
+    CONFIGS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    "$CONFIGS_ROOT/install.sh"
+fi
 
 # Install LazyVim dependencies
 echo "Installing LazyVim dependencies..."

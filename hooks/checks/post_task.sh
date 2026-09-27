@@ -9,7 +9,7 @@
 #
 # Provides:
 #   run_post_task_checks — orchestrator that runs the project's checks in parallel
-#   code_changed         — turn-end change gate (re-exported from checks_common.sh)
+#   code_changed         — turn-end change gate (re-exported from common.sh)
 #
 # Everything is scoped to the files this turn changed (via changed_code_files),
 # falling back to a full scan when git is unavailable. The battery is the local
@@ -47,8 +47,8 @@ fi
 
 # Shared helpers (also sources ensure_node.sh).
 SHARED_DIR_SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=checks_common.sh
-source "$SHARED_DIR_SELF/checks_common.sh"
+# shellcheck source=common.sh
+source "$SHARED_DIR_SELF/common.sh"
 
 # Defaults
 MAX_TEST_TIME="${MAX_TEST_TIME:-300}"

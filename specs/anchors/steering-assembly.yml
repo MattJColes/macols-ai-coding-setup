@@ -6,11 +6,11 @@ steering-assembly.assemble:
   rule:
     kind: function_definition
     has: { field: name, regex: '^assemble_steering$' }
-  files: [lib/common.sh]
+  files: [lib/steering.sh]
 
 steering-assembly.ponytail-append:
   language: bash
   rule:
     kind: function_definition
     has: { field: name, regex: '^append_ponytail_ruleset$' }
-  files: [lib/common.sh]
+  files: [lib/steering.sh]

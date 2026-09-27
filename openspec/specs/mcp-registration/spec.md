@@ -2,13 +2,13 @@
 
 ## Purpose
 
-`shared/mcp-config.json` is the default source of MCP servers (playwright,
+`config/mcp/servers.json` is the default source of MCP servers (playwright,
 context7, dart, gopls), with pinned package versions. A server with a
 `requires` key (dart, gopls) is registered only when that binary is on PATH.
 
-Two opt-in sources sit beside it. `shared/mcp-config-aws.json` holds
+Two opt-in sources sit beside it. `config/mcp/aws.json` holds
 `aws-mcp` and `aws-iac`, registered for every tool only when the user opts in.
-`shared/mcp-config-brave.json` holds `brave-search`, merged only by the
+`config/mcp/brave.json` holds `brave-search`, merged only by the
 OpenCode and Oh My Pi writers and only when a Brave Search API key is on disk.
 
 Every writer takes its list from `mcp_resolve`, so all five tools see the

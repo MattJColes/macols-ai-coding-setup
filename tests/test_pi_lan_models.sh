@@ -34,7 +34,7 @@ writeFileSync(join(home, ".omp/agent/config.yaml"), YAML.stringify({
 run_models() {
     env HOME="$TEST_HOME" PI_CODING_AGENT_DIR="$TEST_HOME/.omp/agent" \
         OMP_DEFAULT_MODEL= OMP_PLAN_MODEL= OMP_MODELS_CONFIG= \
-        bash "$REPO_DIR/install_pi.sh" --models-only </dev/null >"$FIXTURE/install.log" 2>&1
+        bash "$REPO_DIR/installers/pi.sh" --models-only </dev/null >"$FIXTURE/install.log" 2>&1
 }
 run_models
 cp -R "$TEST_HOME" "$FIXTURE/once"
@@ -114,7 +114,7 @@ for mode in '--models-only --no-models' '--models-only --project'; do
         cd "$FIXTURE/project"
         # shellcheck disable=SC2086
         env HOME="$FIXTURE/empty" PI_CODING_AGENT_DIR="$FIXTURE/empty/.omp/agent" \
-            bash "$REPO_DIR/install_pi.sh" $mode </dev/null >"$FIXTURE/skip.log"
+            bash "$REPO_DIR/installers/pi.sh" $mode </dev/null >"$FIXTURE/skip.log"
     )
     [ ! -e "$FIXTURE/empty/.pi" ] && [ ! -e "$FIXTURE/empty/.omp" ]
 done

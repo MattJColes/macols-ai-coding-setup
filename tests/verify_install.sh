@@ -236,7 +236,7 @@ verify_pi() {
         [ -f "$omp_d/models.yml" ] && pass "omp models.yml references API keys instead of inlining them" \
             "! grep -qE '^[[:space:]]+apiKey: \"?(sk-|gsk_|xai-|AIza)' '$omp_d/models.yml'"
     else
-        warn "omp models not configured — run ./install_pi.sh --models-only to pick them"
+        warn "omp models not configured — run ./install.sh pi --models-only to pick them"
     fi
 }
 

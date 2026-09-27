@@ -21,13 +21,13 @@ The Ubuntu entry point keeps its historical filename,
 From the repository root:
 
 ```bash
-./install.sh --env
+./install.sh --machine
 ```
 
 Or run the platform setup directly:
 
 ```bash
-cd machine-setup
+cd machine
 ./install_macos.sh       # macOS
 ./install_ubuntu26.sh    # Ubuntu 24.04 or 26.04
 ```
@@ -134,7 +134,7 @@ The installers write to these user locations:
 ~/.local/bin/                  user-level executables
 ```
 
-The AI coding config comes from `../shared/`. Make changes there and rerun the
+The AI coding config comes from `../config/` and `../hooks/`. Make changes there and rerun the
 installer instead of editing the generated copies.
 
 ## Troubleshooting

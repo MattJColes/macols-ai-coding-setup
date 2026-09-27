@@ -15,7 +15,7 @@
 # Per-edit checks are intentionally lightweight: only the formatter/linter/
 # type-checker for the changed file's language runs here. Tests, duplication,
 # layer rules and cdk synth run once at turn end via the Stop hook
-# (post_task_checks.sh); semgrep and dependency audits belong in CI.
+# (post_task.sh); semgrep and dependency audits belong in CI.
 #
 # Output is for the agent: findings plus a fix instruction, never "PASSED"
 # chatter. An empty report means the file is clean.
@@ -31,8 +31,8 @@ fi
 
 # Shared helpers (also sources ensure_node.sh).
 SHARED_DIR_SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=checks_common.sh
-source "$SHARED_DIR_SELF/checks_common.sh"
+# shellcheck source=common.sh
+source "$SHARED_DIR_SELF/common.sh"
 
 # Defaults
 MAX_TEST_TIME="${MAX_TEST_TIME:-120}"

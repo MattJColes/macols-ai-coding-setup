@@ -2,7 +2,7 @@
 #
 # Shared post-code hook (PostToolUse / file-write) — used by every CLI.
 #
-# Runs the fast file-scoped checks in shared/post_code_checks.sh on each edited
+# Runs the fast file-scoped checks in hooks/checks/post_code.sh on each edited
 # file and hands any findings back to the MODEL in the shape its tool reads.
 # Plain stdout on exit 0 goes to a debug log in Claude Code, Codex and ZCode,
 # which is why findings used to be invisible; each format below is the one the
@@ -18,14 +18,15 @@
 # or the "*** Add File:" / "*** Update File:" headers of a Codex apply_patch
 # (whose tool_input.command is the patch text).
 #
-# Referenced in place from the repo (not copied), so the shared library sits
-# one directory up. Override with MACOLS_SHARED_DIR if you relocate it.
+# Referenced in place from the repo (not copied); the check libraries sit in
+# hooks/checks/ and the output adapters in hooks/adapters/ next to this file.
+# Override with MACOLS_HOOKS_DIR if you relocate them.
 #
 set -eo pipefail
 
-SHARED_DIR="${MACOLS_SHARED_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-# shellcheck source=hook_output.sh
-source "$SHARED_DIR/hooks/hook_output.sh"
+HOOKS_DIR="${MACOLS_HOOKS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
+# shellcheck source=adapters/hook_output.sh
+source "$HOOKS_DIR/adapters/hook_output.sh"
 
 FORMAT="text"
 declare -a FILES=()
@@ -60,7 +61,8 @@ fi
 
 [ ${#FILES[@]} -eq 0 ] && exit 0
 
-source "$SHARED_DIR/post_code_checks.sh"
+# shellcheck source=checks/post_code.sh
+source "$HOOKS_DIR/checks/post_code.sh"
 
 REPORT=""
 for FILE_PATH in "${FILES[@]}"; do

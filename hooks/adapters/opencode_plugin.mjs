@@ -21,11 +21,11 @@
  * confirmation reason (blocking that call and telling the model to check with
  * the user); re-running the identical command then passes through.
  *
- * Installed to ~/.config/opencode/plugins/ by install_opencode.sh, which
- * substitutes the path placeholders with the repo's shared/hooks paths.
+ * Installed to ~/.config/opencode/plugins/ by installers/opencode.sh, which
+ * substitutes the path placeholders with the repo's hooks/ paths.
  */
 
-// Hook script paths (replaced by install_opencode.sh via sed)
+// Hook script paths (replaced by installers/opencode.sh via sed)
 const HOOK_SCRIPT = "__HOOK_SCRIPT_PATH__";
 const TASK_HOOK_SCRIPT = "__TASK_HOOK_SCRIPT_PATH__";
 const PRE_DEPLOY_CHECK_SCRIPT = "__PRE_DEPLOY_CHECK_PATH__";

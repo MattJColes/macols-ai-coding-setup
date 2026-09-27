@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Shared Check Helpers — single source of truth for the bits that the per-edit
-# (post_code_checks.sh) and turn-end (post_task_checks.sh) batteries both need.
+# (post_code.sh) and turn-end (post_task.sh) batteries both need.
 #
 # Sourced, never executed. Holds only environment/discovery helpers and the
 # change gate; the actual checks live in the two battery files that source this.

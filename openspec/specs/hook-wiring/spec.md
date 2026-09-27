@@ -2,12 +2,12 @@
 
 ## Purpose
 
-Quality/safety hooks under `shared/hooks/` (post-code, post-task,
+Quality/safety hooks under `hooks/` (post-code, post-task,
 pre-deploy) are referenced **in place** — never copied — so their
 relative sourcing of the shared check libraries keeps working. Each tool
 wires them through its native mechanism, and every wiring SHALL deliver
 findings to the MODEL, not just a log: the hooks take
-`--format claude|codex|zcode|text` and `shared/hooks/hook_output.sh` renders
+`--format claude|codex|zcode|text` and `hooks/adapters/hook_output.sh` renders
 the report in the shape that tool injects into context. Post-code findings
 never block an edit; the turn-end battery asks for at most one more step.
 
@@ -72,7 +72,7 @@ Existing keys elsewhere in the config (mcp, plugins, …) SHALL survive.
 
 ### Requirement: The OpenCode plugin is installed with substituted hook paths
 `install_opencode_plugin <plugins_dir>` SHALL render
-`shared/hooks/opencode_post_code_plugin.mjs` into the plugins dir as a `.js`
+`hooks/adapters/opencode_plugin.mjs` into the plugins dir as a `.js`
 file (OpenCode's plugin loader scans only `*.ts`/`*.js`) with the
 `__HOOK_SCRIPT_PATH__`/`__TASK_HOOK_SCRIPT_PATH__`/
 `__PRE_DEPLOY_CHECK_PATH__` placeholders replaced by the absolute shared-hook
@@ -88,29 +88,29 @@ identical retry — the user having confirmed — passes).
 #### Scenario: Plugin references shared hooks in place
 
 - **WHEN** the plugin is installed
-- **THEN** it shells out to the hooks under this repo's `shared/hooks/`, not to copies
+- **THEN** it shells out to the hooks under this repo's `hooks/`, not to copies
 
 ### Requirement: The Pi extension bakes in the hooks directory, in both agents
 `install_pi_extension <extensions_dir> <pi|omp>` SHALL render
-`shared/hooks/pi-checks.ts` with `__PI_HOOKS_DIR__` replaced by the absolute
+`hooks/adapters/pi-checks.ts` with `__PI_HOOKS_DIR__` replaced by the absolute
 shared hooks dir and `__PI_FLAVOUR__` by the agent, wiring `tool_call` (bash)
 to the cdk pre-deploy guard (`ctx.ui.confirm`; blocks on decline, and with a
 confirm-first reason when headless), `tool_result` to the post-code check
 (findings appended to the result content, never a steer), and the turn end
 to the post-task battery as one continuation: `agent_before_settle` in pi,
 `session_stop` in omp. The two Pi agents share no config directories, so
-`install_pi.sh` SHALL install the extension into both
+`installers/pi.sh` SHALL install the extension into both
 `~/.pi/agent/extensions` and `~/.omp/agent/extensions`.
 <!-- anchor: hook-wiring.pi-extension -->
 
 #### Scenario: Extension installed
 
-- **WHEN** `install_pi.sh` completes
+- **WHEN** `installers/pi.sh` completes
 - **THEN** `pi-checks.ts` exists in both agent dirs and contains no `__PI_HOOKS_DIR__` or `__PI_FLAVOUR__` placeholder
 
 ### Requirement: The pre-deploy matcher is single-sourced
 The cdk deploy/destroy pattern and confirmation reason SHALL live only in
-`shared/hooks/pre_deploy_check.sh` (prints the reason on match, nothing
+`hooks/pre_deploy_check.sh` (prints the reason on match, nothing
 otherwise, always exit 0); `pre_deploy_hook.sh`, the OpenCode plugin and the
 Pi extension SHALL all delegate to it rather than duplicating the regex.
 

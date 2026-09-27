@@ -106,7 +106,7 @@ export PATH="$HOME/.local/bin:$PATH"
 # Install Python dev tools
 # Cross-platform Python packages (wheels on macOS + manylinux), installed the
 # same way as on macOS so the shared post-code/post-task hooks find them. These
-# back the lint/type-check/security battery in shared/post_*_checks.sh.
+# back the lint/type-check/security battery in hooks/checks/post_*.sh.
 echo "Installing Python dev tools..."
 uv tool install pytest
 uv tool install ruff
@@ -227,13 +227,16 @@ fi
 
 # Install the agentic coding CLIs and their configuration. Each CLI binary and
 # its agents/skills/prompts, steering, MCPs and hooks come from the per-tool
-# installers, driven by the single sources of truth under ../shared.
-echo "Installing agentic coding CLIs and configs..."
-# Derive from SCRIPT_DIR (absolute, set at the top) — NOT $0, which resolves
-# against the current cwd, and an earlier `cd /tmp` makes $0-based paths point
-# at / (regression: install.sh became //install.sh).
-CONFIGS_ROOT="$(dirname "$SCRIPT_DIR")"
-"$CONFIGS_ROOT/install.sh"
+# installers, driven by the single sources of truth under ../config.
+# Skipped when ./install.sh --machine called us: it installs the tools next.
+if [ "${MACOLS_FROM_INSTALL:-0}" != "1" ]; then
+    echo "Installing agentic coding CLIs and configs..."
+    # Derive from SCRIPT_DIR (absolute, set at the top) — NOT $0, which resolves
+    # against the current cwd, and an earlier `cd /tmp` makes $0-based paths point
+    # at / (regression: install.sh became //install.sh).
+    CONFIGS_ROOT="$(dirname "$SCRIPT_DIR")"
+    "$CONFIGS_ROOT/install.sh"
+fi
 
 # Install Ollama
 echo "Installing Ollama..."

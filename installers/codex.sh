@@ -4,16 +4,16 @@
 #
 # Ensures the standalone `codex` CLI, then installs Agent Skills, custom
 # agents, the system AGENTS.md, MCP servers and lifecycle hooks — all from
-# the single sources of truth under shared/. With no options it installs
+# the single sources of truth under config/ and hooks/. With no options it installs
 # everything. Codex removed custom prompts (~/.codex/prompts); personas ship
 # as Agent Skills instead, and stale prompts from earlier installs are
 # cleaned up.
 #
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-# shellcheck source=lib/common.sh
-source "$SCRIPT_DIR/lib/common.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+source "$(dirname "$SCRIPT_DIR")/lib/common.sh"
 
 CODEX_DIR="$HOME/.codex"
 LEGACY_PROMPTS_DIR="$CODEX_DIR/prompts"
@@ -30,11 +30,11 @@ HOOKS_JSON="$CODEX_DIR/hooks.json"
 
 usage() {
     cat << EOF
-Usage: $0 [OPTIONS]
+Usage: ./install.sh codex [OPTIONS]
 
 Installs (and, unless told otherwise, the Codex CLI itself) Agent Skills,
 custom agents, the system AGENTS.md, MCP servers and lifecycle hooks from
-shared/.
+config/ and hooks/.
 
 Options:
     -h, --help          Show this help message

@@ -6,7 +6,7 @@
 # Should be sourced (not executed) by scripts that need Node.js.
 #
 # Usage:
-#   source "$(dirname "$0")/../shared/ensure_node.sh"
+#   source "$(dirname "${BASH_SOURCE[0]}")/checks/ensure_node.sh"
 #
 # After sourcing, node will be on PATH if Node.js is installed
 # via NVM, fnm, Homebrew, or system package manager.
