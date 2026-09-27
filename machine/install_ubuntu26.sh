@@ -5,9 +5,9 @@ if [ -z "$BASH_VERSION" ]; then
     exec bash "$0" "$@"
 fi
 
-set -e
+set -euo pipefail
 
-echo "=== Ubuntu 26 Development Environment Setup ==="
+echo "=== Ubuntu 24/26 Development Environment Setup ==="
 echo ""
 
 # Set non-interactive mode for apt
@@ -45,309 +45,108 @@ if [ ! -e /usr/bin/python3 ] || ! /usr/bin/python3 -c 'import apt_pkg' >/dev/nul
     fi
 fi
 
-# Update package list
-echo "Updating package list..."
-sudo apt-get update -y
-
-# Install curl
-echo "Installing curl..."
-sudo apt-get install -y curl wget
-
-# Install htop
-echo "Installing htop..."
-sudo apt-get install -y htop
-
-# Install curl
-echo "Installing unzip..."
-sudo apt-get install -y unzip
-
-# Install git early (needed by the oh-my-zsh/p10k installer)
-echo "Installing git..."
-sudo apt-get install -y git
-
-# Install zsh + Oh My Zsh + Powerlevel10k first so ~/.zshrc exists
-# before the NVM/brew/herdr blocks below append to it
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-echo "Running install_ohmyzsh_p10k.sh..."
-bash "$SCRIPT_DIR/install_ohmyzsh_p10k.sh"
+# shellcheck source=common.sh
+source "$SCRIPT_DIR/common.sh"
 
-# Install Python 3.14
-# Works on both Ubuntu 24.04 (needs the deadsnakes PPA) and 26.04 (ships 3.14
-# in the default repos, so the PPA is skipped).
-#
-# IMPORTANT: we deliberately do NOT point /usr/bin/python3 at 3.14. Ubuntu's
-# apt tooling (command-not-found / cnf-update-db) imports the python3-apt C
-# bindings (apt_pkg), which only exist for the distro's stock python3. Re-aiming
-# /usr/bin/python3 at 3.14 breaks every later apt run with:
-#   ModuleNotFoundError: No module named 'apt_pkg'
-# Instead we register `python` (which doesn't exist by default) -> 3.14, leaving
-# the system python3 untouched.
-echo "Installing Python 3.14..."
-if apt-cache show python3.14 >/dev/null 2>&1; then
-    # Already available in the distro repos (Ubuntu 26.04+)
-    echo "python3.14 available in default repos; skipping deadsnakes PPA."
-else
-    # Ubuntu 24.04 etc. — pull from the deadsnakes PPA
-    echo "Adding deadsnakes PPA for python3.14..."
-    sudo apt-get install -y software-properties-common
-    sudo add-apt-repository -y ppa:deadsnakes/ppa
-    sudo apt-get update -y
-fi
-sudo apt-get install -y python3.14 python3.14-venv python3.14-dev python3-pip
-# Provide a `python` command pointing at 3.14 without touching system python3.
-sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.14 1
+# System packages that need apt (the rest come from machine/Brewfile).
+echo "Installing base packages (apt)..."
+apt_update
+sudo apt-get install -y curl wget unzip git zsh build-essential procps file \
+    ca-certificates software-properties-common
 
-# Install uv
-echo "Installing uv..."
-curl -LsSf https://astral.sh/uv/install.sh | sh
-# Add uv to PATH for this session
-export PATH="$HOME/.local/bin:$PATH"
+# zsh + Oh My Zsh first so ~/.zshrc exists before the blocks below write to it.
+bash "$SCRIPT_DIR/install_zsh.sh"
 
-# Install Python dev tools
-# Cross-platform Python packages (wheels on macOS + manylinux), installed the
-# same way as on macOS so the shared post-code/post-task hooks find them. These
-# back the lint/type-check/security battery in hooks/checks/post_*.sh.
-echo "Installing Python dev tools..."
-uv tool install pytest
-uv tool install ruff
-uv tool install mypy
-uv tool install pip-audit
-uv tool install semgrep
-uv tool install commitizen
+# Homebrew + everything in the Brewfile (neovim, gh, awscli, uv, go, starship,
+# the hook linters…). Replaces the x86-only Neovim tarball and AWS CLI zip,
+# the GitHub CLI apt repo and the curl|sh uv installer.
+ensure_homebrew
+brew_bundle
 
-# Install AWS CLI
-echo "Installing AWS CLI..."
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
-cd /tmp
-unzip -q awscliv2.zip
-sudo ./aws/install --update
-rm -rf awscliv2.zip aws
-
-# Install GitHub CLI
-# https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian
-echo "Installing GitHub CLI..."
-(type -p wget >/dev/null || (sudo apt-get update && sudo apt-get install wget -y)) \
-	&& sudo mkdir -p -m 755 /etc/apt/keyrings \
-	&& out=$(mktemp) && wget -nv -O"$out" https://cli.github.com/packages/githubcli-archive-keyring.gpg \
-	&& cat "$out" | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
-	&& sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
-	&& sudo mkdir -p -m 755 /etc/apt/sources.list.d \
-	&& echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-	&& sudo apt-get update \
-	&& sudo apt-get install gh -y
-
-# Install the stacked-PR extension (gh stack ...) — optional, non-fatal
-echo "Installing gh-stack extension..."
-if gh extension list 2>/dev/null | grep -q 'github/gh-stack'; then
-    echo "gh-stack already installed"
-else
-    gh extension install github/gh-stack || echo "⚠ gh-stack install skipped"
+# Retire the old /opt Neovim tarball install (brew's neovim replaces it).
+if [ -d /opt/nvim-linux-x86_64 ]; then
+    echo "Removing the old /opt Neovim tarball install..."
+    sudo rm -rf /opt/nvim-linux-x86_64
+    for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
+        [ -f "$rc" ] && grep -qF '/opt/nvim-linux-x86_64/bin' "$rc" \
+            && grep -vF '/opt/nvim-linux-x86_64/bin' "$rc" > "$rc.macols.tmp" && mv "$rc.macols.tmp" "$rc"
+    done
 fi
 
-# Install Podman
+install_python
+install_node
+install_gh_stack
+
+# Podman, Docker (official repo) and QEMU/binfmt for multi-arch builds.
 echo "Installing Podman..."
 sudo apt-get install -y podman
 
-# Install Docker (official repo)
 echo "Installing Docker..."
-sudo apt-get install -y ca-certificates
 sudo install -m 0755 -d /etc/apt/keyrings
 sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt-get update
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+    | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+apt_update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+id -nG "$USER" | grep -qw docker || sudo usermod -aG docker "$USER"
 
-# Add current user to docker group (takes effect after re-login)
-echo "Adding $USER to docker group..."
-sudo usermod -aG docker "$USER"
-
-# Install QEMU + binfmt for multi-arch Docker builds (linux/arm64, etc.)
 # On Ubuntu 26, "qemu-user-static" is a virtual package with no install
-# candidate, so explicitly select a concrete provider (falling back to the
-# legacy name on older releases).
+# candidate, so select a concrete provider (legacy name on older releases).
 echo "Installing QEMU and binfmt support..."
 if ! sudo apt-get install -y qemu-user-binfmt binfmt-support; then
     sudo apt-get install -y qemu-user-static binfmt-support
 fi
 
-# Install NVM (fetch latest release tag)
-echo "Installing NVM..."
-NVM_LATEST=$(curl -fsSL https://api.github.com/repos/nvm-sh/nvm/releases/latest | grep -oP '"tag_name": "\K[^"]+')
-NVM_LATEST="${NVM_LATEST:-v0.40.1}"
-echo "Using NVM ${NVM_LATEST}"
-curl -o- "https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_LATEST}/install.sh" | bash
-export NVM_DIR="$HOME/.nvm"
-# shellcheck source=/dev/null
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-# Ensure NVM is loaded in .zshrc if zsh is installed
-if [ -f "$HOME/.zshrc" ] && ! grep -q 'NVM_DIR' "$HOME/.zshrc" 2>/dev/null; then
-    cat >> "$HOME/.zshrc" << 'NVMEOF'
-
-# NVM (Node Version Manager)
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
-NVMEOF
-    echo "Added NVM configuration to ~/.zshrc"
+# Ollama's official installer (not brew) because it sets up the systemd
+# service that host_ollama_model.sh configures.
+if command -v ollama &>/dev/null; then
+    echo "Ollama already installed."
+else
+    echo "Installing Ollama..."
+    curl -fsSL https://ollama.com/install.sh | sh || warn "Ollama install failed"
 fi
 
-# Install latest Node.js via NVM
-echo "Installing latest Node.js via NVM..."
-nvm install node
-nvm use node
-nvm alias default node
+install_lazyvim
+setup_prompt
 
-# Install TypeScript globally (latest)
-echo "Installing TypeScript..."
-npm install -g typescript@latest
-
-# Install AWS CDK (latest)
-echo "Installing AWS CDK..."
-npm install -g aws-cdk@latest
-
-# Install LazyVim dependencies (lazygit comes from brew in the sub-script — not in Ubuntu apt)
-echo "Installing LazyVim dependencies..."
-sudo apt-get install -y git ripgrep fd-find
-
-# Install Neovim (latest stable)
-echo "Installing Neovim..."
-NVIM_VERSION=$(curl -s https://api.github.com/repos/neovim/neovim/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
-curl -Lo /tmp/nvim-linux-x86_64.tar.gz "https://github.com/neovim/neovim/releases/download/${NVIM_VERSION}/nvim-linux-x86_64.tar.gz"
-sudo rm -rf /opt/nvim-linux-x86_64
-sudo tar -C /opt -xzf /tmp/nvim-linux-x86_64.tar.gz
-rm /tmp/nvim-linux-x86_64.tar.gz
-
-# Add nvim to PATH if not already there
-if ! grep -q '/opt/nvim-linux-x86_64/bin' ~/.bashrc; then
-    # shellcheck disable=SC2016
-    echo 'export PATH="$PATH:/opt/nvim-linux-x86_64/bin"' >> ~/.bashrc
-fi
-
-# Install the agentic coding CLIs and their configuration. Each CLI binary and
-# its agents/skills/prompts, steering, MCPs and hooks come from the per-tool
-# installers, driven by the single sources of truth under ../config.
-# Skipped when ./install.sh --machine called us: it installs the tools next.
-if [ "${MACOLS_FROM_INSTALL:-0}" != "1" ]; then
-    echo "Installing agentic coding CLIs and configs..."
-    # Derive from SCRIPT_DIR (absolute, set at the top) — NOT $0, which resolves
-    # against the current cwd, and an earlier `cd /tmp` makes $0-based paths point
-    # at / (regression: install.sh became //install.sh).
-    CONFIGS_ROOT="$(dirname "$SCRIPT_DIR")"
-    "$CONFIGS_ROOT/install.sh"
-fi
-
-# Install Ollama
-echo "Installing Ollama..."
-curl -fsSL https://ollama.com/install.sh | sh
-
-# Configure tmux (enable mouse scroll wheel + PgUp in SSH sessions)
-echo "Configuring tmux..."
-if [ ! -f "$HOME/.tmux.conf" ] || ! grep -q '^set -g mouse on' "$HOME/.tmux.conf" 2>/dev/null; then
-    cat >> "$HOME/.tmux.conf" << 'TMUXEOF'
-
-# Enable mouse: scroll wheel scrolls the pane's scrollback
-set -g mouse on
-
-# Page Up jumps straight into copy mode and scrolls up
-bind -n Pageup copy-mode -u
-TMUXEOF
-    echo "Added tmux mouse configuration to ~/.tmux.conf"
-fi
-
-# Backup existing nvim config if it exists
-if [ -d "$HOME/.config/nvim" ]; then
-    echo "Backing up existing nvim config..."
-    mv "$HOME/.config/nvim" "$HOME/.config/nvim.backup.$(date +%Y%m%d_%H%M%S)"
-fi
-
-if [ -d "$HOME/.local/share/nvim" ]; then
-    mv "$HOME/.local/share/nvim" "$HOME/.local/share/nvim.backup.$(date +%Y%m%d_%H%M%S)"
-fi
-
-if [ -d "$HOME/.local/state/nvim" ]; then
-    mv "$HOME/.local/state/nvim" "$HOME/.local/state/nvim.backup.$(date +%Y%m%d_%H%M%S)"
-fi
-
-if [ -d "$HOME/.cache/nvim" ]; then
-    mv "$HOME/.cache/nvim" "$HOME/.cache/nvim.backup.$(date +%Y%m%d_%H%M%S)"
-fi
-
-# Install LazyVim
-echo "Installing LazyVim..."
-git clone https://github.com/LazyVim/starter "$HOME/.config/nvim"
-rm -rf "$HOME/.config/nvim/.git"
-
-# Self-heal: remove the stale herdr launch block that earlier versions of this
-# script appended to the rc files. It was guarded on HERDR_ENV (not the
-# HERDR_SESSION used by the current HERDR_AUTOLAUNCH block) and had no
-# 'command -v herdr' check, so it relaunched herdr on exit and errored when
-# herdr was absent. Strip it from the marker comment through its closing 'fi'.
+# Self-heal: remove the stale herdr launch block earlier versions of this
+# script appended (guarded on HERDR_ENV, no 'command -v herdr' check).
 for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do
     if [ -f "$rc" ] && grep -qF 'Launch herdr on SSH login' "$rc"; then
         echo "Removing stale herdr launch block from $rc..."
-        sed -i '/# --- Launch herdr on SSH login ---/,/^fi$/d' "$rc"
+        awk '/# --- Launch herdr on SSH login ---/ { skip = 1 }
+             skip && /^fi$/ { skip = 0; next }
+             !skip { print }' "$rc" > "$rc.macols.tmp" && mv "$rc.macols.tmp" "$rc"
     fi
 done
 
-# Advertise 24-bit colour support to terminal apps. Set in both shells' rc
-# files so it applies whether the login shell is zsh or bash.
+# Advertise 24-bit colour support to terminal apps.
 for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do
-    if [ -f "$rc" ] && ! grep -q 'COLORTERM' "$rc" 2>/dev/null; then
-        echo 'export COLORTERM=truecolor' >> "$rc"
-        echo "Added COLORTERM=truecolor to $rc"
-    fi
+    set_rc_block "$rc" colorterm 'export COLORTERM=truecolor'
 done
 
-# Install Homebrew + herdr + yazi + lazygit + neovim tooling (sub-script).
-# The sub-script also installs the herdr SSH auto-launch hook into ~/.bashrc
-# and ~/.zshrc (single HERDR_AUTOLAUNCH block), so no extra wiring is needed here.
-echo "Running install_brew_herdr_yazi_lazygit_nvim.sh..."
+# herdr + its plugins and layouts, yazi config, tmux and the herdr SSH
+# auto-launch hook.
 bash "$SCRIPT_DIR/install_brew_herdr_yazi_lazygit_nvim.sh"
+
+install_agent_tools
 
 echo ""
 echo "=== Configuration ==="
-echo ""
+configure_git_identity
+configure_aws
 
-# Git configuration
-read -rp "Enter your Git username: " git_username
-read -rp "Enter your Git email: " git_email
-
-if [ -n "$git_username" ]; then
-    git config --global user.name "$git_username"
-    echo "Git username set to: $git_username"
-fi
-
-if [ -n "$git_email" ]; then
-    git config --global user.email "$git_email"
-    echo "Git email set to: $git_email"
-fi
-
-# AWS configuration
-echo ""
-echo "Configuring AWS CLI..."
-aws configure
-
-# Ollama model configuration
-echo ""
-echo "=== Ollama Model Setup ==="
-read -p "Pull an Ollama model now? [y/N]: " -r REPLY
-if [[ $REPLY =~ ^[Yy]$ ]]; then
+if is_interactive && command -v ollama &>/dev/null; then
     echo ""
-    echo "Popular models:"
-    echo "  - qwen3.6:27b     (27B - powerful, recommended)"
-    echo "  - qwen3-coder:30b (30B MoE - coding focused)"
-    echo "  - devstral:24b    (24B - agentic coding)"
-    echo "  - gpt-oss:20b     (20B MoE - fast reasoning)"
-    echo "  - deepseek-r1     (7B - reasoning focused)"
-    echo ""
-    read -rp "Enter model name [qwen3.6:27b]: " ollama_model
-    ollama_model=${ollama_model:-qwen3.6:27b}
-
-    echo "Pulling $ollama_model..."
-    ollama pull "$ollama_model"
-    echo "Model $ollama_model installed successfully!"
+    echo "=== Ollama Model Setup ==="
+    read -rp "Pull an Ollama model now? [y/N]: " reply
+    if [[ $reply =~ ^[Yy]$ ]]; then
+        read -rp "Model name [qwen3.6:27b]: " ollama_model
+        ollama_model=${ollama_model:-qwen3.6:27b}
+        ollama pull "$ollama_model" || warn "ollama pull $ollama_model failed"
+    fi
 fi
 
 echo ""
@@ -355,11 +154,10 @@ echo "=== Installation Complete ==="
 echo ""
 echo "Next steps:"
 echo "1. Log out and back in (or run 'newgrp docker') for docker group membership to take effect"
-echo "2. Restart your terminal or run: source ~/.bashrc"
+echo "2. Restart your terminal (zsh + starship) or run: exec zsh"
 echo "3. Run 'nvim' to complete LazyVim setup"
-echo "4. Start Ollama service if not already running: ollama serve"
-echo "5. Pull additional models: ollama pull <model-name>"
-echo "6. Verify installations:"
+echo "4. To host a model over Tailscale: sudo ./host_ollama_model.sh"
+echo "5. Verify installations:"
 echo "   - python3 --version"
 echo "   - node --version"
 echo "   - aws --version"

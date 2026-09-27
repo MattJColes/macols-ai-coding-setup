@@ -33,18 +33,30 @@ cd machine
 ```
 
 Read the platform script before running it. It needs an internet connection and
-updates your shell config. It also asks for your Git identity and runs
-`aws configure`. Existing Neovim data is moved into timestamped backups before
-LazyVim is installed.
+updates your shell config through marker-delimited blocks, so re-running it
+upgrades packages without duplicating anything. It asks for your Git identity
+only when none is set, and runs `aws configure` only when `~/.aws` is empty.
+Prompts are skipped without a terminal or with `MACOLS_NONINTERACTIVE=1`. An
+existing `~/.config/nvim` is never touched.
+
+Both platform scripts share `common.sh` and install their packages from one
+[`Brewfile`](Brewfile) with `brew bundle`. To add a tool, add it there.
 
 ## What gets installed
 
 Both platform installers provide:
 
-- Python 3.14, uv, pytest, ruff, mypy, pip-audit, semgrep and Commitizen
+- Everything in the [`Brewfile`](Brewfile): git, GitHub CLI, AWS CLI, Neovim,
+  lazygit, delta, yazi, tmux, ripgrep, fd, jq, yq, ast-grep, starship, uv, Go,
+  gopls, bun, shellcheck and golangci-lint (plus Podman, Flutter, coreutils and
+  the Inconsolata font on macOS)
+- Python 3.14 from `uv python install`, with pytest, ruff, mypy, pyright,
+  pip-audit, semgrep and Commitizen as uv tools
 - Node.js through NVM, TypeScript and AWS CDK
-- AWS CLI, GitHub CLI, Podman and common command-line tools
-- Neovim/LazyVim, ripgrep, fd and lazygit
+- zsh with Oh My Zsh and the starship prompt (in zsh and bash); an earlier
+  Powerlevel10k setup is removed from `~/.zshrc`
+- The repository's LazyVim config (`Lazyvim/`) when you have no Neovim config
+- herdr, its plugins and layouts, and the yazi config
 - Claude Code, Codex, OpenCode, both Pi agents (plain `pi` and Oh My Pi) and
   ZCode's configuration (the ZCode app itself is a separate desktop install),
   including this repository's generated personas, instructions, MCP
@@ -54,8 +66,8 @@ Platform-specific additions:
 
 | Platform | Additional setup |
 |---|---|
-| macOS | Homebrew, Flutter, Xcode tooling and a Podman machine-ready install |
-| Ubuntu | Docker, QEMU/binfmt, Ollama, zsh/Powerlevel10k, tmux, Homebrew, yazi, herdr and its project/review/browser plugins |
+| macOS | Xcode Command Line Tools check, Flutter and a Podman machine-ready install |
+| Ubuntu | Docker, Podman and QEMU/binfmt from apt, and Ollama with its systemd service |
 
 To install the herdr/yazi workflow separately on either platform, run:
 
@@ -74,12 +86,12 @@ for the project picker, review mode, browser panes and worktree layout.
 
 | Script | Purpose |
 |---|---|
-| `install_ohmyzsh_p10k.sh` | Install zsh, Oh My Zsh and Powerlevel10k |
-| `install_ghostty_config.sh` | Install the repository's Ghostty configuration |
+| `install_zsh.sh` | Install zsh and Oh My Zsh and make zsh the login shell |
+| `install_ghostty_config.sh` | Install the repository's Ghostty configuration to `~/.config/ghostty/config.ghostty` |
 | `install_iterm_colors.sh` | Install the Ayu Dark iTerm2 colour scheme |
-| `install_lazyvim_config.sh` | Install the repository's LazyVim configuration |
-| `configure_lmstudio.sh` | Configure OpenCode for a local LM Studio model |
-| `host_ollama_model.sh` | Expose an Ollama model from a host machine |
+| `install_lazyvim_config.sh` | Replace your Neovim config with the repository's LazyVim configuration (backs up the old one) |
+| `configure_lmstudio.sh` | Merge a local LM Studio provider into OpenCode's `opencode.json` |
+| `host_ollama_model.sh` | Serve an Ollama model on this machine's Tailscale address only, preloaded, with a q8_0 KV cache |
 | `expand_disk.sh` | Assist with expanding an Ubuntu disk |
 
 There are also guides for
@@ -91,8 +103,9 @@ There are also guides for
 Start a new terminal and check the tools you plan to use:
 
 ```bash
-python --version
+python3 --version
 uv --version
+starship --version
 node --version
 aws --version
 podman --version
@@ -152,9 +165,8 @@ If Podman is not running on macOS:
 podman machine start
 ```
 
-If LazyVim needs rebuilding, move its directories aside and rerun the platform
-installer. The installer makes timestamped backups when it finds existing
-Neovim state.
+If LazyVim needs rebuilding, run `./install_lazyvim_config.sh`, which backs up
+your current config first.
 
 For AI tool configuration and per-tool troubleshooting, return to the
-[top-level README](../README.md#troubleshooting).
+[installing guide](../docs/installing.md).

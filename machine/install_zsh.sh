@@ -16,7 +16,7 @@ if ! command -v zsh &> /dev/null; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
         brew install zsh
     elif command -v apt-get &> /dev/null; then
-        sudo apt-get update -y && sudo apt-get install -y zsh
+        { sudo apt-get update -y || true; } && sudo apt-get install -y zsh
     else
         echo "Error: install zsh manually, then re-run." >&2
         exit 1

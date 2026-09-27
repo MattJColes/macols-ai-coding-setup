@@ -27,8 +27,12 @@ GLM_MODEL="${GLM_MODEL:-glm-4.7-flash}"
 
 # OpenCode configuration paths
 OPENCODE_CONFIG_DIR="$HOME/.config/opencode"
-OPENCODE_CONFIG_FILE="$OPENCODE_CONFIG_DIR/config.json"
-OPENCODE_MCP_CONFIG="$OPENCODE_CONFIG_DIR/mcp.json"
+# opencode.json is the file OpenCode reads and the one ./install.sh opencode
+# writes MCP servers into. This script merges into it; it never replaces it.
+OPENCODE_CONFIG_FILE="$OPENCODE_CONFIG_DIR/opencode.json"
+LEGACY_CONFIG_FILE="$OPENCODE_CONFIG_DIR/config.json"
+
+interactive() { [ -t 0 ] && [ "${MACOLS_NONINTERACTIVE:-0}" != "1" ]; }
 
 echo -e "${BLUE}Configuration:${NC}"
 echo -e "  LM Studio API URL: ${CYAN}${LMSTUDIO_API_URL}${NC}"
@@ -70,94 +74,62 @@ else
     echo "  6. Re-run this script"
     echo
 
-    read -p "$(echo -e "${YELLOW}Continue with configuration anyway? [y/N]: ${NC}")" -n 1 -r
-    echo
+    REPLY=y
+    if interactive; then
+        read -p "$(echo -e "${YELLOW}Continue with configuration anyway? [y/N]: ${NC}")" -n 1 -r
+        echo
+    fi
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         echo -e "${RED}Aborted.${NC}"
         exit 1
     fi
 fi
 
-# Create config directory if it doesn't exist
 mkdir -p "$OPENCODE_CONFIG_DIR"
 
-# Clean existing config for a fresh install
-if [ -f "$OPENCODE_CONFIG_FILE" ]; then
-    echo -e "${YELLOW}Clearing existing config: $OPENCODE_CONFIG_FILE${NC}"
-    rm -f "$OPENCODE_CONFIG_FILE"
+if interactive; then
+    echo -e "${BLUE}Model Configuration:${NC}"
+    read -rp "$(echo -e "${YELLOW}Enter GLM model identifier [${GLM_MODEL}]: ${NC}")" MODEL_INPUT
+    [ -n "$MODEL_INPUT" ] && GLM_MODEL="$MODEL_INPUT"
+    read -rp "$(echo -e "${YELLOW}Enter LM Studio port [${LMSTUDIO_PORT}]: ${NC}")" PORT_INPUT
+    if [ -n "$PORT_INPUT" ]; then
+        LMSTUDIO_PORT="$PORT_INPUT"
+        LMSTUDIO_API_URL="http://${LMSTUDIO_HOST}:${LMSTUDIO_PORT}/v1"
+    fi
+    echo
 fi
 
-# Prompt for custom model name
-echo -e "${BLUE}Model Configuration:${NC}"
-read -rp "$(echo -e "${YELLOW}Enter GLM model identifier [${GLM_MODEL}]: ${NC}")" MODEL_INPUT
-if [ -n "$MODEL_INPUT" ]; then
-    GLM_MODEL="$MODEL_INPUT"
+# Earlier versions wrote a whole config.json with a provider shape OpenCode no
+# longer reads ("api" instead of options.baseURL). Move that copy aside.
+if [ -f "$LEGACY_CONFIG_FILE" ] && grep -q '"lmstudio"' "$LEGACY_CONFIG_FILE" && grep -q '"api": "http' "$LEGACY_CONFIG_FILE"; then
+    mv "$LEGACY_CONFIG_FILE" "$LEGACY_CONFIG_FILE.pre-macols.bak"
+    echo -e "${YELLOW}Moved the old generated config.json aside (${LEGACY_CONFIG_FILE}.pre-macols.bak)${NC}"
 fi
 
-# Prompt for custom port
-read -rp "$(echo -e "${YELLOW}Enter LM Studio port [${LMSTUDIO_PORT}]: ${NC}")" PORT_INPUT
-if [ -n "$PORT_INPUT" ]; then
-    LMSTUDIO_PORT="$PORT_INPUT"
-    LMSTUDIO_API_URL="http://${LMSTUDIO_HOST}:${LMSTUDIO_PORT}/v1"
-fi
-
-echo
-
-# Create OpenCode configuration
-echo -e "${BLUE}Creating OpenCode configuration...${NC}"
-
-cat > "$OPENCODE_CONFIG_FILE" << EOF
-{
-  "\$schema": "https://opencode.ai/config.json",
-  "model": "lmstudio/${GLM_MODEL}",
-  "small_model": "lmstudio/${GLM_MODEL}",
-  "theme": "opencode",
-  "autoupdate": true,
-  "provider": {
-    "lmstudio": {
-      "api": "${LMSTUDIO_API_URL}",
-      "models": {
-        "${GLM_MODEL}": {
-          "name": "GLM-4.7-Flash",
-          "cost": {
-            "input": 0,
-            "output": 0
-          },
-          "limit": {
-            "context": 131072,
-            "output": 32768
-          }
-        }
-      },
-      "options": {
-        "apiKey": "lm-studio",
-        "timeout": 300000
-      }
-    },
-    "anthropic": {
-      "options": {
-        "apiKey": "{env:ANTHROPIC_API_KEY}",
-        "timeout": 600000
-      }
-    }
-  },
-  "permission": {
-    "edit": "ask",
-    "bash": "ask",
-    "webfetch": "ask"
-  },
-  "tools": {
-    "bash": true,
-    "read": true,
-    "write": true,
-    "edit": true,
-    "glob": true,
-    "grep": true
-  }
+echo -e "${BLUE}Merging the LM Studio provider into ${OPENCODE_CONFIG_FILE}...${NC}"
+command -v node &>/dev/null || { echo -e "${RED}node is required to merge the config.${NC}"; exit 1; }
+CFG="$OPENCODE_CONFIG_FILE" MODEL="$GLM_MODEL" URL="$LMSTUDIO_API_URL" node -e '
+const fs = require("fs"), e = process.env;
+let c = {};
+if (fs.existsSync(e.CFG)) {
+  try { c = JSON.parse(fs.readFileSync(e.CFG, "utf8")); }
+  catch (err) { console.error("Cannot parse " + e.CFG + "; fix it and re-run."); process.exit(1); }
 }
-EOF
+c["$schema"] = c["$schema"] || "https://opencode.ai/config.json";
+c.provider = c.provider || {};
+const p = c.provider.lmstudio || {};
+p.npm = "@ai-sdk/openai-compatible";
+p.name = p.name || "LM Studio (local)";
+p.options = { ...(p.options || {}), baseURL: e.URL, apiKey: "lm-studio" };
+p.models = { ...(p.models || {}) };
+p.models[e.MODEL] = { name: e.MODEL, limit: { context: 131072, output: 32768 }, ...(p.models[e.MODEL] || {}) };
+c.provider.lmstudio = p;
+c.model = "lmstudio/" + e.MODEL;
+c.small_model = c.small_model || ("lmstudio/" + e.MODEL);
+fs.writeFileSync(e.CFG, JSON.stringify(c, null, 2) + "\n");
+'
 
-echo -e "${GREEN}OK OpenCode configuration created: ${OPENCODE_CONFIG_FILE}${NC}\n"
+echo -e "${GREEN}OK LM Studio provider merged into ${OPENCODE_CONFIG_FILE}${NC}\n"
 
 # Create shell aliases for easy switching
 SHELL_RC="$HOME/.bashrc"
@@ -214,7 +186,6 @@ echo "  Provider: LM Studio (OpenAI-compatible)"
 echo "  Model: ${GLM_MODEL}"
 echo "  API URL: ${LMSTUDIO_API_URL}"
 echo "  Config: ${OPENCODE_CONFIG_FILE}"
-echo "  MCP Config: ${OPENCODE_MCP_CONFIG}"
 
 echo -e "\n${YELLOW}GLM-4.7-Flash Model Setup:${NC}"
 echo "  1. Open LM Studio"

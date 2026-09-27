@@ -6,10 +6,13 @@
 #   2. Keep models resident in memory indefinitely (OLLAMA_KEEP_ALIVE=-1)
 #   3. Serve at the model's full context window (OLLAMA_CONTEXT_LENGTH)
 #   4. Preload a specific model on boot so it's warm before first request
-#   5. Expose the server ONLY over the Tailscale network (ufw on tailscale0)
+#   5. Listen ONLY on this machine's Tailscale address (falls back to
+#      127.0.0.1 when Tailscale isn't up), plus a ufw rule on tailscale0
+#   6. Quantise the KV cache to q8_0 so the long context fits in memory
 #
-# Usage:  sudo ./setup-ollama-persistent.sh [model-tag] [context-length]
-# Example: sudo ./setup-ollama-persistent.sh qwen3.6:27b 262144
+# Usage:  sudo ./host_ollama_model.sh [model-tag] [context-length]
+# Example: sudo ./host_ollama_model.sh qwen3.6:27b 262144
+# Set OLLAMA_BIND=0.0.0.0 to deliberately listen on every interface.
 #
 set -euo pipefail
 
@@ -38,14 +41,28 @@ systemctl enable ollama.service
 systemctl start ollama.service
 
 # --- keep models resident forever + max context ---------------------------
-echo ">>> Setting OLLAMA_KEEP_ALIVE=-1 and OLLAMA_CONTEXT_LENGTH=$CTX ..."
+# Bind to the Tailscale address only. 0.0.0.0 exposed the unauthenticated API
+# to the whole LAN whenever ufw was missing or inactive.
+TS_IP="$(tailscale ip -4 2>/dev/null | head -1 || true)"
+BIND="${OLLAMA_BIND:-${TS_IP:-127.0.0.1}}"
+if [[ -z "$TS_IP" && -z "${OLLAMA_BIND:-}" ]]; then
+  echo ">>> Tailscale not up: binding to 127.0.0.1. Re-run once 'tailscale ip -4' works."
+fi
+echo ">>> Setting OLLAMA_KEEP_ALIVE=-1, OLLAMA_CONTEXT_LENGTH=$CTX, OLLAMA_HOST=$BIND:11434 ..."
 mkdir -p /etc/systemd/system/ollama.service.d
 cat > /etc/systemd/system/ollama.service.d/override.conf <<EOF
+# Start after Tailscale so its address exists to bind to (the stock unit's
+# Restart=always retries if it is still coming up).
+[Unit]
+After=tailscaled.service network-online.target
+Wants=network-online.target
+
 [Service]
 Environment="OLLAMA_KEEP_ALIVE=-1"
 Environment="OLLAMA_CONTEXT_LENGTH=$CTX"
 Environment="OLLAMA_FLASH_ATTENTION=1"
-Environment="OLLAMA_HOST=0.0.0.0:11434"
+Environment="OLLAMA_KV_CACHE_TYPE=q8_0"
+Environment="OLLAMA_HOST=$BIND:11434"
 EOF
 
 # --- firewall: allow ONLY traffic arriving over Tailscale -----------------
@@ -80,7 +97,7 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 ExecStartPre=/bin/sleep 5
-ExecStart=/usr/bin/curl -fsS http://localhost:11434/api/generate -d '{"model":"$MODEL","keep_alive":-1}'
+ExecStart=/usr/bin/curl -fsS http://$BIND:11434/api/generate -d '{"model":"$MODEL","keep_alive":-1}'
 RemainAfterExit=yes
 Restart=on-failure
 RestartSec=10
@@ -103,9 +120,8 @@ systemctl --no-pager --lines=0 status ollama.service ollama-preload.service || t
 echo
 echo ">>> Loaded models (should show $MODEL):"
 sleep 3
-"$OLLAMA_BIN" ps
+OLLAMA_HOST="$BIND:11434" "$OLLAMA_BIN" ps
 echo
-TS_IP="$(tailscale ip -4 2>/dev/null | head -1 || true)"
 if [[ -n "$TS_IP" ]]; then
   echo ">>> Reach it over Tailscale:  curl http://$TS_IP:11434/api/tags"
 else

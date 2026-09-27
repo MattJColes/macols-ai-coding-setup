@@ -50,7 +50,7 @@ ensure_mcp_prereqs() {
         if [ "$(detect_os)" = "macos" ] && command -v brew &> /dev/null; then
             brew install jq
         elif [ "$(detect_os)" = "linux" ]; then
-            sudo apt-get update -y && sudo apt-get install -y jq
+            { sudo apt-get update -y || true; } && sudo apt-get install -y jq
         else
             printf "${RED}Please install jq manually: https://jqlang.github.io/jq/${NC}\n"
             return 1
@@ -133,7 +133,7 @@ ensure_yq() {
     if [ "$(detect_os)" = "macos" ] && command -v brew &> /dev/null; then
         brew install yq
     elif [ "$(detect_os)" = "linux" ]; then
-        sudo apt-get update -y && sudo apt-get install -y yq
+        { sudo apt-get update -y || true; } && sudo apt-get install -y yq
     else
         printf "${RED}Please install yq manually: https://github.com/mikefarah/yq${NC}\n"
         return 1
@@ -157,7 +157,7 @@ ensure_quality_tools() {
     if ! command -v shellcheck &> /dev/null; then
         printf "${BLUE}Installing shellcheck...${NC}\n"
         if command -v brew &> /dev/null; then brew install shellcheck || failed=1
-        elif [ "$(detect_os)" = "linux" ]; then { sudo apt-get update -y && sudo apt-get install -y shellcheck; } || failed=1
+        elif [ "$(detect_os)" = "linux" ]; then { { sudo apt-get update -y || true; } && sudo apt-get install -y shellcheck; } || failed=1
         else failed=1; fi
     fi
     if ! command -v jscpd &> /dev/null; then

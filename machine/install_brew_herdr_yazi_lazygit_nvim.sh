@@ -7,39 +7,22 @@ fi
 
 set -euo pipefail
 
-echo ""
-echo "=============================="
-echo " [1/8] Homebrew"
-echo "=============================="
-
-if ! command -v brew &>/dev/null; then
-    echo "Installing Homebrew..."
-
-    # Install build prerequisites (Ubuntu/apt)
-    echo "  Installing build dependencies (apt)..."
-    sudo apt-get update -y
-    sudo apt-get install -y build-essential procps curl file git
-
-    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-else
-    echo "Homebrew already installed."
-fi
-
-# Ensure brew is on PATH for the rest of the script
-if [[ -f /home/linuxbrew/.linuxbrew/bin/brew ]]; then
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=common.sh
+source "$SCRIPT_DIR/common.sh"
 
 echo ""
 echo "=============================="
-echo " [2/8] Installing packages"
+echo " [1/6] Homebrew packages"
 echo "=============================="
 
-echo "Installing neovim, yazi, lazygit, delta, and tmux..."
-brew install neovim yazi lazygit git-delta tmux
-
-echo "Installing modern CLI tools (ast-grep, jq, dasel)..."
-brew install ast-grep jq dasel
+# neovim, yazi, lazygit, delta, tmux, go, bun, ast-grep, jq and dasel all come
+# from machine/Brewfile. herdr's formula is not in the default taps on every
+# machine, so it stays a separate, non-fatal install.
+ensure_homebrew
+if ! command -v yazi &>/dev/null || ! command -v lazygit &>/dev/null; then
+    brew_bundle
+fi
 
 echo "Installing herdr..."
 if brew install herdr; then
@@ -54,29 +37,15 @@ fi
 
 echo ""
 echo "=============================="
-echo " [3/8] herdr plugins + layouts"
+echo " [2/6] herdr plugins + layouts"
 echo "=============================="
 
 HERDR_CONFIG_DIR="$HOME/.config/herdr"
 HERDR_PLUS_CFG="$HERDR_CONFIG_DIR/plugins/config/cloudmanic.herdr-plus"
 
-# Go is needed to build herdr-plus from source.
-if command -v go &>/dev/null; then
-    echo "go already installed."
-else
-    echo "Installing go (required to build herdr plugins)..."
-    brew install go || echo "  WARNING: go install failed — the herdr-plus build may fail."
-fi
-
-# Bun is the runtime for herdr-browser (plugin itself + its CDP CLI).
-if command -v bun &>/dev/null; then
-    echo "bun already installed."
-else
-    echo "Installing bun (required by herdr-browser)..."
-    brew install oven-sh/bun/bun \
-        || npm install -g bun \
-        || echo "  WARNING: bun install failed — herdr-browser will not run. Install it manually: https://bun.sh"
-fi
+# Go (herdr-plus build) and bun (herdr-browser runtime) come from the Brewfile.
+command -v go &>/dev/null || warn "go missing - the herdr-plus build may fail"
+command -v bun &>/dev/null || warn "bun missing - herdr-browser will not run"
 
 # herdr-browser drives a real Chrome/Chromium; it never downloads one itself.
 if command -v chromium &>/dev/null || command -v chromium-browser &>/dev/null \
@@ -279,63 +248,20 @@ fi
 
 echo ""
 echo "=============================="
-echo " [4/8] LazyVim setup"
+echo " [3/6] Verifying installations"
 echo "=============================="
 
-if [[ ! -d "$HOME/.config/nvim" ]]; then
-    echo "Cloning LazyVim starter..."
-    git clone https://github.com/LazyVim/starter "$HOME/.config/nvim"
-    rm -rf "$HOME/.config/nvim/.git"
-    echo "LazyVim installed."
-else
-    echo "Neovim config already exists, skipping LazyVim install."
-fi
-
-echo "  Writing git and theme plugins..."
-mkdir -p "$HOME/.config/nvim/lua/plugins"
-cat > "$HOME/.config/nvim/lua/plugins/git.lua" << 'EOF'
-return {
-  { "Shatur/neovim-ayu" },
-
-  {
-    "LazyVim/LazyVim",
-    opts = {
-      colorscheme = "ayu-dark",
-    },
-  },
-
-  {
-    "lewis6991/gitsigns.nvim",
-    opts = {
-      signs = {
-        add = { text = "+" },
-        change = { text = "~" },
-        delete = { text = "_" },
-        topdelete = { text = "‾" },
-        changedelete = { text = "~" },
-      },
-      current_line_blame = true,
-    },
-  },
-
-  { "sindrets/diffview.nvim", cmd = { "DiffviewOpen", "DiffviewFileHistory" } },
-}
-EOF
+for tool in yazi ya lazygit delta nvim; do
+    if command -v "$tool" &>/dev/null; then
+        printf '  %-8s %s\n' "$tool" "$("$tool" --version 2>/dev/null | head -1)"
+    else
+        warn "$tool not found"
+    fi
+done
 
 echo ""
 echo "=============================="
-echo " [5/8] Verifying installations"
-echo "=============================="
-
-yazi --version
-ya --version
-lazygit --version
-delta --version
-nvim --version | head -1
-
-echo ""
-echo "=============================="
-echo " [6/8] Installing Yazi plugins"
+echo " [4/6] Installing Yazi plugins"
 echo "=============================="
 
 ya pkg add yazi-rs/plugins:git || true
@@ -344,7 +270,7 @@ ya pkg install --discard || true
 
 echo ""
 echo "=============================="
-echo " [7/8] Writing Yazi config"
+echo " [5/6] Writing Yazi config"
 echo "=============================="
 
 YAZI_CONFIG="$HOME/.config/yazi"
@@ -373,21 +299,10 @@ group = "git"
 [mgr]
 show_hidden = true
 
-[manager]
-show_git = true
-linemode = "git"
-
 [opener]
 edit = [
 	{ run = 'nvim "$@"', block = true, desc = "nvim" },
 ]
-
-[git]
-modified = { fg = "yellow", bold = true }
-untracked = { fg = "cyan" }
-staged    = { fg = "green" }
-renamed   = { fg = "magenta" }
-deleted   = { fg = "red" }
 EOF
 
 echo "  Writing keymap.toml..."
@@ -520,28 +435,20 @@ echo "  Done."
 
 echo ""
 echo "=============================="
-echo " [8/8] Shell configuration"
+echo " [6/6] Shell configuration"
 echo "=============================="
-
-BREW_LINE='eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'
-EDITOR_LINE='export EDITOR="nvim"'
 
 for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
     if [[ -f "$rc" ]]; then
-        if ! grep -qF 'linuxbrew' "$rc"; then
-            echo "" >> "$rc"
-            echo "$BREW_LINE" >> "$rc"
-            echo "  Added brew shellenv to $rc"
-        else
-            echo "  brew shellenv already in $rc"
+        # Homebrew's shellenv is written by ensure_homebrew (common.sh) with
+        # this machine's prefix. Drop the linuxbrew line older versions
+        # appended unconditionally (wrong on macOS).
+        if grep -qxF 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' "$rc"; then
+            grep -vxF 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' "$rc" > "$rc.macols.tmp" && mv "$rc.macols.tmp" "$rc"
         fi
-
         if ! grep -qF 'export EDITOR="nvim"' "$rc"; then
-            echo "" >> "$rc"
-            echo "$EDITOR_LINE" >> "$rc"
-            echo "  Added EDITOR=nvim to $rc"
-        else
-            echo "  EDITOR=nvim already set in $rc"
+            set_rc_block "$rc" editor 'export EDITOR="nvim"'
+            echo "  Set EDITOR=nvim in $rc"
         fi
 
         # Auto-launch herdr on interactive SSH logins.
@@ -626,13 +533,10 @@ EOF
     fi
 done
 
-# Configure tmux mouse support
-if ! grep -qF "set -g mouse on" "$HOME/.tmux.conf" 2>/dev/null; then
-    echo "set -g mouse on" >> "$HOME/.tmux.conf"
-    echo "  Added mouse support to ~/.tmux.conf"
-else
-    echo "  tmux mouse already enabled in ~/.tmux.conf"
-fi
+# tmux: mouse scrolling, and PgUp jumps straight into copy mode.
+set_rc_block "$HOME/.tmux.conf" tmux-mouse 'set -g mouse on
+bind -n Pageup copy-mode -u'
+echo "  tmux mouse support set in ~/.tmux.conf"
 
 echo ""
 echo "=============================="

@@ -77,4 +77,7 @@ return {
       end,
     },
   },
+
+  -- diffview for side-by-side diffs and file history
+  { "sindrets/diffview.nvim", cmd = { "DiffviewOpen", "DiffviewFileHistory" } },
 }
