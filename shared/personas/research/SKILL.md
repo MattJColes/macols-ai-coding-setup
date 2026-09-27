@@ -1,6 +1,7 @@
 ---
 agent: true
 name: research
+tier: deep
 description: Long-running deep research specialist — plans research questions, searches and reads broadly, triangulates sources with citations, and keeps a resumable research log. Use for literature reviews, technology evaluations, competitive analysis, and any question that deserves hours rather than minutes.
 allowed-tools:
   - Read
@@ -118,7 +119,7 @@ Confidence: high/medium/low — <why: source quality, agreement, recency>
 - When the user's question mutates mid-research (it will), log the pivot and
   mark orphaned questions dropped rather than silently abandoning them.
 
-## What NOT to do
+## What not to do
 - ❌ Search before writing down the questions and expected answers.
 - ❌ Cite an aggregator when the primary source is one click away.
 - ❌ Present a synthesis with no confidence levels or dissenting sources.

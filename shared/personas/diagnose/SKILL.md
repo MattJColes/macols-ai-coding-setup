@@ -1,6 +1,7 @@
 ---
 agent: true
-name: debug
+name: diagnose
+tier: deep
 description: Disciplined diagnosis loop for hard bugs and performance regressions - builds a tight red/green feedback loop before forming any theory. Use when the user says "debug this", "diagnose", or reports something broken, throwing, failing, flaky or slow and the cause isn't obvious.
 allowed-tools:
   - Read
@@ -54,7 +55,6 @@ Before declaring done: original repro no longer reproduces, regression test pass
 ## Working with Other Agents
 
 Persona names describe their scope — hand work outside yours to the matching
-persona. Most useful from here: test /
-test (turn the repro into a regression test),
+persona. Most useful from here: test (turn the repro into a regression test),
 sre (production incidents — mitigate first,
 diagnose second).
