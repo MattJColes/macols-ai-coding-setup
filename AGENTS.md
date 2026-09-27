@@ -38,7 +38,7 @@ Edit the single source, never the rendered output:
 - **Personas:** `shared/personas/<name>/SKILL.md`. Frontmatter drives
   rendering: `agent: true` also emits a Claude/OpenCode agent and a Codex
   agent TOML. `user-invocable: true` also emits a Claude skill, so one file can
-  provide both forms (e.g. review). Every persona also renders as
+  provide both forms (e.g. audit). Every persona also renders as
   a ZCode Agent Skill and slash command. Persona bodies may inline shared
   partials with `{{include: _shared/<file>.md}}` (renderer inlines them into
   every output; `_`-prefixed dirs hold partials, not personas). After adding, editing,

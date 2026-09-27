@@ -120,6 +120,6 @@ done_banner
 echo "Next steps:"
 echo "  • Restart ZCode to load the new configuration"
 echo "  • Skills load automatically when their description matches the work"
-echo "  • Commands are available as slash commands (e.g. /python, /review)"
+echo "  • Commands are available as slash commands (e.g. /python, /audit)"
 echo "  • MCP servers and hooks live in $CONFIG_JSON$(aws_mcp_enabled && echo ' (aws-* MCPs need ~/.aws/credentials)')"
 echo ""

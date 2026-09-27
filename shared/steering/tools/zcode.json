@@ -3,11 +3,11 @@
   "ASSISTANT_NOUN": "ZCode assistant",
   "PLAN_MODE_CLAUSE": " Don't enter plan mode unless asked to plan.",
   "TRACK_CHUNK": "Track each chunk with the todo list (TodoWrite).",
-  "MATCH_SPECIALIST": "Specialist knowledge loads as Agent Skills (`~/.zcode/skills/`) when their description matches the work, or explicitly as slash commands (e.g. `/python`, `/go`, `/review`, `/ship`).",
+  "MATCH_SPECIALIST": "Specialist knowledge loads as Agent Skills (`~/.zcode/skills/`) when their description matches the work, or explicitly as slash commands (e.g. `/python`, `/go`, `/audit`, `/ship`).",
   "COLLAB_SECTION": [
     "## Skills & Slash Commands",
     "",
-    "- Give each invocation a self-contained instruction (paths, constraints, expected output), and run `/review` before finishing. Tightly coupled work stays sequential."
+    "- Give each invocation a self-contained instruction (paths, constraints, expected output), and run `/audit` before finishing. Tightly coupled work stays sequential."
   ],
   "EXTRA_SECTION": ""
 }

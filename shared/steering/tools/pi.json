@@ -7,7 +7,7 @@
   "COLLAB_SECTION": [
     "## Subagents",
     "",
-    "- Use subagents (the `pi-subagents` package) to isolate context for research, review, debugging and running tests. Give each a self-contained instruction (paths, constraints, expected output). Tightly coupled work stays sequential."
+    "- Use subagents (the `pi-subagents` package) to isolate context for research, auditing, diagnosing bugs and running tests. Give each a self-contained instruction (paths, constraints, expected output). Tightly coupled work stays sequential."
   ],
   "EXTRA_SECTION": [
     "",

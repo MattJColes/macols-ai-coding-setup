@@ -7,7 +7,7 @@
   "COLLAB_SECTION": [
     "## Subagents",
     "",
-    "- Use subagents to isolate context, not to match specialisms: `research`, `review`, `debug` and `test` are the agents. Launch independent ones in a single message, in the background for long runs.",
+    "- Use subagents to isolate context, not to match specialisms: `research`, `audit`, `diagnose` and `test` are the agents. Launch independent ones in a single message, in the background for long runs.",
     "- Agents share no context, so give each a self-contained prompt (paths, constraints, expected output), then check their results together. Tightly coupled work stays sequential."
   ],
   "EXTRA_SECTION": ""

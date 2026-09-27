@@ -173,8 +173,8 @@ if [ "$DO_CONTEXT" = true ]; then
     if [ "$PROJECT_INSTALL" = true ]; then
         assemble_steering pi "./AGENTS.md"; append_ponytail_ruleset "./AGENTS.md"
     else
-        assemble_steering pi "$PI_AGENT_DIR/AGENTS.md"; append_ponytail_ruleset "$PI_AGENT_DIR/AGENTS.md"
-        assemble_steering pi "$OMP_DIR/AGENTS.md"; append_ponytail_ruleset "$OMP_DIR/AGENTS.md"
+        assemble_steering pi "$PI_AGENT_DIR/AGENTS.md"
+        assemble_steering pi "$OMP_DIR/AGENTS.md"
     fi; echo ""
 fi
 if [ "$DO_MCPS" = true ] && [ "$PROJECT_INSTALL" = false ]; then

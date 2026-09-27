@@ -7,7 +7,7 @@
   "COLLAB_SECTION": [
     "## Custom Agents",
     "",
-    "- Delegate to a custom agent (`~/.codex/agents/`) to isolate context: `research`, `review`, `debug` and `test`. Give each a self-contained instruction (paths, constraints, expected output). Tightly coupled work stays sequential."
+    "- Delegate to a custom agent (`~/.codex/agents/`) to isolate context: `research`, `audit`, `diagnose` and `test`. Give each a self-contained instruction (paths, constraints, expected output). Tightly coupled work stays sequential."
   ],
   "EXTRA_SECTION": ""
 }

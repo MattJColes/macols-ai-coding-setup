@@ -7,7 +7,7 @@
   "COLLAB_SECTION": [
     "## Agents",
     "",
-    "- Use agents (via the Task tool) to isolate context: `research`, `review`, `debug` and `test`. Agents share no context, so give each a self-contained prompt (paths, constraints, expected output). Tightly coupled work stays sequential."
+    "- Use agents (via the Task tool) to isolate context: `research`, `audit`, `diagnose` and `test`. Agents share no context, so give each a self-contained prompt (paths, constraints, expected output). Tightly coupled work stays sequential."
   ],
   "EXTRA_SECTION": [
     "",

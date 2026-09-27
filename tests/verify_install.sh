@@ -186,7 +186,7 @@ verify_pi_layout() {
     local d="$1" label="$2"
     pass "skills in $label/skills/*/SKILL.md" "count_gt0 '$d/skills' 'SKILL.md' 3"
     pass "$label/AGENTS.md is System-Level Pi" "grep -q 'System-Level Pi' '$d/AGENTS.md'"
-    pass "$label/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
+    pass "$label/AGENTS.md has no ponytail block (the package provides it)" "! grep -q 'ponytail:ruleset:start' '$d/AGENTS.md'"
     pass "$label/AGENTS.md has response format (once)" "rf_once '$d/AGENTS.md'"
     pass "every $label skill has response format" "rf_every '$d/skills' 'SKILL.md'"
     persona_skill_checks "$d/skills" "$label"

@@ -147,7 +147,7 @@ ensure_openspec() {
 }
 
 # ensure_ast_grep — install the ast-grep structural-search CLI used by the
-# review persona and the Spec Anchors steering section. Idempotent:
+# audit persona and the anchors skill. Idempotent:
 # returns immediately when the CLI is on PATH. Global npm install (the
 # @ast-grep/cli package ships both `ast-grep` and `sg` binaries) — npm is the
 # one toolchain every installer already bootstraps, whereas brew is not
@@ -649,9 +649,10 @@ fs.writeFileSync(process.env.DEST, out);
 }
 
 # ── Ponytail (github.com/DietrichGebert/ponytail) ────────────────────────────
-# Every agent gets ponytail via its native mechanism: Claude Code as a plugin,
-# omp as a package (see install_pi.sh), and the AGENTS.md-driven tools (Codex,
-# OpenCode, omp) as a marker-delimited ruleset block appended to AGENTS.md.
+# Every agent gets ponytail exactly once, via its native mechanism: Claude Code
+# as a plugin, pi and omp as a package (see install_pi.sh), and Codex,
+# OpenCode and ZCode as a marker-delimited ruleset block appended to AGENTS.md.
+# Project-mode AGENTS.md files keep the block, since other tools read them.
 
 # append_ponytail_ruleset <agents_md> — merge ponytail's AGENTS.md ruleset
 # (vendored from the upstream repo into shared/steering/ponytail.AGENTS.md)
