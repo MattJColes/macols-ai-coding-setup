@@ -1,46 +1,54 @@
-// pi-checks — wires the shared check scripts into Oh My Pi (omp).
+// pi-checks — wires the shared check scripts into the Pi agents (plain `pi`
+// and Oh My Pi `omp`).
 //
-// omp has no settings.json hook array (hooks are extensions), so this small
-// extension subscribes to the events that mirror the PreToolUse + PostToolUse
-// + Stop hooks the other CLIs use:
+// The Pi agents have no settings.json hook array (hooks are extensions), so
+// this extension subscribes to the events that mirror the PreToolUse +
+// PostToolUse + Stop hooks the other CLIs use:
 //
-//   tool_call    (bash tool)         -> hooks/pre_deploy_check.sh <command>
-//                                       (cdk deploy/destroy guard; asks via
-//                                        ctx.ui.confirm, blocks on decline)
-//   tool_result  (write/edit tools)  -> hooks/post_code_hook.sh <file>
-//   agent_end    (turn finished)     -> hooks/post_task_hook.sh
+//   tool_call            (bash tool)        -> hooks/pre_deploy_check.sh <cmd>
+//                                              (cdk deploy/destroy guard; asks
+//                                               via ctx.ui.confirm)
+//   tool_result          (write/edit tools) -> hooks/post_code_hook.sh <file>
+//                        findings are appended to the tool result content, so
+//                        the model reads them with the edit (no steer, which
+//                        would interrupt the run)
+//   agent_before_settle  (pi)               -> hooks/post_task_hook.sh
+//   session_stop         (omp)              -> hooks/post_task_hook.sh
+//                        findings go back as one continuation. The hook only
+//                        re-runs when the tree changed since its last run, and
+//                        both agents cap continuations, so it cannot loop.
 //
-// The check scripts are advisory: they print findings, never block. Findings
-// are surfaced back into the session via pi.sendMessage. Only the pre-deploy
-// guard can block, and only after the user explicitly declines the confirm.
-//
-// HOOKS_DIR is substituted with the repo's shared/hooks path by install_pi.sh
-// (the scripts are referenced in place, not copied).
-
-import type { ExtensionAPI } from "@oh-my-pi/pi-coding-agent";
+// install_pi.sh substitutes HOOKS_DIR (the repo's shared/hooks, referenced in
+// place) and FLAVOUR (pi | omp).
 
 const HOOKS_DIR = "__PI_HOOKS_DIR__";
+const FLAVOUR: string = "__PI_FLAVOUR__";
 const WRITE_TOOL = /(write|edit|create|patch|replace)/i;
 
-export default function (pi: ExtensionAPI) {
-  const run = async (script: string, args: string[], signal?: AbortSignal) => {
+export default function (pi: any) {
+  const run = async (script: string, args: string[], signal?: AbortSignal): Promise<string> => {
     try {
-      const res = await pi.exec("bash", [`${HOOKS_DIR}/${script}`, ...args], {
+      const res = await pi.exec("bash", [`${HOOKS_DIR}/${script}`, "--format", "text", ...args], {
         signal,
-        timeout: 300_000,
+        timeout: 600_000,
       });
-      // Surface both streams — some checks print findings to stderr.
-      const out = `${res.stdout || ""}\n${res.stderr || ""}`.trim();
-      if (out) {
-        pi.sendMessage({
-          customType: "pi-checks",
-          content: out,
-          display: true,
-        });
-      }
+      return `${res.stdout || ""}`.trim();
     } catch {
-      // Advisory only — never let a check failure disrupt the session.
+      return ""; // advisory — a failing check script must never disrupt the session
     }
+  };
+
+  const editedPaths = (input: any): string[] => {
+    const paths = [input?.path, input?.file_path, input?.filePath].filter(
+      (p) => typeof p === "string" && p
+    );
+    for (const text of [input?.patch, input?.patchText, input?.input]) {
+      if (typeof text !== "string") continue;
+      for (const m of text.matchAll(/^\*\*\* (?:Add File|Update File|Move to): (.+)$/gm)) {
+        paths.push(m[1].trim());
+      }
+    }
+    return [...new Set(paths)];
   };
 
   pi.on("tool_call", async (event: any, ctx: any) => {
@@ -50,11 +58,10 @@ export default function (pi: ExtensionAPI) {
 
     let reason = "";
     try {
-      const res = await pi.exec(
-        "bash",
-        [`${HOOKS_DIR}/pre_deploy_check.sh`, command],
-        { signal: ctx?.signal, timeout: 30_000 }
-      );
+      const res = await pi.exec("bash", [`${HOOKS_DIR}/pre_deploy_check.sh`, command], {
+        signal: ctx?.signal,
+        timeout: 30_000,
+      });
       reason = `${res.stdout || ""}`.trim();
     } catch {
       return; // the guard itself failing must never block normal commands
@@ -67,20 +74,37 @@ export default function (pi: ExtensionAPI) {
         return { block: true, reason: "User declined the cdk deploy/destroy confirmation." };
       }
     } catch {
-      // No interactive UI (headless run) — stay advisory: surface the
-      // warning and let the command proceed rather than wedging the session.
-      pi.sendMessage({ customType: "pi-checks", content: reason, display: true });
+      // No interactive UI (headless run): block with the reason so the model
+      // asks the user, rather than deploying unconfirmed.
+      return { block: true, reason: `${reason} Ask the user to confirm before retrying.` };
     }
   });
 
   pi.on("tool_result", async (event: any, ctx: any) => {
     if (event?.isError || !WRITE_TOOL.test(String(event?.toolName ?? ""))) return;
-    const input = event?.input ?? {};
-    const file = input.path ?? input.file_path ?? input.filePath ?? "";
-    await run("post_code_hook.sh", file ? [String(file)] : [], ctx?.signal);
+    const files = editedPaths(event?.input ?? {});
+    if (files.length === 0) return;
+    const findings = await run("post_code_hook.sh", files, ctx?.signal);
+    if (!findings) return;
+    return { content: [...(event.content ?? []), { type: "text", text: findings }] };
   });
 
-  pi.on("agent_end", async (_event: any, ctx: any) => {
-    await run("post_task_hook.sh", [], ctx?.signal);
-  });
+  const turnEnd = async (ctx: any): Promise<string> => run("post_task_hook.sh", [], ctx?.signal);
+
+  if (FLAVOUR === "omp") {
+    pi.on("session_stop", async (_event: any, ctx: any) => {
+      const findings = await turnEnd(ctx);
+      if (findings) return { continue: true, additionalContext: findings };
+    });
+  } else {
+    pi.on("agent_before_settle", async (event: any, ctx: any) => {
+      if (event?.outcome && event.outcome !== "completed") return;
+      const findings = await turnEnd(ctx);
+      if (!findings) return;
+      return {
+        entries: [{ type: "custom_message", customType: "pi-checks", content: findings, display: true }],
+        continue: true,
+      };
+    });
+  }
 }

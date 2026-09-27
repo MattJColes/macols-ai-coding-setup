@@ -1,0 +1,87 @@
+# Quality gates in CI — save as .github/workflows/quality.yml and delete the
+# jobs for languages the repo doesn't use (a job for a missing language fails). Runs the same tools as the agent
+# hooks, against the whole repo, plus the slow and network-bound checks
+# (semgrep, dependency audits, govulncheck) that stay out of the per-turn loop.
+name: quality
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --all-extras --dev
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pyright
+      - name: Layer contracts
+        run: |
+          if [ -f .importlinter ] || grep -q '^\[tool.importlinter\]' pyproject.toml; then
+            uv run lint-imports
+          fi
+      - run: uv run pytest -q
+      - run: uvx pip-audit --strict .
+
+  typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx eslint .
+      - run: npx tsc --noEmit
+      - name: Layer rules
+        run: |
+          if [ -f .dependency-cruiser.cjs ]; then
+            npx depcruise --config .dependency-cruiser.cjs src
+          fi
+      - run: npm test
+      - run: npm audit --audit-level=high
+
+  dart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed .
+      - run: dart analyze --fatal-infos
+      - run: flutter test
+
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: golangci/golangci-lint-action@v8
+      - run: go test -race ./...
+      - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
+  duplication:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npx --yes jscpd@4 .   # threshold and ignores come from .jscpd.json
+
+  semgrep:
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - run: semgrep scan --config p/default --error --metrics=off

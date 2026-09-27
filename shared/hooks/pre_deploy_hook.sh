@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Shared pre-deploy hook (PreToolUse on Bash) — used by Claude Code and Codex.
+# Shared pre-deploy hook (PreToolUse on Bash) — used by Claude Code, Codex and ZCode.
 # (OpenCode and omp wire the same guard through their plugin/extension, all
 # via the shared matcher in pre_deploy_check.sh.)
 #
@@ -14,12 +14,26 @@
 #
 # PreToolUse protocol: emit JSON on stdout with hookSpecificOutput.
 #   permissionDecision "ask"   -> surface a confirmation prompt to the user
-#   permissionDecision "allow" -> proceed without prompting
+#                                 (Claude Code, ZCode)
+#   permissionDecision "deny"  -> refuse this call with a reason (Codex)
 # Anything else (or no output) falls through to normal permission handling.
+#
+# Codex has no "ask" for hooks and fails OPEN on unsupported decisions, so with
+# --format codex the guard denies the first attempt with an instruction to get
+# the user's confirmation, and lets an identical retry within 15 minutes
+# through (the same confirm-by-retry the OpenCode plugin uses).
+#
+# Usage: pre_deploy_hook.sh [--format claude|codex|zcode]
 #
 # The tool passes JSON via stdin with tool_name and tool_input.command.
 #
 set -eo pipefail
+
+FORMAT="claude"
+case "${1:-}" in
+    --format) FORMAT="${2:-claude}" ;;
+    --format=*) FORMAT="${1#--format=}" ;;
+esac
 
 HOOK_INPUT=$(cat)
 
@@ -44,16 +58,31 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REASON="$(bash "$SCRIPT_DIR/pre_deploy_check.sh" "$COMMAND")"
 if [ -n "$REASON" ]; then
+    DECISION="ask"
+    if [ "$FORMAT" = "codex" ]; then
+        # Confirm-by-retry: remember the command; an identical retry passes.
+        STATE_DIR="${TMPDIR:-/tmp}/macols-predeploy-$(id -u)"
+        mkdir -p "$STATE_DIR" && chmod 700 "$STATE_DIR"
+        KEY=$(printf '%s' "$COMMAND" | git hash-object --stdin 2>/dev/null || printf '%s' "$COMMAND" | cksum | cut -d' ' -f1)
+        find "$STATE_DIR" -type f -mmin +15 -delete 2>/dev/null || true
+        if [ -f "$STATE_DIR/$KEY" ]; then
+            rm -f "$STATE_DIR/$KEY"
+            exit 0
+        fi
+        : > "$STATE_DIR/$KEY"
+        DECISION="deny"
+        REASON="$REASON Ask the user to confirm, then re-run the exact same command to proceed."
+    fi
     if command -v jq &> /dev/null; then
-        jq -n --arg reason "$REASON" '{
+        jq -n --arg reason "$REASON" --arg decision "$DECISION" '{
             hookSpecificOutput: {
                 hookEventName: "PreToolUse",
-                permissionDecision: "ask",
+                permissionDecision: $decision,
                 permissionDecisionReason: $reason
             }
         }'
     else
-        python3 -c "import json,sys; print(json.dumps({'hookSpecificOutput':{'hookEventName':'PreToolUse','permissionDecision':'ask','permissionDecisionReason':sys.argv[1]}}))" "$REASON"
+        python3 -c "import json,sys; print(json.dumps({'hookSpecificOutput':{'hookEventName':'PreToolUse','permissionDecision':sys.argv[2],'permissionDecisionReason':sys.argv[1]}}))" "$REASON" "$DECISION"
     fi
     exit 0
 fi

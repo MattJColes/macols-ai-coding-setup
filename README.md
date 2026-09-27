@@ -424,11 +424,35 @@ Setting any of them applies exactly what they say and asks nothing.
 
 ## Hooks
 
-The wrappers in `shared/hooks/` run checks without blocking the agent:
+The wrappers in `shared/hooks/` turn quality rules into feedback the agent
+acts on. Every tool gets the findings in its own model-visible format
+(`--format claude|codex|zcode|text`), not just a log line:
 
-- **post-code:** fast lint and type checks after an edit
-- **post-task:** the full test and security checks at the end of a turn
-- **pre-deploy:** asks for confirmation before `cdk deploy` or `cdk destroy`
+- **post-code:** after each edit, the file's formatter, linter and type check
+  (ruff + pyright/mypy, eslint, dart analyze, gofmt, shellcheck) plus a
+  file-length limit. Findings come back with the edit and never block it.
+- **post-task:** at the end of a turn, tests related to the changed files,
+  lint and strict types, golangci-lint, jscpd duplication, and layer rules
+  (import-linter, dependency-cruiser) when the project configures them. When
+  something fails, the agent gets one more step with the findings and a fix
+  instruction. It only re-runs when the tree changed since its last run, so
+  it can't loop and Q&A turns stay fast (under a second on small projects).
+- **pre-deploy:** asks for confirmation before `cdk deploy` or `cdk destroy`.
+  Codex has no "ask", so it denies the first attempt and allows an identical
+  retry after you confirm.
+
+Semgrep and dependency audits (pip-audit, npm audit, govulncheck) run in CI,
+not per turn. `MACOLS_SEMGREP=1` turns local semgrep back on.
+
+The thresholds come from each project's own config. The `quality` skill
+installs starter configs (ruff, ESLint, tsconfig, analysis_options,
+golangci-lint, jscpd, import-linter, dependency-cruiser) and a matching CI
+workflow. Other switches: `MACOLS_PYTEST_SCOPE=changed|full|off`,
+`MACOLS_DUPLICATION=off`, `MACOLS_MAX_FILE_LINES` (default 500, `0` to turn
+off), `MACOLS_GO_RACE=1`, `MACOLS_CHECKS_VERBOSE=1`.
+
+Codex only runs hooks you have trusted, so approve them in Codex after
+installing (and again after they change).
 
 `pre_deploy_check.sh` holds the shared matcher. Each tool wires it into its own
 hook API.

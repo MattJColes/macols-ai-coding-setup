@@ -197,6 +197,37 @@ ensure_yq() {
     fi
 }
 
+# ensure_quality_tools — the linters the hooks' quality gates call when a
+# project has no local copy: shellcheck (shell scripts), jscpd (duplication)
+# and, when Go is installed, golangci-lint. Project-level tools (ruff,
+# pyright, eslint, tsc, dependency-cruiser, import-linter) come from each
+# project's own dev dependencies. Each install is independent and non-fatal;
+# a missing tool just means that gate is skipped.
+ensure_quality_tools() {
+    local failed=0
+    if ! command -v shellcheck &> /dev/null; then
+        printf "${BLUE}Installing shellcheck...${NC}\n"
+        if command -v brew &> /dev/null; then brew install shellcheck || failed=1
+        elif [ "$(detect_os)" = "linux" ]; then { sudo apt-get update -y && sudo apt-get install -y shellcheck; } || failed=1
+        else failed=1; fi
+    fi
+    if ! command -v jscpd &> /dev/null; then
+        printf "${BLUE}Installing jscpd (duplication check)...${NC}\n"
+        if command -v npm &> /dev/null; then npm install -g jscpd@4 || failed=1; else failed=1; fi
+    fi
+    if command -v go &> /dev/null && ! command -v golangci-lint &> /dev/null; then
+        printf "${BLUE}Installing golangci-lint...${NC}\n"
+        if command -v brew &> /dev/null; then brew install golangci-lint || failed=1
+        else go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest || failed=1; fi
+    fi
+    if [ "$failed" -eq 0 ]; then
+        printf "${GREEN}✓ Quality-gate tools available${NC}\n"
+    else
+        printf "${YELLOW}⚠ Some quality-gate tools could not be installed; those gates are skipped${NC}\n"
+        return 1
+    fi
+}
+
 # ensure_node_on_noninteractive_path — ponytail's hooks (and our JSON config
 # writers) invoke node outside interactive shells, where NVM/fnm rc wiring
 # never loads. Symlink the resolved node/npm/npx into ~/.local/bin, which is on
@@ -1163,7 +1194,7 @@ PRE_DEPLOY_CHECK="$HOOKS_DIR/pre_deploy_check.sh"
 
 check_hook_sources() {
     local f
-    for f in "$SHARED_DIR/checks_common.sh" "$SHARED_DIR/post_code_checks.sh" "$SHARED_DIR/post_task_checks.sh" "$@"; do
+    for f in "$SHARED_DIR/checks_common.sh" "$SHARED_DIR/post_code_checks.sh" "$SHARED_DIR/post_task_checks.sh" "$HOOKS_DIR/hook_output.sh" "$@"; do
         [ -f "$f" ] || { printf "${RED}Required file not found: %s${NC}\n" "$f"; return 1; }
     done
     chmod +x "$@" 2>/dev/null || true
@@ -1178,11 +1209,14 @@ write_claude_hooks() {
 const fs = require("fs"), env = process.env;
 let existing = {};
 if (fs.existsSync(env.SETTINGS_FILE)) { try { existing = JSON.parse(fs.readFileSync(env.SETTINGS_FILE, "utf8")); } catch (e) {} }
+// --format claude makes the hooks answer in the Claude JSON shape: PostToolUse
+// additionalContext and a one-shot Stop decision:block, both model-visible
+// (plain stdout on exit 0 only reaches the debug log).
 existing.hooks = {
-    PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT }] }],
-    PostToolUse: [{ matcher: "Edit|Write|NotebookEdit", hooks: [{ type: "command", command: env.HOOK_SCRIPT }] }],
+    PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT + " --format claude", timeout: 30 }] }],
+    PostToolUse: [{ matcher: "Edit|Write|NotebookEdit", hooks: [{ type: "command", command: env.HOOK_SCRIPT + " --format claude", timeout: 120 }] }],
     Stop: [{ hooks: [
-        { type: "command", command: env.TASK_HOOK_SCRIPT }
+        { type: "command", command: env.TASK_HOOK_SCRIPT + " --format claude", timeout: 600 }
     ] }]
 };
 // Hard safety the model cannot talk itself out of: deny reads of AWS
@@ -1219,27 +1253,32 @@ const fs = require("fs"), env = process.env;
 // accepts only "description" and "hooks". The event map is nested under
 // "hooks" — a Claude-style flat file fails with `unknown field PreToolUse`.
 // Matchers: Codex maps its apply_patch tool onto the Write/Edit aliases, so
-// the Claude-style matcher strings select the same edits.
+// the Claude-style matcher strings select the same edits; the post-code hook
+// reads the edited paths from the patch text in tool_input.command.
+// --format codex: Codex has no "ask" (unsupported decisions fail open), so
+// the deploy guard denies once and lets an identical retry through.
 const config = {
-    description: "macols-ai-coding-setup advisory quality and safety hooks",
+    description: "macols-ai-coding-setup quality and safety hooks",
     hooks: {
-        PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT, timeout: 30 }] }],
-        PostToolUse: [{ matcher: "Edit|Write", hooks: [{ type: "command", command: env.HOOK_SCRIPT, timeout: 120 }] }],
-        // Stop mirrors Claude: the deterministic post-task battery.
+        PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT + " --format codex", timeout: 30 }] }],
+        PostToolUse: [{ matcher: "Edit|Write", hooks: [{ type: "command", command: env.HOOK_SCRIPT + " --format codex", timeout: 120 }] }],
+        // Stop mirrors Claude: the turn-end battery, one decision:block nudge.
         Stop: [{ hooks: [
-            { type: "command", command: env.TASK_HOOK_SCRIPT, timeout: 300 }
+            { type: "command", command: env.TASK_HOOK_SCRIPT + " --format codex", timeout: 600 }
         ] }]
     }
 };
 fs.writeFileSync(env.HOOKS_JSON, JSON.stringify(config, null, 2) + "\n");
 '
     printf "${GREEN}✓ Hooks written to %s${NC}\n" "$1"
+    printf "${YELLOW}  Codex only runs hooks you have trusted: open Codex and approve the macols hooks (again after each change to them).${NC}\n"
 }
 
-# write_zcode_hooks <config_json> — merge the advisory hooks into ZCode's
-# config.json under hooks.events. Config-file hooks only fire when
-# hooks.enabled is true, and type "command" timeouts are seconds. Existing
-# keys elsewhere in the config (mcp, plugins, …) survive.
+# write_zcode_hooks <config_json> — merge the hooks into ZCode's config.json
+# under hooks.events. Config-file hooks only fire when hooks.enabled is true.
+# ZCode runs "process" hooks (argv, no shell) with timeouts in timeoutMs, and
+# only JSON stdout reaches the model. Existing keys elsewhere in the config
+# (mcp, plugins, …) survive.
 write_zcode_hooks() {
     require_node || return 1
     check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_HOOK" || return 1
@@ -1250,12 +1289,14 @@ let cfg = {};
 if (fs.existsSync(env.HOOKS_JSON)) { try { cfg = JSON.parse(fs.readFileSync(env.HOOKS_JSON, "utf8")); } catch (e) {} }
 // Same events as the Claude settings hooks. Matchers are regexes over the
 // tool name; Write/Edit alias the apply-patch tool, as in the Codex hooks.
+const hook = (script, timeoutMs) => ({ type: "process", command: "bash", args: [script, "--format", "zcode"], timeoutMs });
 cfg.hooks = {
+    ...(cfg.hooks || {}),
     enabled: true,
     events: {
-        PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT, timeout: 30, enabled: true }] }],
-        PostToolUse: [{ matcher: "Edit|Write|NotebookEdit", hooks: [{ type: "command", command: env.HOOK_SCRIPT, timeout: 120, enabled: true }] }],
-        Stop: [{ hooks: [{ type: "command", command: env.TASK_HOOK_SCRIPT, timeout: 300, enabled: true }] }]
+        PreToolUse: [{ matcher: "Bash", hooks: [hook(env.PRE_DEPLOY_HOOK_SCRIPT, 30000)] }],
+        PostToolUse: [{ matcher: "Edit|Write|NotebookEdit", hooks: [hook(env.HOOK_SCRIPT, 120000)] }],
+        Stop: [{ hooks: [hook(env.TASK_HOOK_SCRIPT, 600000)] }]
     }
 };
 fs.writeFileSync(env.HOOKS_JSON, JSON.stringify(cfg, null, 2) + "\n");
@@ -1277,11 +1318,13 @@ install_opencode_plugin() {
     printf "${GREEN}✓ Plugin installed to %s${NC}\n" "$1/post_code_hook_plugin.js"
 }
 
-# install_pi_extension <extensions_dir> — bake the repo hooks dir into pi-checks.ts.
+# install_pi_extension <extensions_dir> <pi|omp> — bake the repo hooks dir and
+# the agent flavour into pi-checks.ts (the turn-end event differs: pi's
+# agent_before_settle vs omp's session_stop).
 install_pi_extension() {
     check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_CHECK" "$HOOKS_DIR/pi-checks.ts" || return 1
     mkdir -p "$1"
-    sed "s#__PI_HOOKS_DIR__#$HOOKS_DIR#g" "$HOOKS_DIR/pi-checks.ts" > "$1/pi-checks.ts"
+    sed -e "s#__PI_HOOKS_DIR__#$HOOKS_DIR#g" -e "s#__PI_FLAVOUR__#${2:-pi}#g" "$HOOKS_DIR/pi-checks.ts" > "$1/pi-checks.ts"
     printf "${GREEN}✓ Extension installed to %s${NC}\n" "$1/pi-checks.ts"
 }
 

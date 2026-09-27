@@ -2,24 +2,24 @@
 #
 # Shared Post-Code Checks Library
 #
-# Sourced by tool-specific wrappers (ClaudeCode, OpenCode).
-# NOT directly executable — must be sourced.
+# Sourced by post_code_hook.sh. NOT directly executable — must be sourced.
 #
 # Expects caller to set:
-#   FILE_PATH   (optional) — file that was modified, used to filter checks
+#   FILE_PATH   (optional) — file that was modified, used to pick the checks
 #   MAX_TEST_TIME (optional, default 120) — timeout in seconds
 #
 # Provides:
-#   run_post_code_checks — fast, file-scoped lint/type-check orchestrator
+#   run_post_code_checks — fast, file-scoped lint/type-check orchestrator.
+#                          Prints a report of findings (nothing when clean).
 #
-# Per-edit checks are intentionally lightweight: only the linter/type-checker
-# for the changed file's language runs here. Tests, security audits and cdk
-# synth run once at turn end via the Stop hook (post_task_checks.sh).
+# Per-edit checks are intentionally lightweight: only the formatter/linter/
+# type-checker for the changed file's language runs here. Tests, duplication,
+# layer rules and cdk synth run once at turn end via the Stop hook
+# (post_task_checks.sh); semgrep and dependency audits belong in CI.
 #
-# Shared environment/discovery helpers (setup_timeout_cmd, find_venv_bin, …)
-# live in checks_common.sh, sourced below.
+# Output is for the agent: findings plus a fix instruction, never "PASSED"
+# chatter. An empty report means the file is clean.
 #
-# Results are collected in ISSUES_FOUND[] and MESSAGES[] arrays.
 # Always returns 0 (non-blocking).
 #
 
@@ -38,143 +38,135 @@ source "$SHARED_DIR_SELF/checks_common.sh"
 MAX_TEST_TIME="${MAX_TEST_TIME:-120}"
 FILE_PATH="${FILE_PATH:-}"
 
-# Track issues found
+# Track issues found. Each entry is a self-contained finding (may be multi-line).
 declare -a ISSUES_FOUND=()
-declare -a MESSAGES=()
-
-add_message() {
-    MESSAGES+=("$1")
-}
 
 add_issue() {
     ISSUES_FOUND+=("$1")
 }
 
-# Report the post-execution result tail of a lint/type check: pass note on
-# success, finding + excerpt on failure. Findings use add_issue; the pass note
-# and the excerpt use add_message (this file's per-edit severities).
-# Usage: report_check_result <label> <exit> <output> <count_re> <noun> <timeout_msg> [<tail_grep>]
+# Record a lint/type check result. Clean runs record nothing. A failing run
+# records the finding count, a short excerpt and the matching fix hint. A
+# non-zero exit with no countable findings means the tool itself failed (bad
+# flag, broken config) — that is reported too, instead of passing silently.
+# Usage: report_check_result <label> <exit> <output> <count_re> <noun> [<tail_grep>]
 report_check_result() {
-    local label="$1" ec="$2" output="$3" count_re="$4" noun="$5" timeout_msg="$6" tail_grep="${7:-}"
-    if [ "$ec" -eq 0 ]; then
-        add_message "$label: PASSED"
-        return
-    fi
+    local label="$1" ec="$2" output="$3" count_re="$4" noun="$5" tail_grep="${6:-}"
+    [ "$ec" -eq 0 ] && return
     if [ "$ec" -eq 124 ]; then
-        add_issue "$timeout_msg"
+        add_issue "$label: timed out"
         return
     fi
-    local n
-    n=$(printf '%s' "$output" | grep -cE "$count_re" || true)
+    local n excerpt
+    n=$(printf '%s\n' "$output" | grep -cE "$count_re" || true)
     n="${n:-0}"
     if [ "$n" -gt 0 ]; then
-        add_issue "$label: $n $noun"
-        local tail
         if [ -n "$tail_grep" ]; then
-            tail=$(printf '%s' "$output" | grep "$tail_grep" | head -10)
+            excerpt=$(printf '%s\n' "$output" | grep -E "$tail_grep" | head -15)
         else
-            tail=$(printf '%s' "$output" | head -10)
+            excerpt=$(printf '%s\n' "$output" | grep -E "$count_re" | head -15)
         fi
-        add_message "$tail"
+        add_issue "$label: $n $noun"$'\n'"$excerpt"$'\n'"$(fix_hint "$label $output")"
+    else
+        add_issue "$label: exited $ec without reporting findings (tool or config error)"$'\n'"$(printf '%s\n' "$output" | head -5)"
     fi
 }
 
-# Run dart analyze
+# Run dart analyze on the changed file.
 run_dart_analyze() {
-    if ! command -v dart &> /dev/null; then
-        add_message "dart not installed - skipping Dart analysis"
-        return 0
-    fi
-
+    command -v dart &> /dev/null || return 0
     local analyze_output ec=0
-    analyze_output=$(dart analyze . 2>&1) || ec=$?
-    report_check_result "Dart analyze" "$ec" "$analyze_output" "^\s*(info|warning|error) " "issues" "Dart analyze: TIMED OUT"
+    analyze_output=$(dart analyze "$FILE_PATH" 2>&1) || ec=$?
+    report_check_result "dart analyze" "$ec" "$analyze_output" "^\s*(info|warning|error) " "issues"
 }
 
-# Run ruff linter — scoped to the changed file.
+# Run ruff on the changed file. Uses the project's ruff config, so the
+# complexity/length/argument limits from the project's pyproject apply here.
 run_ruff_check() {
     local ruff_bin
     ruff_bin=$(find_venv_bin ruff)
     [ -z "$ruff_bin" ] && return 0
-
-    local target="."
-    if [ -n "$FILE_PATH" ] && [[ "$FILE_PATH" == *.py ]]; then
-        target="$FILE_PATH"
-    fi
-
     local ruff_output ec=0
-    ruff_output=$("$ruff_bin" check "$target" 2>&1) || ec=$?
-    report_check_result "Ruff" "$ec" "$ruff_output" "^.+:[0-9]+:[0-9]+:" "linting issues" "Ruff: TIMED OUT"
+    ruff_output=$("$ruff_bin" check --output-format concise "$FILE_PATH" 2>&1) || ec=$?
+    report_check_result "ruff" "$ec" "$ruff_output" "^.+:[0-9]+:[0-9]+:" "lint issues"
 }
 
-# Run mypy type checker — scoped to the changed file.
-run_mypy_check() {
-    local mypy_bin
-    mypy_bin=$(find_venv_bin mypy)
-    [ -z "$mypy_bin" ] && return 0
-
-    local target
-    if [ -n "$FILE_PATH" ] && [[ "$FILE_PATH" == *.py ]]; then
-        target="$FILE_PATH"
-    else
-        target=""
-        for dir in src app lib lambda functions; do
-            if [ -d "$dir" ] && find "$dir" -maxdepth 3 -name "*.py" -type f 2>/dev/null | grep -q .; then
-                target="$target $dir"
-            fi
-        done
-        if [ -z "$target" ]; then
-            return 0
-        fi
-    fi
-
-    local mypy_output ec=0
-    local mypy_cmd="${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME }$mypy_bin --no-error-summary $target"
-    mypy_output=$(eval "$mypy_cmd" 2>&1) || ec=$?
-    report_check_result "Mypy" "$ec" "$mypy_output" ": error:" "type errors" "Mypy: TIMED OUT after ${MAX_TEST_TIME}s" ": error:"
-}
-
-# Run ESLint — scoped to the changed file. Prefers a project-local eslint binary
-# over `npx` to avoid npx's per-invocation resolution overhead on every edit.
-run_eslint_check() {
-    local eslint_bin
-    if [ -x "node_modules/.bin/eslint" ]; then
-        eslint_bin="node_modules/.bin/eslint"
-    elif command -v eslint &> /dev/null; then
-        eslint_bin="eslint"
-    elif command -v npx &> /dev/null; then
-        eslint_bin="npx eslint"
-    else
+# Type-check the changed file: pyright when the project configures it, else
+# mypy when the project opts in via [tool.mypy]. Both honour project config
+# (strict mode lives there, not here).
+run_python_typecheck() {
+    local proj_cfg=""
+    [ -f "pyproject.toml" ] && proj_cfg="pyproject.toml"
+    if [ -f "pyrightconfig.json" ] || { [ -n "$proj_cfg" ] && grep -q '\[tool\.pyright\]' "$proj_cfg"; }; then
+        local pyright_bin
+        pyright_bin=$(find_venv_bin pyright)
+        [ -z "$pyright_bin" ] && [ -x node_modules/.bin/pyright ] && pyright_bin="node_modules/.bin/pyright"
+        [ -z "$pyright_bin" ] && return 0
+        local out ec=0
+        out=$(${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME} "$pyright_bin" "$FILE_PATH" 2>&1) || ec=$?
+        report_check_result "pyright" "$ec" "$out" " - error:" "type errors" " - error:"
         return 0
     fi
-
-    local target
-    if [ -n "$FILE_PATH" ] && [[ "$FILE_PATH" == *.ts || "$FILE_PATH" == *.js || "$FILE_PATH" == *.tsx || "$FILE_PATH" == *.jsx ]]; then
-        target="$FILE_PATH"
-    else
-        target="."
+    if [ -n "$proj_cfg" ] && grep -q '\[tool\.mypy\]' "$proj_cfg"; then
+        local mypy_bin
+        mypy_bin=$(find_venv_bin mypy)
+        [ -z "$mypy_bin" ] && return 0
+        local out ec=0
+        out=$(${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME} "$mypy_bin" --no-error-summary "$FILE_PATH" 2>&1) || ec=$?
+        report_check_result "mypy" "$ec" "$out" ": error:" "type errors" ": error:"
     fi
-
-    local eslint_output ec=0
-    local eslint_cmd="${TIMEOUT_CMD:+$TIMEOUT_CMD 60 }$eslint_bin --no-warn-on-unmatched-pattern \"$target\""
-    eslint_output=$(eval "$eslint_cmd" 2>&1) || ec=$?
-    report_check_result "ESLint" "$ec" "$eslint_output" "^.+:[0-9]+:[0-9]+" "issues" "ESLint: TIMED OUT"
 }
 
-# Main orchestrator — fast, file-scoped lint/type-check only.
-#
-# The per-edit hook stays lightweight: for the single file that changed it runs
-# only the linter / type-checker for that language. The heavy battery (tests,
-# security audits, cdk synth) deliberately does NOT run here — it runs once at
-# turn end via the Stop hook (post_task_checks.sh), instead of after every edit.
+# Resolve an ESLint binary, preferring the project-local one over npx (npx
+# resolution costs hundreds of ms per edit). Echoes nothing when unavailable.
+eslint_bin() {
+    if [ -x "node_modules/.bin/eslint" ]; then
+        echo "node_modules/.bin/eslint"
+    elif command -v eslint &> /dev/null; then
+        echo "eslint"
+    fi
+}
+
+# Run ESLint on the changed file. Default (stylish) output is the one format
+# every ESLint major still ships; findings are its "line:col  error|warning"
+# rows. Exit 2 is a config/runtime failure and is reported as such.
+run_eslint_check() {
+    local bin
+    bin=$(eslint_bin)
+    [ -z "$bin" ] && return 0
+    local eslint_output ec=0
+    eslint_output=$(${TIMEOUT_CMD:+$TIMEOUT_CMD 60} "$bin" --no-error-on-unmatched-pattern "$FILE_PATH" 2>&1) || ec=$?
+    report_check_result "eslint" "$ec" "$eslint_output" "^[[:space:]]+[0-9]+:[0-9]+[[:space:]]+(error|warning)" "issues"
+}
+
+# Run shellcheck on the changed shell script.
+run_shellcheck() {
+    command -v shellcheck &> /dev/null || return 0
+    local out ec=0
+    out=$(shellcheck -f gcc "$FILE_PATH" 2>&1) || ec=$?
+    report_check_result "shellcheck" "$ec" "$out" "^.+:[0-9]+:[0-9]+: " "issues"
+}
+
+# gofmt the changed Go file (report only — the agent applies the fix). The
+# heavier golangci-lint and go test run at turn end.
+run_gofmt_check() {
+    command -v gofmt &> /dev/null || return 0
+    local out
+    out=$(gofmt -l "$FILE_PATH" 2>&1) || true
+    if [ -n "$out" ]; then
+        add_issue "gofmt: $FILE_PATH is not formatted"$'\n'"Fix: run gofmt -w $FILE_PATH (or goimports -w)."
+    fi
+}
+
+# Main orchestrator — fast, file-scoped checks only. Prints the report.
 run_post_code_checks() {
     setup_timeout_cmd
+    [ -n "$FILE_PATH" ] && [ -f "$FILE_PATH" ] || return 0
 
-    # Nothing to scope to / not a source file we lint — skip.
     case "$FILE_PATH" in
         *.py)
             run_ruff_check || true
-            run_mypy_check || true
+            run_python_typecheck || true
             ;;
         *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs)
             run_eslint_check || true
@@ -182,22 +174,24 @@ run_post_code_checks() {
         *.dart)
             run_dart_analyze || true
             ;;
+        *.go)
+            run_gofmt_check || true
+            ;;
+        *.sh|*.bash)
+            run_shellcheck || true
+            ;;
         *)
             return 0
             ;;
     esac
 
-    # Output results
-    if [ ${#ISSUES_FOUND[@]} -gt 0 ]; then
-        echo "Hook: Post-code checks found issues:"
-        for issue in "${ISSUES_FOUND[@]}"; do
-            echo "  - $issue"
-        done
-    fi
+    local long
+    long=$(printf '%s\n' "$FILE_PATH" | check_file_lengths)
+    [ -n "$long" ] && add_issue "$long"$'\n'"$(fix_hint "$long")"
 
-    for msg in "${MESSAGES[@]}"; do
-        echo "$msg"
+    local issue
+    for issue in "${ISSUES_FOUND[@]}"; do
+        printf '%s\n' "$issue"
     done
-
     return 0
 }

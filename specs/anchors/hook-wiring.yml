@@ -35,3 +35,10 @@ hook-wiring.pi-extension:
     kind: function_definition
     has: { field: name, regex: '^install_pi_extension$' }
   files: [lib/common.sh]
+
+hook-wiring.turn-end-gate:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^changes_since_last_check$' }
+  files: [shared/checks_common.sh]

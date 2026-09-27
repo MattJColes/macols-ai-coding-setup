@@ -75,7 +75,12 @@ Edit the single source, never the rendered output:
   omp already requires as its runtime. Unattended callers use
   `OMP_MODELS_CONFIG` / `OMP_DEFAULT_MODEL` / `OMP_PLAN_MODEL`.
 - **Hooks:** `shared/hooks/*` (post-code, post-task, pre-deploy),
-  referenced in place, wired by `write_*_hooks` in `lib/common.sh`.
+  referenced in place, wired by `write_*_hooks` in `lib/common.sh`. Every
+  wiring passes `--format <tool>`; `shared/hooks/hook_output.sh` renders
+  findings in the shape that tool shows the model. Plain stdout on exit 0 is
+  invisible to Claude Code, Codex and ZCode, so never rely on it. The
+  checks live in `shared/post_code_checks.sh` / `post_task_checks.sh`; gate
+  configs for projects ship in `shared/personas/quality/references/`.
 - **Machine setup:** `machine-setup/` (macOS + Ubuntu 24/26). The herdr script
   also installs the herdr-plus/herdr-reviewr/herdr-browser plugins, their
   Claude+yazi project/worktree layouts, and herdr-browser's prerequisites

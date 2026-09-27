@@ -67,6 +67,7 @@ verify_claudecode() {
     pass "~/.claude/bin/claude-launch is executable" "[ -x '$d/bin/claude-launch' ]"
     if has_jq; then
         pass "settings.json has PostToolUse hook"  "jq -e '.hooks.PostToolUse[0].hooks[0].command' '$d/settings.json' >/dev/null"
+        pass "settings.json hooks answer in Claude JSON (--format claude)" "jq -e '[.hooks[][].hooks[].command | test(\"--format claude\")] | all' '$d/settings.json' >/dev/null"
         pass "~/.claude.json has filesystem MCP"    "jq -e '.mcpServers.filesystem' '$HOME/.claude.json' >/dev/null 2>&1"
     else
         warn "jq not available — skipping JSON assertions"
@@ -98,6 +99,7 @@ verify_codex() {
         pass "hooks.json top level is Codex's description/hooks" "jq -e '[keys[] | select(. != \"description\" and . != \"hooks\")] | length == 0' '$d/hooks.json' >/dev/null"
         pass "hooks.json has PostToolUse hook"     "jq -e '.hooks.PostToolUse[0].hooks[0].command' '$d/hooks.json' >/dev/null"
         pass "hooks.json Stop runs post-task battery" "jq -e '.hooks.Stop[0].hooks[0].command | test(\"post_task\")' '$d/hooks.json' >/dev/null"
+        pass "hooks.json hooks answer in Codex JSON (--format codex)" "jq -e '[.hooks[][].hooks[].command | test(\"--format codex\")] | all' '$d/hooks.json' >/dev/null"
     fi
     soft "codex mcp list shows filesystem" "command -v codex >/dev/null && codex mcp list 2>/dev/null | grep -q filesystem"
 }
@@ -116,6 +118,7 @@ verify_opencode() {
     pass "no stale .mjs plugin remains" "[ ! -f '$d/plugins/post_code_hook_plugin.mjs' ]"
     pass "plugin placeholders substituted" "! grep -q '__.*_PATH__' '$d/plugins/post_code_hook_plugin.js'"
     pass "plugin wires pre-deploy check" "grep -q 'pre_deploy_check.sh' '$d/plugins/post_code_hook_plugin.js'"
+    pass "plugin handles session.idle as a bus event" "grep -q 'event?.type !== \"session.idle\"' '$d/plugins/post_code_hook_plugin.js'"
     if has_jq; then
         pass "opencode.json has filesystem MCP under .mcp" "jq -e '.mcp.filesystem' '$d/opencode.json' >/dev/null"
         if has_brave_key; then
@@ -138,6 +141,7 @@ verify_pi_layout() {
     pass "every $label skill has response format" "rf_every '$d/skills' 'SKILL.md'"
     pass "$label extensions/pi-checks.ts exists" "[ -f '$d/extensions/pi-checks.ts' ]"
     pass "$label extension hooks dir substituted" "! grep -q '__PI_HOOKS_DIR__' '$d/extensions/pi-checks.ts'"
+    pass "$label extension flavour substituted" "! grep -q '__PI_FLAVOUR__' '$d/extensions/pi-checks.ts'"
     pass "$label extension wires pre-deploy check" "grep -q 'pre_deploy_check.sh' '$d/extensions/pi-checks.ts'"
 }
 
@@ -197,8 +201,9 @@ verify_zcode() {
     pass "every ~/.zcode command has response format" "rf_every '$d/commands' '*.md'"
     if has_jq; then
         pass "config.json hooks are enabled" "jq -e '.hooks.enabled == true' '$d/cli/config.json' >/dev/null"
-        pass "config.json has PostToolUse hook" "jq -e '.hooks.events.PostToolUse[0].hooks[0].command' '$d/cli/config.json' >/dev/null"
-        pass "config.json Stop runs post-task battery" "jq -e '.hooks.events.Stop[0].hooks[0].command | test(\"post_task\")' '$d/cli/config.json' >/dev/null"
+        pass "config.json has PostToolUse hook" "jq -e '.hooks.events.PostToolUse[0].hooks[0].args[0]' '$d/cli/config.json' >/dev/null"
+        pass "config.json Stop runs post-task battery" "jq -e '.hooks.events.Stop[0].hooks[0].args[0] | test(\"post_task\")' '$d/cli/config.json' >/dev/null"
+        pass "config.json hooks are ZCode process hooks with timeoutMs" "jq -e '[.hooks.events[][].hooks[] | .type == \"process\" and (.timeoutMs | type == \"number\") and (.args | index(\"zcode\"))] | all' '$d/cli/config.json' >/dev/null"
         pass "config.json has filesystem MCP under .mcp.servers" "jq -e '.mcp.servers.filesystem' '$d/cli/config.json' >/dev/null"
     fi
 }

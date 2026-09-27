@@ -2,51 +2,80 @@
 #
 # Shared post-task hook (Stop / turn-end) — used by every CLI.
 #
-# Thin wrapper that sources shared/post_task_checks.sh.
+# Runs the turn-end battery in shared/post_task_checks.sh and, when it finds
+# problems, hands them back to the MODEL as one more step of work.
 #
-# ADVISORY + CHANGE-GATED:
-# - Skips entirely when the turn didn't touch code (clean working tree of code
-#   files) — no point re-running the whole suite after a Q&A or docs-only turn.
-# - When code did change, runs the checks and REPORTS findings to stderr, but
-#   never blocks the stop. Per-edit checks already run via the post-code hook;
-#   a hard block re-runs the full suite and traps on pre-existing failures in
-#   code you never touched. Reporting keeps the signal without the friction.
-# - pytest is SCOPED to the tests the changed files reach (changed test files
-#   plus test_<module>.py for each changed module). The full suite is the
-#   pre-push hook's job. MACOLS_PYTEST_SCOPE=full|changed|off overrides.
+# Usage: post_task_hook.sh [--format claude|codex|zcode|text]
+#   claude, codex — {"decision":"block","reason":…}: the agent keeps going
+#   zcode         — {"continue":true, additionalContext}
+#   text          — plain report on stdout (OpenCode plugin, pi/omp extension)
 #
-# This script is referenced in place from the repo (it is not copied), so the
-# shared library sits one directory up. Override with MACOLS_SHARED_DIR.
+# When it runs:
+# - Only when code changed since the battery last ran (a fingerprint of the
+#   working tree, stored in .git/macols-last-check). Q&A turns after an edit
+#   no longer re-run everything, and an agent that was shown findings and
+#   changed nothing is allowed to stop, so the hook cannot loop.
+# - Never when the tool says this stop is already a hook-driven continuation
+#   (stop_hook_active) — one nudge per turn, then the user decides.
+# - pytest/jest/vitest/go test are scoped to what the changed files reach.
+#   The full suite is CI's and the pre-push hook's job.
+#   MACOLS_PYTEST_SCOPE=full|changed|off overrides the Python scope.
+#
+# Only critical findings (failing tests, lint/type/gate errors) are sent to the
+# model; notes such as "pytest not installed" print only with
+# MACOLS_CHECKS_VERBOSE=1.
+#
+# Referenced in place from the repo (not copied), so the shared library sits
+# one directory up. Override with MACOLS_SHARED_DIR.
 #
 set -eo pipefail
 
 SHARED_DIR="${MACOLS_SHARED_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+# shellcheck source=hook_output.sh
+source "$SHARED_DIR/hooks/hook_output.sh"
 
-# Drain stdin (tools send JSON; we don't need any field here).
+FORMAT="text"
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --format) FORMAT="${2:-text}"; shift 2 ;;
+        --format=*) FORMAT="${1#--format=}"; shift ;;
+        *) shift ;;
+    esac
+done
+
+HOOK_INPUT=""
 if [ ! -t 0 ]; then
-    cat > /dev/null 2>&1 || true
+    HOOK_INPUT=$(cat 2>/dev/null || true)
+fi
+if [ -n "$HOOK_INPUT" ] && command -v jq &> /dev/null; then
+    HOOK_CWD=$(printf '%s' "$HOOK_INPUT" | jq -r '.cwd // empty' 2>/dev/null || true)
+    [ -n "$HOOK_CWD" ] && [ -d "$HOOK_CWD" ] && cd "$HOOK_CWD"
+    # A continuation this hook already caused: let the agent stop.
+    if [ "$(printf '%s' "$HOOK_INPUT" | jq -r '.stop_hook_active // false' 2>/dev/null)" = "true" ]; then
+        exit 0
+    fi
 fi
 
 source "$SHARED_DIR/post_task_checks.sh"
 
-# Change gate: skip the whole battery when no code changed this turn.
+# Change gates: code must have changed, and changed since the last run.
 code_changed || exit 0
+changes_since_last_check || exit 0
 
-run_post_task_checks || exit 0  # Nothing to check
+run_post_task_checks || { record_check_fingerprint; exit 0; }
+record_check_fingerprint
 
-# Advisory: surface findings to stderr (shown in the transcript), never block.
-if [ ${#CRITICAL_ISSUES[@]} -gt 0 ]; then
-    echo "Post-task validation found issues (advisory — not blocking):" >&2
-    for issue in "${CRITICAL_ISSUES[@]}"; do
-        echo "  - $issue" >&2
-    done
+if [ "${MACOLS_CHECKS_VERBOSE:-0}" = "1" ] && [ ${#WARNINGS[@]} -gt 0 ]; then
+    printf 'Validation notes:\n' >&2
+    printf '  - %s\n' "${WARNINGS[@]}" >&2
 fi
 
-if [ ${#WARNINGS[@]} -gt 0 ]; then
-    echo "Validation notes:" >&2
-    for warning in "${WARNINGS[@]}"; do
-        echo "  - $warning" >&2
-    done
-fi
+[ ${#CRITICAL_ISSUES[@]} -eq 0 ] && exit 0
 
+REPORT="Turn-end checks found problems in your changes. Fix them, re-run the failing check, then finish:"$'\n'
+for issue in "${CRITICAL_ISSUES[@]}"; do
+    REPORT+="- $issue"$'\n'
+done
+
+emit_stop_feedback "$FORMAT" "$REPORT"
 exit 0

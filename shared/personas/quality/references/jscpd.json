@@ -1,0 +1,14 @@
+{
+  "//": "Duplication gate — save as .jscpd.json at the repo root. The turn-end hook reports clones touching changed files; CI fails over the threshold (percent of duplicated lines).",
+  "threshold": 3,
+  "minLines": 10,
+  "format": ["python", "javascript", "typescript", "jsx", "tsx", "go", "dart"],
+  "ignore": [
+    "**/node_modules/**", "**/.venv/**", "**/vendor/**", "**/dist/**", "**/build/**",
+    "**/test/**", "**/tests/**", "**/__tests__/**", "**/testdata/**",
+    "**/*_test.go", "**/*.test.*", "**/*.spec.*", "**/test_*.py",
+    "**/*.g.dart", "**/*.freezed.dart", "**/*.pb.go", "**/*_pb2.py"
+  ],
+  "gitignore": true,
+  "reporters": ["console"]
+}

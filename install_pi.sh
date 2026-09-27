@@ -153,6 +153,7 @@ if [ "$DO_PI" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     ensure_openspec || printf "${YELLOW}⚠ openspec install skipped/failed${NC}\n"
     ensure_ast_grep || printf "${YELLOW}⚠ ast-grep install skipped/failed${NC}\n"
     ensure_yq || printf "${YELLOW}⚠ yq install skipped/failed${NC}\n"
+    ensure_quality_tools || true
     ensure_node_on_noninteractive_path || printf "${YELLOW}⚠ node PATH linking skipped/failed${NC}\n"
     echo ""
 fi
@@ -186,8 +187,8 @@ if [ "$DO_MODELS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     echo ""
 fi
 if [ "$DO_HOOKS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
-    install_pi_extension "$PI_AGENT_DIR/extensions"
-    install_pi_extension "$OMP_DIR/extensions"
+    install_pi_extension "$PI_AGENT_DIR/extensions" pi
+    install_pi_extension "$OMP_DIR/extensions" omp
     echo ""
 fi
 
