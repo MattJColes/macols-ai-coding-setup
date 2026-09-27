@@ -1,6 +1,7 @@
 ---
 agent: true
 name: debug
+tier: deep
 description: Disciplined diagnosis loop for hard bugs and performance regressions - builds a tight red/green feedback loop before forming any theory. Use when the user says "debug this", "diagnose", or reports something broken, throwing, failing, flaky or slow and the cause isn't obvious.
 allowed-tools:
   - Read

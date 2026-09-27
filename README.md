@@ -280,8 +280,15 @@ opts in by adding rules under `specs/anchors/*.yml`.
 ## Personas
 
 Each persona is one file: `shared/personas/<name>/SKILL.md`. Its frontmatter
-(`agent: true`, `allowed-tools:`, `user-invocable:`) drives how each installer renders it.
+(`agent: true`, `allowed-tools:`, `user-invocable:`, `tier:`) drives how each installer renders it.
 Add or edit a persona once and every tool picks it up on the next install.
+
+`tier: light | standard | deep` becomes `effort: low | medium | high` on Claude
+Code skills and agents and `model_reasoning_effort` on Codex agents; other
+targets have no effort field and drop it. It never picks a model. Detail a
+persona only needs sometimes lives in `references/` (and helpers in
+`scripts/`) next to `SKILL.md`; skills get those folders copied alongside, and
+single-file forms (agents, ZCode commands) get them inlined.
 
 Personas with `agent: true` also render as subagents. Only the ones worth
 delegating to a separate context carry it (review, research, debug, test);

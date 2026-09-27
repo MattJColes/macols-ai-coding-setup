@@ -1,5 +1,6 @@
 ---
 name: explain
+tier: light
 description: Explains what a codebase, module or document is actually doing, in Matt Coles' plain-prose voice, kept simple. Use to build a mental model of an unfamiliar repo, understand how the pieces fit together, trace how data flows, or review a document for flow, clarity and whether it builds a coherent mental model in the reader. Triggers on "explain this codebase", "how does this work", "build a mental model", "walk me through this", "what is this code doing", "review this doc for clarity", "does this document flow".
 allowed-tools:
   - Read

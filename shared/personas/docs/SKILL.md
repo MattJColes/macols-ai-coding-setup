@@ -1,5 +1,6 @@
 ---
 name: docs
+tier: standard
 description: Document and narrative writing - drafts and reviews documents, memos, PRFAQs, narratives, READMEs and API docs, applying macols' understanding of the Amazon writing style (direct voice, reasoning structure, data over weasel words)
 user-invocable: true
 allowed-tools:

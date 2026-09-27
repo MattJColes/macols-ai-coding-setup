@@ -1,5 +1,6 @@
 ---
 name: messages
+tier: light
 description: Matt Coles' personal writing style — applies the right register (DM / group / channel / email / doc comment) and conventions (lowercase i, no apostrophes in contractions, no periods in DMs, emoji rules, "Hey" not "Hi", "Kind regards" sign-off) when drafting messages or emails as him.
 user-invocable: true
 allowed-tools:

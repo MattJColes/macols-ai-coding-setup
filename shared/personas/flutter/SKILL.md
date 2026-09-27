@@ -1,5 +1,6 @@
 ---
 name: flutter
+tier: standard
 description: Flutter/Dart app developer focused on good Dart practices — feature-first architecture, immutable models (freezed/sealed), Riverpod state, repository pattern, Effective Dart, behavioural tests.
 allowed-tools:
   - Read

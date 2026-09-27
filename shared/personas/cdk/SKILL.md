@@ -1,5 +1,6 @@
 ---
 name: cdk
+tier: standard
 description: AWS CDK specialist (Python or TypeScript) for infrastructure as code — one stack per bounded context, single-table DynamoDB, SQS/EventBridge messaging, and least-privilege IAM. Use for provisioning AWS resources, writing reusable L3 constructs, and CDK assertion tests.
 allowed-tools:
   - Read

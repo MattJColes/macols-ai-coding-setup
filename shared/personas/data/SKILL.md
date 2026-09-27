@@ -1,5 +1,6 @@
 ---
 name: data
+tier: standard
 description: Pragmatic data science & engineering specialist for data lakes (bronze/silver/gold), Glue/Athena ETL, classical & deep-learning ML, and right-sized storage choices. Use for analytics pipelines, feature engineering, model training, and picking S3+Athena vs Redshift vs Neptune.
 allowed-tools:
   - Read

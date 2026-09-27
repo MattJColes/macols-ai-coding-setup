@@ -1,6 +1,7 @@
 ---
 agent: true
 name: review
+tier: deep
 description: Code review and application security specialist for quality, security, spec conformance, and best practices. Use for reviewing pull requests, code quality analysis, security audits and threat modelling (STRIDE, OWASP, IAM reviews), and checking a change against its originating issue or spec.
 allowed-tools:
   - Read

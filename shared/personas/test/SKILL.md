@@ -1,6 +1,7 @@
 ---
 agent: true
 name: test
+tier: standard
 description: Testing specialist for Python (pytest, moto) and TypeScript (Jest, React Testing Library, Playwright, MSW). Use for unit, integration and E2E tests, coverage, fixtures, and test automation.
 allowed-tools:
   - Read
