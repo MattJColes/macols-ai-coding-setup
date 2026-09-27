@@ -283,8 +283,9 @@ Each persona is one file: `shared/personas/<name>/SKILL.md`. Its frontmatter
 (`agent: true`, `allowed-tools:`, `user-invocable:`) drives how each installer renders it.
 Add or edit a persona once and every tool picks it up on the next install.
 
-Personas with `agent: true` also render as subagents (13 of the 22); the rest
-are user-invocable skills only. A persona body may pull in a shared partial
+Personas with `agent: true` also render as subagents. Only the ones worth
+delegating to a separate context carry it (review, research, debug, test);
+the rest are user-invocable skills only. A persona body may pull in a shared partial
 with `{{include: _shared/<file>.md}}` — the renderer inlines it into every
 output, and `_`-prefixed directories under `shared/personas/` hold partials,
 not personas.

@@ -1,5 +1,4 @@
 ---
-agent: true
 name: ui-ux
 description: UI/UX design specialist for wireframes, design systems, and accessibility. Use for design decisions, component styling, and user experience.
 allowed-tools:

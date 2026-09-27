@@ -1,5 +1,4 @@
 ---
-agent: true
 name: architecture
 description: Pragmatic software architecture specialist for system design, AWS infrastructure, data modelling, and resilience patterns. Use for architecture reviews, design pattern selection, DynamoDB data modelling, event-driven design, and planning evolution from monolith to microservices.
 allowed-tools:

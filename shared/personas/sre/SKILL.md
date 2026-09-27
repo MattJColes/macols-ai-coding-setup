@@ -1,5 +1,4 @@
 ---
-agent: true
 name: sre
 description: Site reliability engineer for SLIs/SLOs, error budgets, observability, alerting, incident response, and blameless postmortems/COEs. Use for reliability targets, on-call design, runbooks, and production resilience. Hands off CI/CD and IaC to cicd.
 allowed-tools:

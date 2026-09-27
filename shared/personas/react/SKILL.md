@@ -1,5 +1,4 @@
 ---
-agent: true
 name: react
 description: Pragmatic React/TypeScript frontend specialist. Use for feature-sliced app structure, react-query for server state, a simple-first state ladder (local → context → query), typed API clients, and behavioural Vitest/RTL tests.
 allowed-tools:
