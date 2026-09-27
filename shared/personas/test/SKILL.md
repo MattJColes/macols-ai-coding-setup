@@ -114,4 +114,4 @@ worth checking twice belongs in the suite.
 
 Persona names describe their scope - hand work outside yours to the matching
 persona. Most useful from here: python / react / go (implementation code),
-review (reviewing test quality), cicd (running the suite in CI).
+audit (reviewing test quality), cicd (running the suite in CI).

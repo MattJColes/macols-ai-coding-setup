@@ -19,12 +19,16 @@ the tool allowlist (default Read/Write/Edit/Bash/Grep/Glob for agents).
 Personas SHALL NOT carry a `model` key — rendering is model-agnostic and
 every rendered agent inherits its tool's session/default model.
 Only personas worth running in a separate context carry `agent: true`
-(review, research, debug, test); every other persona is a skill only.
+(audit, research, diagnose, test); every other persona is a skill only.
+Persona names SHALL NOT collide with a built-in command or bundled skill in a
+tool they render to: `review` became `audit` (Claude Code's `/review` alias,
+Codex's and OpenCode's built-in `/review` all shadow a skill of that name) and
+`debug` became `diagnose` (it would replace Claude Code's bundled `/debug`).
 
 #### Scenario: One persona is both agent and skill
 
 - **WHEN** a persona's frontmatter has both `agent: true` and `user-invocable: true`
-- **THEN** the same body renders as an agent and as a skill (e.g. review)
+- **THEN** the same body renders as an agent and as a skill (e.g. audit)
 
 ### Requirement: Persona bodies may inline shared partials
 
@@ -73,7 +77,7 @@ An unknown tier value SHALL fail the render. Tier never selects a model.
 
 #### Scenario: Deep persona rendered for Claude and Codex
 
-- **WHEN** `review` has `tier: deep`
+- **WHEN** `audit` has `tier: deep`
 - **THEN** its Claude skill and agent carry `effort: high`, its Codex agent TOML carries `model_reasoning_effort = "high"`, and no other output mentions a tier
 
 ### Requirement: Generation emits each tool's native format from the same body
@@ -95,6 +99,16 @@ and `developer_instructions` (TOML literal block, escaped-string fallback).
 No rendered agent carries a `model:` key — every agent (Claude, OpenCode,
 Codex) inherits the parent session's model.
 <!-- anchor: persona-rendering.generator -->
+
+Every mode SHALL also remove output an earlier install rendered for a retired
+or renamed persona (coordinate, linux, ponytail, review, debug) when no
+persona of that name exists any more, deleting only files that carry the
+appended response-format block so a user's own same-named skill survives.
+
+#### Scenario: Renamed persona leaves no stale copy
+
+- **WHEN** `~/.claude/skills/review/SKILL.md` was rendered by an earlier install and the persona is now `audit`
+- **THEN** the next skill-mode render deletes `~/.claude/skills/review/` and writes `~/.claude/skills/audit/`
 
 #### Scenario: Skill-only persona in agent mode
 

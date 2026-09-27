@@ -528,6 +528,20 @@ for (const name of fs.readdirSync(pdir).sort()) {
     count++;
   }
 }
+// Retired or renamed personas: remove what an earlier install rendered so a
+// stale copy cannot shadow a built-in (/review, /debug) or linger unused. Only
+// files carrying the appended response-format block are ours to delete.
+const RETIRED = ["coordinate", "linux", "ponytail", "review", "debug"];
+const ours = (f) => fs.existsSync(f) && fs.readFileSync(f, "utf8").includes(RESPONSE_FORMAT.split("\n")[0]);
+for (const r of RETIRED) {
+  if (fs.existsSync(path.join(pdir, r, "SKILL.md"))) continue;
+  const skill = path.join(tdir, r, "SKILL.md");
+  if (mode === "skill" && ours(skill)) fs.rmSync(path.join(tdir, r), { recursive: true, force: true });
+  for (const ext of [".md", ".toml"]) {
+    const f = path.join(tdir, r + ext);
+    if (mode !== "skill" && ours(f)) fs.rmSync(f);
+  }
+}
 console.log("__COUNT__" + count);
 PERSONA_EOF
 

@@ -122,4 +122,4 @@ Pipeline and ops scripts follow the house rules:
 Persona names describe their scope - hand work outside yours to the matching
 persona. Most useful from here: cdk (the infra the pipeline deploys),
 sre (SLOs and gate thresholds),
-review (scanning policy).
+audit (scanning policy).

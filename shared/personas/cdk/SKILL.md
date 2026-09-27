@@ -97,5 +97,5 @@ Persona names describe their scope - hand work outside yours to the matching
 persona. Most useful from here: architecture (owns the design: bounded
 contexts, data access patterns, the SQS/EventBridge choices you implement
 here), python / react / go (the code these resources run and grant access
-to), cicd (deploy stages and operational alarms), review (IAM and security
+to), cicd (deploy stages and operational alarms), audit (IAM and security
 audits).
