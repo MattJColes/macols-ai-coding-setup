@@ -101,6 +101,7 @@ banner "Codex CLI Installer"
 if [ "$DO_CLI" = true ]; then
     ensure_brew; ensure_cli codex
     ensure_openspec || printf "${YELLOW}⚠ openspec install skipped/failed${NC}\n"
+    install_openspec_schema || printf "${YELLOW}⚠ openspec schema install skipped/failed${NC}\n"
     ensure_ast_grep || printf "${YELLOW}⚠ ast-grep install skipped/failed${NC}\n"
     ensure_yq || printf "${YELLOW}⚠ yq install skipped/failed${NC}\n"
     ensure_quality_tools || true

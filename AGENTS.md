@@ -100,6 +100,15 @@ Edit the single source, never the rendered output:
   `specs/anchors/*.yml` and checked by `scripts/spec_drift_gate.sh`. When
   anchored behaviour changes, update the matching spec section. If code moved
   without changing behaviour, re-point the anchor and say so.
+- **OpenSpec schema:** changes use `macols`, a fork of `spec-driven` in
+  `openspec/schemas/macols/`. Every change carries four artifacts: intent (the
+  proposal's Why/What), scope (May change / Must not change), constraints
+  (ids cited from `openspec/constraints.md`, the register of standing rules
+  and their guards) and evidence (`evidence.md`: one runnable check per claim,
+  recorded with the head SHA before the change counts as done). After an
+  OpenSpec upgrade, diff the fork against the package's `schemas/spec-driven/`
+  (`openspec schema which spec-driven` prints its path) and carry the changes
+  across by hand.
 
 ## Conventions (follow these in every installer change)
 

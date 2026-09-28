@@ -28,3 +28,10 @@ cli-provisioning.yq:
     kind: function_definition
     has: { field: name, regex: '^ensure_yq$' }
   files: [lib/os.sh]
+
+cli-provisioning.openspec-schema:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^install_openspec_schema$' }
+  files: [lib/os.sh]

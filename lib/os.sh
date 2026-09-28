@@ -72,6 +72,23 @@ persist_local_bin_path() {
     done
 }
 
+# install_openspec_schema — make this repo's OpenSpec schema fork (`macols`:
+# proposal with scope and constraints, plus an evidence artifact) available to
+# every repo as a user-level schema, in OpenSpec's user schema dir
+# (${XDG_DATA_HOME:-~/.local/share}/openspec/schemas). Repos still opt in:
+# `schema: macols` in their openspec/config.yaml, or
+# `openspec new change --schema macols`. Nothing is written into any repo.
+# The directory is repo-owned, so it is replaced on each run.
+install_openspec_schema() {
+    local src="$REPO_ROOT/openspec/schemas/macols"
+    local dest="${XDG_DATA_HOME:-$HOME/.local/share}/openspec/schemas/macols"
+    [ -f "$src/schema.yaml" ] || { printf "${RED}OpenSpec schema source missing: %s${NC}\n" "$src"; return 1; }
+    mkdir -p "$(dirname "$dest")"
+    rm -rf "$dest"
+    cp -R "$src" "$dest"
+    printf "${GREEN}✓ OpenSpec schema 'macols' installed to %s${NC}\n" "$dest"
+}
+
 # ensure_openspec — install the OpenSpec CLI (github.com/Fission-AI/openspec)
 # used for spec-driven development across every agent. Idempotent: returns
 # immediately when the CLI is on PATH. Global npm install (needs Node 20.19+;
