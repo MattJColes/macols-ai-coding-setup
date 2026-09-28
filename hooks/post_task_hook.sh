@@ -17,9 +17,12 @@
 #   changed nothing is allowed to stop, so the hook cannot loop.
 # - Never when the tool says this stop is already a hook-driven continuation
 #   (stop_hook_active) — one nudge per turn, then the user decides.
-# - pytest/jest/vitest/go test are scoped to what the changed files reach.
-#   The full suite is CI's and the pre-push hook's job.
+# - pytest/jest/vitest/go test are scoped to what the changed files reach
+#   (pytest-testmon or file names for Python, the test cache for Go). The full
+#   suite is the commit checkpoint's and CI's job.
 #   MACOLS_PYTEST_SCOPE=full|changed|off overrides the Python scope.
+# - Every run appends per-check timings to .git/macols-checks.jsonl
+#   (bin/macols-check-stats summarises them).
 #
 # Only critical findings (failing tests, lint/type/gate errors) are sent to the
 # model; notes such as "pytest not installed" print only with

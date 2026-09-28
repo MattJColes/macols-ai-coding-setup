@@ -114,6 +114,9 @@ jobs:
       - name: Scoped turn-end pytest self-test
         run: ./tests/test_scoped_pytest.sh
 
+      - name: Hook loops self-test (check log, testmon, go scope, deploy diff)
+        run: ./tests/test_hook_loops.sh
+
       - name: Drift gate vs merge-base (advisory, PR only)
         if: github.event_name == 'pull_request'
         run: ./scripts/spec_drift_gate.sh --github --base "origin/${GITHUB_BASE_REF}"

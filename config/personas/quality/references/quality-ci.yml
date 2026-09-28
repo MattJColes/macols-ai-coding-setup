@@ -61,7 +61,9 @@ jobs:
       - name: Layer rules
         run: |
           if [ -f .dependency-cruiser.cjs ]; then
-            npx depcruise --config .dependency-cruiser.cjs src
+            known=()
+            [ -f .dependency-cruiser-known-violations.json ] && known=(--ignore-known)
+            npx depcruise --config .dependency-cruiser.cjs "${known[@]}" src
           fi
       - run: npm test
       - run: npm audit --audit-level=high

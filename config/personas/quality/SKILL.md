@@ -30,7 +30,7 @@ CI job, so local and CI results agree.
 | import-linter / dependency-cruiser | - | when configured | yes |
 | jscpd duplication | - | clones touching changed files | threshold |
 | file length (500 lines, grown files only) | yes | yes | eslint max-lines |
-| tests | - | related tests only | full suite |
+| tests | - | related tests (pytest-testmon when installed; Go: changed modules, test cache skips the rest) | full suite |
 | semgrep, pip-audit, npm audit, govulncheck | - | - | yes |
 
 ## Apply to a Project
@@ -56,9 +56,11 @@ CI job, so local and CI results agree.
    ("Fix: move shared code into core/…; see docs/architecture.md#layers"),
    because that text is what the agent sees when the rule breaks. Point at a
    real doc section; create the section if it doesn't exist.
-5. Add the dev dependencies the project lacks (ruff, pyright, import-linter;
-   eslint, typescript, dependency-cruiser, jscpd; golangci-lint in CI) using
-   the project's package manager.
+5. Add the dev dependencies the project lacks (ruff, pyright, import-linter,
+   pytest-testmon; eslint, typescript, dependency-cruiser, jscpd;
+   golangci-lint in CI) using the project's package manager. With testmon in
+   the venv the turn-end hook picks tests by coverage instead of by file name;
+   add `.testmondata*` to `.gitignore`.
 6. Add `references/quality-ci.yml` as `.github/workflows/quality.yml`, trimming
    the jobs for languages the repo doesn't use.
 7. Put the project's own per-loop commands in `.macols/checks.conf` from
@@ -74,6 +76,28 @@ The hooks only look at changed files, so existing violations surface as files
 get touched. Don't bulk-suppress them. If CI can't go green on day one, set
 the limits at the current worst offender and ratchet them down in follow-up
 changes; list the offenders so they can be scheduled.
+
+Start with the three layer rules that matter most, not a full graph. Existing
+breaks of those rules become approved exceptions, recorded where a reviewer
+sees them change:
+
+- dependency-cruiser: `npx depcruise --config .dependency-cruiser.cjs --output-type baseline src > .dependency-cruiser-known-violations.json`.
+  The hook and the CI template pass `--ignore-known` when the file exists, so
+  only new violations fail. Regenerate it only to remove entries.
+- import-linter: list each exception in the contract's `ignore_imports`, with
+  a comment saying why and when it goes.
+- golangci-lint: for a legacy module, set `issues.new-from-merge-base: main`
+  in CI so only new findings fail; the turn-end hook already looks at changed
+  packages only.
+
+## Is It Worth the Time?
+
+The hooks log every check they run to `.git/macols-checks.jsonl`. After a week
+of agent work, `macols-check-stats` shows total and p95 time per check, the
+failure rate, repeated failures and escapes (tests that failed at the commit
+checkpoint but weren't selected at turn end). A slow check that never fails
+belongs in CI; a high escape count means the project should add
+pytest-testmon or better test names.
 
 ## Thresholds
 

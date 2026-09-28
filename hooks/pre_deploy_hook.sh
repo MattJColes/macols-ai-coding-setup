@@ -7,7 +7,8 @@
 # Guards `cdk deploy` / `cdk destroy`. The biggest CDK-specific danger is a
 # Construct ID rename that looks like a harmless refactor but forces resource
 # replacement/destruction. This hook pauses such commands and asks the user to
-# confirm they reviewed `cdk diff` for replacements before proceeding.
+# confirm; for a deploy the prompt carries the removals, replacements and
+# IAM/security-group changes from `cdk diff` (see pre_deploy_check.sh).
 #
 # Hard safety belongs in hooks, not the steering file — steering rules are
 # model-interpreted and degrade as context grows.
@@ -29,6 +30,9 @@
 #
 set -eo pipefail
 
+# Resolved before the cd into the session's cwd below.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 FORMAT="claude"
 case "${1:-}" in
     --format) FORMAT="${2:-claude}" ;;
@@ -43,6 +47,8 @@ TOOL_NAME=""
 if command -v jq &> /dev/null; then
     TOOL_NAME=$(echo "$HOOK_INPUT" | jq -r '.tool_name // empty' 2>/dev/null || true)
     COMMAND=$(echo "$HOOK_INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null || true)
+    HOOK_CWD=$(echo "$HOOK_INPUT" | jq -r '.cwd // empty' 2>/dev/null || true)
+    [ -n "$HOOK_CWD" ] && [ -d "$HOOK_CWD" ] && cd "$HOOK_CWD"
 else
     TOOL_NAME=$(echo "$HOOK_INPUT" | grep -o '"tool_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*:[[:space:]]*"//;s/"$//' || true)
     COMMAND=$(echo "$HOOK_INPUT" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
@@ -55,20 +61,22 @@ fi
 
 # Delegate matching to the shared, protocol-neutral core (single source for
 # the cdk regex + reason across all four tools' wirings).
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ "$FORMAT" = "codex" ]; then
+    # Confirm-by-retry: an identical retry of a command this guard denied in
+    # the last 15 minutes passes without re-running the check (or cdk diff).
+    STATE_DIR="${TMPDIR:-/tmp}/macols-predeploy-$(id -u)"
+    mkdir -p "$STATE_DIR" && chmod 700 "$STATE_DIR"
+    KEY=$(printf '%s' "$COMMAND" | git hash-object --stdin 2>/dev/null || printf '%s' "$COMMAND" | cksum | cut -d' ' -f1)
+    find "$STATE_DIR" -type f -mmin +15 -delete 2>/dev/null || true
+    if [ -f "$STATE_DIR/$KEY" ]; then
+        rm -f "$STATE_DIR/$KEY"
+        exit 0
+    fi
+fi
 REASON="$(bash "$SCRIPT_DIR/pre_deploy_check.sh" "$COMMAND")"
 if [ -n "$REASON" ]; then
     DECISION="ask"
     if [ "$FORMAT" = "codex" ]; then
-        # Confirm-by-retry: remember the command; an identical retry passes.
-        STATE_DIR="${TMPDIR:-/tmp}/macols-predeploy-$(id -u)"
-        mkdir -p "$STATE_DIR" && chmod 700 "$STATE_DIR"
-        KEY=$(printf '%s' "$COMMAND" | git hash-object --stdin 2>/dev/null || printf '%s' "$COMMAND" | cksum | cut -d' ' -f1)
-        find "$STATE_DIR" -type f -mmin +15 -delete 2>/dev/null || true
-        if [ -f "$STATE_DIR/$KEY" ]; then
-            rm -f "$STATE_DIR/$KEY"
-            exit 0
-        fi
         : > "$STATE_DIR/$KEY"
         DECISION="deny"
         REASON="$REASON Ask the user to confirm, then re-run the exact same command to proceed."

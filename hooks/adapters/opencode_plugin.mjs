@@ -86,6 +86,13 @@ export const PostCodeHookPlugin = async ({ $, client, directory, worktree }) => 
       }
       if (checkpoint) throw new Error(checkpoint);
 
+      // Second attempt of a command the guard blocked: the user confirmed,
+      // so let it run without re-running the check (and its cdk diff).
+      if (preDeployConfirmed.has(command)) {
+        preDeployConfirmed.delete(command);
+        return;
+      }
+
       let reason = "";
       try {
         const res = await $`bash ${PRE_DEPLOY_CHECK_SCRIPT} ${command}`.quiet().nothrow().cwd(cwd);
@@ -95,10 +102,6 @@ export const PostCodeHookPlugin = async ({ $, client, directory, worktree }) => 
       }
       if (!reason) return;
 
-      if (preDeployConfirmed.has(command)) {
-        preDeployConfirmed.delete(command);
-        return; // second attempt — user confirmed, let it run
-      }
       preDeployConfirmed.add(command);
       throw new Error(
         `${reason} Ask the user to confirm, then re-run the exact same command to proceed.`

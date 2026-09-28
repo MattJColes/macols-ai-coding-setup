@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+#
+# macols-check-stats — how much time the agent hooks spend in this repo, and
+# whether it's well spent. Reads the per-check log the turn-end battery and
+# the commit checkpoint write (.git/macols-checks.jsonl). See docs/hooks.md.
+#
+# Per loop and check: runs, total and p95 time, failure rate, the current
+# run of consecutive failures (the agent going round in circles), and escapes:
+# tests that failed at the commit checkpoint but that the turn-end selection
+# would not have run.
+#
+# Usage: macols-check-stats [--days N] [--escapes]
+#   --days N    only the last N days (default: everything logged)
+#   --escapes   list the escaped tests instead of the table
+set -euo pipefail
+
+DAYS=""
+MODE=table
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --days) DAYS="${2:?--days needs a number}"; shift 2 ;;
+        --escapes) MODE=escapes; shift ;;
+        -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+        *) echo "Unknown option: $1" >&2; exit 2 ;;
+    esac
+done
+
+command -v jq &>/dev/null || { echo "macols-check-stats needs jq" >&2; exit 1; }
+dir=$(git rev-parse --git-common-dir 2>/dev/null) || { echo "Not in a git repo." >&2; exit 1; }
+log="$dir/macols-checks.jsonl"
+if [ ! -s "$log" ]; then
+    echo "No check runs logged yet in $(git rev-parse --show-toplevel)."
+    echo "The hooks log each turn-end and commit-checkpoint run (MACOLS_CHECK_LOG=off disables it)."
+    exit 0
+fi
+
+since=0
+[ -n "$DAYS" ] && since=$(( $(date +%s) - DAYS * 86400 ))
+
+# Skip lines that don't parse (a run killed mid-write).
+records() { jq -nR --argjson since "$since" '[inputs | fromjson? // empty | select(.ts >= $since)]' < "$log"; }
+
+if [ "$MODE" = escapes ]; then
+    records | jq -r '.[] | select(.escaped) | (.ts | todate) as $t | .escaped[] | "\($t)  \(.)"'
+    exit 0
+fi
+
+records | jq -r '
+    def p95: sort | .[((length * 0.95) | floor) as $i | if $i >= length then length - 1 else $i end];
+    def secs: . / 1000 | . * 10 | round / 10;
+    group_by([.loop, .check])
+    | map({
+        loop: .[0].loop, check: .[0].check, runs: length,
+        total: (map(.ms) | add), p95: (map(.ms) | p95),
+        fails: (map(select(.result == "fail")) | length),
+        streak: (reduce .[] as $r (0; if $r.result == "fail" then . + 1 else 0 end)),
+        escaped: (map(.escaped // []) | add | length)
+      })
+    | sort_by(.loop, (if .check == "total" then 0 else 1 end), -.total)
+    | [["LOOP", "CHECK", "RUNS", "TOTAL_S", "P95_S", "FAIL_%", "FAIL_STREAK", "ESCAPED"]]
+      + map([.loop, .check, .runs, (.total | secs), (.p95 | secs),
+             ((.fails * 100 / .runs) | round), .streak, .escaped] | map(tostring))
+    # Pad each column to its widest cell (no `column` on minimal Linux).
+    | (.[0] | length) as $n
+    | [range($n) as $i | map(.[$i] | length) | max] as $w
+    | .[] | [range($n) as $i | .[$i] + (if $i < $n - 1 then " " * ($w[$i] - (.[$i] | length) + 2) else "" end)] | join("")
+'
