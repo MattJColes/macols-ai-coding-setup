@@ -122,6 +122,9 @@ verify_claudecode() {
     # declaration (offline fallback) — either satisfies the check.
     pass "ponytail plugin installed or declared" \
         "grep -qs 'ponytail@ponytail' '$d/plugins/installed_plugins.json' || grep -qs 'ponytail@ponytail' '$d/settings.json'"
+    pass "revdiff plugin installed or declared" \
+        "grep -qs 'revdiff@revdiff' '$d/plugins/installed_plugins.json' || grep -qs 'revdiff@revdiff' '$d/settings.json'"
+    soft "revdiff binary installed" "command -v revdiff >/dev/null 2>&1"
     soft "git worktree available" "git worktree list >/dev/null 2>&1 || git worktree --help >/dev/null 2>&1"
     soft "openspec CLI installed" "command -v openspec >/dev/null && openspec --version >/dev/null 2>&1"
     soft "openspec 'macols' schema installed user-level" "[ -f \"\${XDG_DATA_HOME:-\$HOME/.local/share}/openspec/schemas/macols/schema.yaml\" ]"
@@ -153,6 +156,7 @@ verify_codex() {
         pass "hooks.json hooks answer in Codex JSON (--format codex)" "jq -e '[.hooks[][].hooks[].command | test(\"--format codex\")] | all' '$d/hooks.json' >/dev/null"
     fi
     soft "codex mcp list shows context7" "command -v codex >/dev/null && codex mcp list 2>/dev/null | grep -q context7"
+    soft "codex revdiff plugin enabled" "grep -qs 'revdiff@revdiff' '$d/config.toml'"
 }
 
 verify_opencode() {
@@ -171,6 +175,7 @@ verify_opencode() {
     pass "plugin placeholders substituted" "! grep -q '__.*_PATH__' '$d/plugins/post_code_hook_plugin.js'"
     pass "plugin wires pre-deploy check" "grep -q 'pre_deploy_check.sh' '$d/plugins/post_code_hook_plugin.js'"
     pass "plugin handles session.idle as a bus event" "grep -q 'event?.type !== \"session.idle\"' '$d/plugins/post_code_hook_plugin.js'"
+    soft "revdiff tool + command installed" "[ -f '$d/tools/revdiff.ts' ] && [ -x '$d/tools/launch-revdiff.sh' ] && [ -f '$d/commands/revdiff.md' ]"
     if has_jq; then
         mcp_checks '.mcp' "$d/opencode.json" 'opencode.json .mcp'
         if has_brave_key; then
@@ -203,6 +208,8 @@ verify_pi() {
     soft "omp --version" "command -v omp >/dev/null && omp --version >/dev/null 2>&1"
     soft "pi --version" "command -v pi >/dev/null && pi --version >/dev/null 2>&1"
     pass "plain pi binary is installed" "command -v pi >/dev/null"
+    soft "pi revdiff package installed" "grep -qs 'umputun/revdiff' '$HOME/.pi/agent/settings.json'"
+    soft "omp revdiff package installed" "grep -qs 'revdiff' '$HOME/.omp/plugins/package.json'"
     verify_pi_layout "$HOME/.pi/agent" "~/.pi/agent"
     verify_pi_layout "$omp_d" "~/.omp/agent"
     if has_jq; then

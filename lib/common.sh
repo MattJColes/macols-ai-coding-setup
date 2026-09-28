@@ -11,6 +11,7 @@
 #   mcp.sh         MCP registration and the Brave/AWS opt-ins (config/mcp)
 #   omp-models.sh  Oh My Pi / pi model and provider setup
 #   hooks.sh       hook wiring for every tool (hooks/)
+#   plugins.sh     third-party agent plugins (Claude marketplace helper, revdiff)
 #
 # Not meant to be executed directly.
 
@@ -59,6 +60,10 @@ AWS_MCP_CHOICE_FILE="$HOME/.config/macols/aws-mcp"
 PONYTAIL_REPO="DietrichGebert/ponytail"
 PONYTAIL_MARKER_START="<!-- ponytail:ruleset:start (managed by macols-configs — do not edit between markers) -->"
 PONYTAIL_MARKER_END="<!-- ponytail:ruleset:end -->"
+# revdiff (https://revdiff.com) — TUI diff review. The brew formula provides the
+# binary; the repo doubles as the Claude/Codex marketplace and the pi package.
+REVDIFF_REPO="umputun/revdiff"
+REVDIFF_FORMULA="umputun/apps/revdiff"
 
 # Ensure Node.js is in PATH (sources NVM/fnm if needed). Node powers persona
 # generation, steering assembly and the JSON config writers.
@@ -95,3 +100,5 @@ source "$LIB_DIR/mcp.sh"
 source "$LIB_DIR/omp-models.sh"
 # shellcheck source=lib/hooks.sh
 source "$LIB_DIR/hooks.sh"
+# shellcheck source=lib/plugins.sh
+source "$LIB_DIR/plugins.sh"

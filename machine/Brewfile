@@ -5,6 +5,7 @@
 # Linux, QEMU, zsh on Linux) stay in install_ubuntu26.sh.
 
 tap "oven-sh/bun"
+tap "umputun/apps"
 
 # Core CLI
 brew "git"
@@ -23,6 +24,7 @@ brew "unzip"
 brew "neovim"
 brew "lazygit"
 brew "git-delta"
+brew "umputun/apps/revdiff"  # TUI diff review; the agent plugins open it
 brew "yazi"
 brew "starship"
 

@@ -43,8 +43,10 @@ OMP_DIR="${PI_CODING_AGENT_DIR:-$HOME/.omp/agent}"
 # which ignores try blocks, so it reports "Missing 'default' export" and the
 # install rolls back — it never installs. Re-add if fixed upstream.
 #   • ponytail — lazy/YAGNI mode extension (github.com/DietrichGebert/ponytail)
-PI_PACKAGES="npm:pi-subagents git:github.com/$PONYTAIL_REPO"
-OMP_PACKAGES="github:$PONYTAIL_REPO"
+#   • revdiff — /revdiff diff review (github.com/umputun/revdiff); omp loads
+#     this pi package through its legacy-pi shim (typebox + @earendil-works)
+PI_PACKAGES="npm:pi-subagents git:github.com/$PONYTAIL_REPO git:github.com/$REVDIFF_REPO"
+OMP_PACKAGES="github:$PONYTAIL_REPO github:$REVDIFF_REPO"
 
 usage() {
     cat << EOF
@@ -159,6 +161,7 @@ if [ "$DO_PI" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     install_macols_commands || printf "${YELLOW}⚠ macols command links skipped/failed${NC}\n"
     ensure_ast_grep || printf "${YELLOW}⚠ ast-grep install skipped/failed${NC}\n"
     ensure_yq || printf "${YELLOW}⚠ yq install skipped/failed${NC}\n"
+    ensure_revdiff || printf "${YELLOW}⚠ revdiff install skipped/failed${NC}\n"
     ensure_quality_tools || true
     ensure_node_on_noninteractive_path || printf "${YELLOW}⚠ node PATH linking skipped/failed${NC}\n"
     echo ""
@@ -202,6 +205,7 @@ done_banner
 echo "Next steps:"
 echo "  • Run 'pi' or 'omp' to start either agent (or '/reload' inside either to pick up the extension)"
 echo "  • Skills are available as /skill:<name> (e.g. /skill:python)"
+echo "  • /revdiff hands the terminal to revdiff for diff review (both agents)"
 echo "  • The pi-checks extension runs tests/lint/security advisories after edits and turns,"
 echo "    and a cdk deploy/destroy confirmation guard"
 echo "  • MCP servers are configured in $OMP_DIR/mcp.json (omp only$(aws_mcp_enabled && echo '; aws-* MCPs need ~/.aws/credentials'))"

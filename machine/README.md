@@ -47,9 +47,9 @@ Both platform scripts share `common.sh` and install their packages from one
 Both platform installers provide:
 
 - Everything in the [`Brewfile`](Brewfile): git, GitHub CLI, AWS CLI, Neovim,
-  lazygit, delta, yazi, tmux, ripgrep, fd, jq, yq, ast-grep, starship, uv, Go,
-  gopls, bun, shellcheck and golangci-lint (plus Podman, Flutter, coreutils and
-  the Inconsolata font on macOS)
+  lazygit, delta, revdiff, yazi, tmux, ripgrep, fd, jq, yq, ast-grep,
+  starship, uv, Go, gopls, bun, shellcheck and golangci-lint (plus Podman,
+  Flutter, coreutils and the Inconsolata font on macOS)
 - Python 3.14 from `uv python install`, with pytest, ruff, mypy, pyright,
   pip-audit, semgrep and Commitizen as uv tools
 - Node.js through NVM, TypeScript and AWS CDK

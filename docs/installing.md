@@ -118,6 +118,27 @@ duplicate of every persona.
 Hooks are referenced in place from this repo's `hooks/` directory, so keep the
 clone where it is after installing. See [Hooks](hooks.md).
 
+### revdiff
+
+[revdiff](https://revdiff.com) is a terminal UI for annotating diffs, files and
+plans. Each agent's plugin opens it in an overlay (tmux, herdr, kitty,
+wezterm, Zellij and others) and hands your annotations back to the agent. The
+installers add the binary with `brew install umputun/apps/revdiff` (it is also
+in `machine/Brewfile`) and then the upstream plugin for each tool that has one:
+
+| Tool | How |
+|------|-----|
+| Claude Code | `claude plugin marketplace add umputun/revdiff` + `claude plugin install revdiff@revdiff` |
+| Codex | `codex plugin marketplace add umputun/revdiff` + `codex plugin add revdiff@revdiff` |
+| OpenCode | upstream `plugins/opencode/setup.sh`, run from a clone cached in `~/.cache/macols/revdiff` |
+| Pi (`pi` + `omp`) | `pi install git:github.com/umputun/revdiff`, `omp install github:umputun/revdiff` |
+
+ZCode has no revdiff integration. The auto-firing `revdiff-planning` plugin is
+left out for Claude Code and Codex; add it by hand if you want every plan
+opened for review. OpenCode's setup script includes its plan-review plugin.
+Without Homebrew the binary step is skipped with a warning, and the plugins
+report an error until `revdiff` is on PATH.
+
 ## Machine Setup
 
 ```bash
