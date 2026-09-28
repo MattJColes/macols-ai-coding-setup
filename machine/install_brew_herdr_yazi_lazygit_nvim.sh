@@ -447,9 +447,15 @@ for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
         # Homebrew's shellenv is written by ensure_homebrew (common.sh) with
         # this machine's prefix. Drop the linuxbrew line older versions
         # appended unconditionally (wrong on macOS).
-        if grep -qxF 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' "$rc"; then
-            grep -vxF 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' "$rc" > "$rc.macols.tmp" && mv "$rc.macols.tmp" "$rc"
-        fi
+        # Only lines outside the macols blocks: the homebrew block itself may
+        # hold the same line on Linux.
+        legacy='eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'
+        LEGACY="$legacy" awk '
+            /^# >>> macols: / { inblock = 1 }
+            /^# <<< macols: / { inblock = 0; print; next }
+            !inblock && $0 == ENVIRON["LEGACY"] { next }
+            { print }' "$rc" > "$rc.macols.tmp"
+        if cmp -s "$rc" "$rc.macols.tmp"; then rm -f "$rc.macols.tmp"; else mv "$rc.macols.tmp" "$rc"; fi
         if ! grep -qF 'export EDITOR="nvim"' "$rc"; then
             set_rc_block "$rc" editor 'export EDITOR="nvim"'
             echo "  Set EDITOR=nvim in $rc"
