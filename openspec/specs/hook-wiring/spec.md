@@ -30,7 +30,7 @@ battery (`decision: block` with the findings as the reason, skipped when
 
 ### Requirement: Codex hooks mirror Claude's, in Codex's own file shape
 `write_codex_hooks <hooks_json>` SHALL write the same Pre/Post/Stop events as
-Claude with `--format codex` and timeouts (30/120/600 seconds). Codex has no
+Claude with `--format codex` and timeouts (300/120/600 seconds; the pre-deploy guard runs `cdk diff`). Codex has no
 hook "ask" and fails open on unsupported decisions, so the pre-deploy guard
 SHALL `deny` the first attempt with a confirm-with-the-user reason and let an
 identical retry within 15 minutes through. The post-code hook SHALL read the
@@ -60,7 +60,7 @@ for its `apply_patch` tool.
 as Claude into `~/.zcode/cli/config.json` under `hooks.events`, with
 `hooks.enabled: true` (config-file hooks never fire without it). Entries SHALL
 be `type: "process"` hooks (`command: "bash"`, `args: [script, "--format",
-"zcode"]`) with `timeoutMs` (30000/120000/600000); ZCode ignores other types
+"zcode"]`) with `timeoutMs` (300000/120000/600000); ZCode ignores other types
 and second-based timeouts, and records plain stdout as a hook failure.
 Existing keys elsewhere in the config (mcp, plugins, …) SHALL survive.
 <!-- anchor: hook-wiring.zcode -->
@@ -119,6 +119,23 @@ Pi extension SHALL all delegate to it rather than duplicating the regex.
 - **WHEN** any tool runs `cdk diff` or `cdk synth`
 - **THEN** `pre_deploy_check.sh` prints nothing and no wiring gates the command
 
+### Requirement: A deploy prompt carries what the diff changes
+For a `cdk deploy` in a trusted project with a `cdk.json` (in the working
+directory, or the `<dir>` of a leading `cd <dir> &&`), `pre_deploy_check.sh`
+SHALL run `cdk diff` (passing `--profile` through, bounded by
+`MACOLS_DEPLOY_DIFF_TIMEOUT`) and append to the reason each resource removed
+or replaced and each stack with IAM or security-group changes, or a line
+saying there are none. When the diff cannot run (untrusted project, no CLI,
+error, timeout) the reason SHALL say so rather than imply a clean diff.
+`cdk destroy` and `MACOLS_DEPLOY_DIFF=off` skip the diff. A confirm-by-retry
+(Codex, OpenCode) SHALL NOT re-run the check.
+<!-- anchor: hook-wiring.deploy-diff -->
+
+#### Scenario: A rename forces a replacement
+
+- **WHEN** the agent runs `cdk deploy` and `cdk diff` reports a resource with `(requires replacement)`
+- **THEN** the confirmation reason lists `replace: <stack> <resource>` before the user approves
+
 ### Requirement: The turn-end battery runs once per change
 `post_task_hook.sh` SHALL run the battery only when code changed AND the
 working tree differs from the fingerprint recorded by its last run
@@ -130,6 +147,22 @@ stop after findings the agent did not act on, do not re-run it or loop.
 
 - **WHEN** the Stop hook fires twice with no edits in between
 - **THEN** the second run prints nothing and exits 0
+
+### Requirement: Every battery run is logged per check
+`run_post_task_checks` SHALL append one JSON line per check, plus a `total`
+line, to `macols-checks.jsonl` in the repo's common git dir (shared by
+worktrees): time, repo, loop (`turn` or `checkpoint`), check, duration in ms
+and `pass`/`fail`. At the checkpoint, a failing Python test that the
+name-based turn-end selection would not have run SHALL be recorded under
+`escaped`. The log SHALL stay bounded (newest 5000 lines once it passes
+10000), `MACOLS_CHECK_LOG=off` SHALL turn it off, and `bin/macols-check-stats`
+SHALL summarise time, failure rate, repeated failures and escapes per check.
+<!-- anchor: hook-wiring.check-log -->
+
+#### Scenario: The user asks whether the hooks are worth their time
+
+- **WHEN** the user runs `macols-check-stats` in a repo after some agent turns
+- **THEN** it prints, per loop and check, the runs, total and p95 time, failure rate and escaped tests
 
 ### Requirement: Repo code only runs in trusted projects
 The hook batteries SHALL run checks that execute repository-controlled code

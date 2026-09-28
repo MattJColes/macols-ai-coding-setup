@@ -1,6 +1,8 @@
 // Layer rules for TypeScript (dependency-cruiser). Save as
 // .dependency-cruiser.cjs at the repo root. Rule comments are shown to the
-// agent when a rule breaks, so write them as the fix instruction.
+// agent when a rule breaks, so write them as the fix instruction. Approve
+// existing breaks with a baseline instead of loosening a rule:
+//   npx depcruise --output-type baseline src > .dependency-cruiser-known-violations.json
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
   forbidden: [

@@ -18,8 +18,10 @@
 # per-turn loop (semgrep, pip-audit/npm audit/govulncheck — see the `quality`
 # skill's CI template).
 #
-#   Tests         pytest (scoped), jest/vitest related tests, flutter test
-#                 (scoped), go test on changed packages, cdk synth
+#   Tests         pytest (scoped, or pytest-testmon when installed),
+#                 jest/vitest related tests, flutter test (scoped), go test
+#                 over changed modules (the test cache skips the rest),
+#                 cdk synth
 #   Lint          ruff, eslint, dart analyze, golangci-lint (or go vet),
 #                 and shellcheck, each with the project's own limits
 #   Types         pyright or mypy (whichever the project configures),
@@ -31,8 +33,10 @@
 # Only findings are recorded as CRITICAL_ISSUES, each with a fix instruction.
 # WARNINGS hold notes (tool missing, nothing to test) for verbose runs.
 #
-# Switches: MACOLS_PYTEST_SCOPE=changed|full|off, MACOLS_DUPLICATION=off,
-# MACOLS_SEMGREP=1 (opt back in to a local semgrep scan), MACOLS_GO_RACE=1.
+# Switches: MACOLS_PYTEST_SCOPE=changed|full|off, MACOLS_TESTMON=off,
+# MACOLS_DUPLICATION=off, MACOLS_SEMGREP=1 (opt back in to a local semgrep
+# scan), MACOLS_GO_RACE=1, MACOLS_GO_TEST_SCOPE=module|changed,
+# MACOLS_CHECK_LOG=off (see log_check_run in common.sh).
 #
 # The independent checks run CONCURRENTLY: each runs in its own subshell and
 # writes its findings to per-job temp files (NUL-delimited, since findings
@@ -56,6 +60,8 @@ MAX_TEST_TIME="${MAX_TEST_TIME:-300}"
 # Track issues found
 declare -a CRITICAL_ISSUES=()
 declare -a WARNINGS=()
+# Tests the checkpoint saw fail that the turn-end selection would not have run.
+declare -a ESCAPED_TESTS=()
 
 add_warning() {
     WARNINGS+=("$1")
@@ -163,17 +169,25 @@ run_python_tests() {
         fi
 
         local pytest_cmd="${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME }$pytest_bin -q --tb=short"
+        local testmon=false
+        _pytest_has_testmon "$pytest_bin" && testmon=true
         if [ "${CHECKPOINT_MODE:-0}" = "1" ]; then
             # Checkpoint: the whole suite of each project this change touches.
             if [ -n "$(changed_code_files)" ] && ! changed_code_files | grep -q "^$(pwd)/"; then
                 cd "$root_dir" || return
                 continue
             fi
+            # Run everything, and refresh testmon's coverage map while at it.
+            [ "$testmon" = true ] && pytest_cmd+=" --testmon-noselect"
+        elif [ "$scope" = "changed" ] && [ "$testmon" = true ]; then
+            # testmon picks the tests whose covered code changed; it runs the
+            # whole suite once to build .testmondata.
+            pytest_cmd+=" --testmon"
         elif [ "$scope" = "changed" ]; then
             local targets
             targets=$(impacted_test_files "$(pwd)")
             if [ -z "$targets" ]; then
-                add_warning "Python tests ($label): no impacted tests found for changed files; full suite runs at pre-push"
+                add_warning "Python tests ($label): no impacted tests found for changed files; full suite runs at the commit checkpoint"
                 cd "$root_dir" || return
                 continue
             fi
@@ -182,38 +196,77 @@ run_python_tests() {
 
         local test_output ec=0
         test_output=$(eval "$pytest_cmd" 2>&1) || ec=$?
-        [ "$ec" -ne 0 ] && report_test_failure "Python tests ($label)" "$ec" "$test_output"
+        # 5 = nothing collected: testmon found no affected tests.
+        [ "$ec" -eq 5 ] && [ "$testmon" = true ] && ec=0
+        if [ "$ec" -ne 0 ]; then
+            report_test_failure "Python tests ($label)" "$ec" "$test_output"
+            [ "${CHECKPOINT_MODE:-0}" = "1" ] && [ "$testmon" = false ] \
+                && _record_python_escapes "$label" "$test_output"
+        fi
 
         cd "$root_dir" || return
     done
 }
 
-# The test files this turn's changes reach, inside one project directory, as a
-# shell-quoted, space-prefixed list (empty when nothing matches). Changed test
-# files count as themselves; a changed module pulls in test_<module>.py from
-# its own directory, tests/ or test/. Deliberately name-based: an import-graph
-# walk is the pre-commit hook's job, and a turn-end battery that tries to be
-# clever is one that runs the whole suite by accident.
-impacted_test_files() {
+# The test files this turn's changes reach, inside one project directory, one
+# absolute path per line. Changed test files count as themselves; a changed
+# module pulls in test_<module>.py from its own directory, tests/ or test/.
+# Deliberately name-based: projects that want coverage-based selection install
+# pytest-testmon, and a turn-end battery that tries to be clever on its own is
+# one that runs the whole suite by accident.
+impacted_test_list() {
     local project_abs="$1"
-    local f base stem d cand out="" seen=$'\n'
+    local f base stem d cand seen=$'\n'
     while IFS= read -r f; do
         [ -z "$f" ] && continue
         case "$f" in "$project_abs"/*.py) ;; *) continue ;; esac
         base="$(basename "$f")"
         case "$base" in
             test_*.py|*_test.py)
-                case "$seen" in *$'\n'"$f"$'\n'*) ;; *) seen+="$f"$'\n'; out+=" $(printf '%q' "$f")" ;; esac ;;
+                case "$seen" in *$'\n'"$f"$'\n'*) ;; *) seen+="$f"$'\n'; printf '%s\n' "$f" ;; esac ;;
             *)
                 stem="${base%.py}"
                 for d in "$(dirname "$f")" "$project_abs/tests" "$project_abs/test"; do
                     cand="$d/test_${stem}.py"
                     [ -f "$cand" ] || continue
-                    case "$seen" in *$'\n'"$cand"$'\n'*) ;; *) seen+="$cand"$'\n'; out+=" $(printf '%q' "$cand")" ;; esac
+                    case "$seen" in *$'\n'"$cand"$'\n'*) ;; *) seen+="$cand"$'\n'; printf '%s\n' "$cand" ;; esac
                 done ;;
         esac
     done <<< "$(changed_code_files)"
+}
+
+# The same list as a shell-quoted, space-prefixed string for pytest's argv.
+impacted_test_files() {
+    local f out=""
+    while IFS= read -r f; do
+        [ -n "$f" ] && out+=" $(printf '%q' "$f")"
+    done < <(impacted_test_list "$1")
     printf '%s' "$out"
+}
+
+# True when this pytest's environment has pytest-testmon installed
+# (MACOLS_TESTMON=off ignores it). Only a venv pytest is checked: its sibling
+# python is the interpreter pytest runs under.
+_pytest_has_testmon() {
+    [ "${MACOLS_TESTMON:-on}" = "off" ] && return 1
+    case "$1" in */*) ;; *) return 1 ;; esac
+    local py
+    py="$(dirname "$1")/python"
+    [ -x "$py" ] && "$py" -c 'import testmon' &>/dev/null
+}
+
+# At the checkpoint: failing tests the name-based turn-end selection would not
+# have run for these changes. They go to the check log as "escaped", so
+# bin/macols-check-stats can say whether the fast path is missing things.
+_record_python_escapes() {
+    local label="$1" output="$2" line id file selected
+    selected=$'\n'"$(impacted_test_list "$PWD")"$'\n'
+    while IFS= read -r line; do
+        id="${line#FAILED }"; id="${id%% - *}"; id="${id%% *}"
+        file="${id%%::*}"
+        case "$selected" in *$'\n'"$PWD/$file"$'\n'*) continue ;; esac
+        ESCAPED_TESTS+=("$label: $id")
+    done < <(printf '%s\n' "$output" | grep -E '^FAILED ')
 }
 
 # Iterate Python sub-projects that have changed .py files. Calls
@@ -384,7 +437,9 @@ run_tsc_check() {
 }
 
 # dependency-cruiser rules over the changed files, only when the repo has a
-# config. Rule `comment`s in the config are the fix instruction.
+# config. Rule `comment`s in the config are the fix instruction. Violations
+# recorded in .dependency-cruiser-known-violations.json (the approved
+# exceptions; `depcruise --output-type baseline`) are ignored.
 run_dependency_cruiser() {
     local cfg
     for cfg in .dependency-cruiser.js .dependency-cruiser.cjs .dependency-cruiser.mjs .dependency-cruiser.json; do
@@ -399,8 +454,10 @@ run_dependency_cruiser() {
     local f
     while IFS= read -r f; do [ -n "$f" ] && files+=("${f#"$PWD"/}"); done < <(changed_matching '*.ts' '*.tsx' '*.js' '*.jsx' '*.mjs' '*.cjs')
     [ ${#files[@]} -eq 0 ] && return 0
+    local -a known=()
+    [ -f .dependency-cruiser-known-violations.json ] && known=(--ignore-known .dependency-cruiser-known-violations.json)
     local out ec=0
-    out=$(${TIMEOUT_CMD:+$TIMEOUT_CMD 120} "$bin" --config "$cfg" --output-type err-long "${files[@]}" 2>&1) || ec=$?
+    out=$(${TIMEOUT_CMD:+$TIMEOUT_CMD 120} "$bin" --config "$cfg" ${known[@]+"${known[@]}"} --output-type err-long "${files[@]}" 2>&1) || ec=$?
     report_check_result "dependency-cruiser" "$ec" "$out" "^[[:space:]]*(error|warn) " "layer violations" "^[[:space:]]*(error|warn) |^    [^ ]"
 }
 
@@ -490,7 +547,11 @@ _changed_go_packages() {
 }
 
 # golangci-lint (the project's .golangci.yml: dupl, gocyclo, funlen, depguard…)
-# or go vet when it isn't installed, then go test, per changed package.
+# or go vet when it isn't installed, on the changed packages; then go test
+# over each changed module. Go's test cache replays packages whose code and
+# dependencies are unchanged, so ./... costs the changed packages plus their
+# dependents, which is exactly what can break. MACOLS_GO_TEST_SCOPE=changed
+# tests only the changed packages (for modules with uncacheable tests).
 run_go_checks() {
     command -v go &> /dev/null || { add_warning "go not installed - skipping Go checks"; return 0; }
     local pkgs
@@ -512,8 +573,8 @@ run_go_checks() {
         ec=0
         local -a race=()
         [ "${MACOLS_GO_RACE:-0}" = "1" ] && race=(-race)
-        local -a test_targets=("${dirs[@]}")
-        [ "${CHECKPOINT_MODE:-0}" = "1" ] && test_targets=(./...)
+        local -a test_targets=(./...)
+        [ "${MACOLS_GO_TEST_SCOPE:-module}" = "changed" ] && [ "${CHECKPOINT_MODE:-0}" != "1" ] && test_targets=("${dirs[@]}")
         out=$(cd "$mod" && ${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME} go test ${race[@]+"${race[@]}"} "${test_targets[@]}" 2>&1) || ec=$?
         [ "$ec" -ne 0 ] && report_test_failure "go test ($label)" "$ec" "$out"
     done
@@ -652,17 +713,24 @@ run_project_checkpoint() { _run_project_check CHECKPOINT; }
 
 # ── Orchestration ────────────────────────────────────────────────────────────
 
-# Run a single check function in isolation and persist its findings.
+# Run a single check function in isolation and persist its findings, its
+# duration and any escaped tests (see run_python_tests).
 _run_check_job() {
-    local fn="$1" out="$2"
+    local fn="$1" out="$2" start
     CRITICAL_ISSUES=()
     WARNINGS=()
+    ESCAPED_TESTS=()
+    start=$(now_ms)
     "$fn" || true
+    printf '%s' "$(( $(now_ms) - start ))" > "$out.ms"
     if [ ${#CRITICAL_ISSUES[@]} -gt 0 ]; then
         printf '%s\0' "${CRITICAL_ISSUES[@]}" > "$out.crit"
     fi
     if [ ${#WARNINGS[@]} -gt 0 ]; then
         printf '%s\0' "${WARNINGS[@]}" > "$out.warn"
+    fi
+    if [ ${#ESCAPED_TESTS[@]} -gt 0 ]; then
+        printf '%s\0' "${ESCAPED_TESTS[@]}" > "$out.esc"
     fi
 }
 
@@ -716,22 +784,33 @@ run_post_task_checks() {
     local tmpdir
     tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/post_task.XXXXXX") || return 1
 
-    local i=0 check
+    local i=0 check started loop=turn
+    [ "${CHECKPOINT_MODE:-0}" = "1" ] && loop=checkpoint
+    started=$(now_ms)
     for check in "${checks[@]}"; do
         _run_check_job "$check" "$tmpdir/$i" &
         i=$((i + 1))
     done
     wait
 
-    local j item
+    local j item result any_fail=pass
+    local -a escaped
     for ((j = 0; j < i; j++)); do
+        result=pass
+        escaped=()
         if [ -f "$tmpdir/$j.crit" ]; then
+            result=fail any_fail=fail
             while IFS= read -r -d '' item; do CRITICAL_ISSUES+=("$item"); done < "$tmpdir/$j.crit"
         fi
         if [ -f "$tmpdir/$j.warn" ]; then
             while IFS= read -r -d '' item; do WARNINGS+=("$item"); done < "$tmpdir/$j.warn"
         fi
+        if [ -f "$tmpdir/$j.esc" ]; then
+            while IFS= read -r -d '' item; do escaped+=("$item"); done < "$tmpdir/$j.esc"
+        fi
+        log_check_run "$loop" "${checks[$j]#run_}" "$(cat "$tmpdir/$j.ms" 2>/dev/null || echo 0)" "$result" ${escaped[@]+"${escaped[@]}"}
     done
+    log_check_run "$loop" total "$(( $(now_ms) - started ))" "$any_fail"
 
     rm -rf "$tmpdir"
     return 0

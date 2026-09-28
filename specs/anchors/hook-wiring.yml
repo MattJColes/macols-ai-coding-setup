@@ -56,3 +56,17 @@ hook-wiring.checkpoint:
     kind: function_definition
     has: { field: name, regex: '^project_check_command$' }
   files: [hooks/checks/post_task.sh]
+
+hook-wiring.deploy-diff:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^deploy_diff_note$' }
+  files: [hooks/pre_deploy_check.sh]
+
+hook-wiring.check-log:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^log_check_run$' }
+  files: [hooks/checks/common.sh]

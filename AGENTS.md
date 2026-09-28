@@ -91,6 +91,8 @@ Edit the single source, never the rendered output:
   configs for projects ship in `config/personas/quality/references/`.
   Anything that runs repo-controlled code (tests, repo-local binaries,
   executable configs) is gated by `project_trusted`; keep new checks behind it.
+  Each battery run logs per-check timings to `.git/macols-checks.jsonl`
+  (`bin/macols-check-stats`), so measure a new check's cost before and after.
 - **Machine setup:** `machine/` (macOS + Ubuntu 24/26). The herdr script
   also installs the herdr-plus/herdr-reviewr/herdr-browser plugins, their
   Claude+yazi project/worktree layouts, and herdr-browser's prerequisites

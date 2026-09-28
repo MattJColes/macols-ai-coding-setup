@@ -40,7 +40,7 @@ if (fs.existsSync(env.SETTINGS_FILE)) { try { existing = JSON.parse(fs.readFileS
 // (plain stdout on exit 0 only reaches the debug log).
 existing.hooks = {
     PreToolUse: [{ matcher: "Bash", hooks: [
-        { type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT + " --format claude", timeout: 30 },
+        { type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT + " --format claude", timeout: 300 },
         { type: "command", command: env.PRE_COMMIT_HOOK_SCRIPT + " --format claude", timeout: 900 }
     ] }],
     PostToolUse: [{ matcher: "Edit|Write|NotebookEdit", hooks: [{ type: "command", command: env.HOOK_SCRIPT + " --format claude", timeout: 120 }] }],
@@ -90,7 +90,7 @@ const config = {
     description: "macols-ai-coding-setup quality and safety hooks",
     hooks: {
         PreToolUse: [{ matcher: "Bash", hooks: [
-            { type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT + " --format codex", timeout: 30 },
+            { type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT + " --format codex", timeout: 300 },
             { type: "command", command: env.PRE_COMMIT_HOOK_SCRIPT + " --format codex", timeout: 900 }
         ] }],
         PostToolUse: [{ matcher: "Edit|Write", hooks: [{ type: "command", command: env.HOOK_SCRIPT + " --format codex", timeout: 120 }] }],
@@ -126,7 +126,7 @@ cfg.hooks = {
     ...(cfg.hooks || {}),
     enabled: true,
     events: {
-        PreToolUse: [{ matcher: "Bash", hooks: [hook(env.PRE_DEPLOY_HOOK_SCRIPT, 30000), hook(env.PRE_COMMIT_HOOK_SCRIPT, 900000)] }],
+        PreToolUse: [{ matcher: "Bash", hooks: [hook(env.PRE_DEPLOY_HOOK_SCRIPT, 300000), hook(env.PRE_COMMIT_HOOK_SCRIPT, 900000)] }],
         PostToolUse: [{ matcher: "Edit|Write|NotebookEdit", hooks: [hook(env.HOOK_SCRIPT, 120000)] }],
         Stop: [{ hooks: [hook(env.TASK_HOOK_SCRIPT, 600000)] }]
     }

@@ -73,18 +73,18 @@ persist_local_bin_path() {
 }
 
 # install_macols_commands — link this repo's user-facing commands
-# (macols-trust, macols-openspec-adopt) into ~/.local/bin, which
+# (macols-trust, macols-check-stats, macols-openspec-adopt) into ~/.local/bin, which
 # persist_local_bin_path keeps on PATH. The hooks and the OpenSpec apply step
 # refer to them by name. Symlinks, so a git pull updates them.
 install_macols_commands() {
     local cmd
     mkdir -p "$HOME/.local/bin"
-    for cmd in macols-trust macols-openspec-adopt; do
+    for cmd in macols-trust macols-check-stats macols-openspec-adopt; do
         [ -x "$REPO_ROOT/bin/$cmd" ] || continue
         ln -sf "$REPO_ROOT/bin/$cmd" "$HOME/.local/bin/$cmd"
     done
     persist_local_bin_path
-    printf "${GREEN}✓ macols-trust and macols-openspec-adopt linked into ~/.local/bin${NC}\n"
+    printf "${GREEN}✓ macols-trust, macols-check-stats and macols-openspec-adopt linked into ~/.local/bin${NC}\n"
 }
 
 # install_openspec_schema — make this repo's OpenSpec schema fork (`macols`:

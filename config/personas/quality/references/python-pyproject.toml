@@ -1,6 +1,8 @@
 # Quality gates for Python — merge these tables into the project's
 # pyproject.toml (don't replace existing settings; tighten them).
 # The turn-end hook and CI run: ruff check, pyright, lint-imports, pytest.
+# With pytest-testmon in the dev dependencies the turn-end hook selects tests
+# by coverage (--testmon); gitignore .testmondata*.
 
 [tool.ruff.lint]
 # E/F/W/I: the usual; C90: complexity; PLR09xx: size limits; S: bandit
@@ -41,3 +43,5 @@ name = "Layers only call downwards (routers -> services -> repositories -> model
 type = "layers"
 containers = ["app.orders", "app.billing"]
 layers = ["routers", "services", "repositories", "models"]
+# Approved exceptions: one line each, with why and when it goes.
+# ignore_imports = ["app.orders.routers.admin -> app.orders.repositories.audit"]  # legacy admin page, remove with ORD-123

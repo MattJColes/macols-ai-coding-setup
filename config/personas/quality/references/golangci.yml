@@ -34,6 +34,10 @@ linters:
       - path: _test\.go
         linters: [dupl, funlen, gocyclo]
 
+# Legacy module: fail CI on new findings only, then ratchet the old ones down.
+# issues:
+#   new-from-merge-base: main
+
 formatters:
   enable:
     - gofmt

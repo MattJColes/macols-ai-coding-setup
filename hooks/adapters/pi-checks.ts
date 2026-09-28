@@ -60,7 +60,7 @@ export default function (pi: any) {
     try {
       const res = await pi.exec("bash", [`${HOOKS_DIR}/pre_deploy_check.sh`, command], {
         signal: ctx?.signal,
-        timeout: 30_000,
+        timeout: 300_000, // a deploy runs cdk diff first
       });
       reason = `${res.stdout || ""}`.trim();
     } catch {

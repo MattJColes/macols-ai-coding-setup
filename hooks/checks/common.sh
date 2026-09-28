@@ -18,6 +18,9 @@
 #   check_file_lengths   — flag changed files that grew past MACOLS_MAX_FILE_LINES
 #   find_venv_bin <tool> — resolve a tool from a virtualenv, walking to repo root
 #   find_python_projects — discover testable Python sub-projects (cached)
+#   now_ms / log_check_run
+#                        — per-check timing log (.git/macols-checks.jsonl),
+#                          summarised by bin/macols-check-stats
 #
 # The two discovery functions memoize their result for the life of the process,
 # so callers that invoke them repeatedly (tests + ruff + mypy) don't re-walk the
@@ -302,6 +305,54 @@ record_check_fingerprint() {
     fp=$(_check_fingerprint) || return 0
     file=$(_check_fingerprint_file) || return 0
     printf '%s' "$fp" > "$file" 2>/dev/null || true
+}
+
+# ── Check log ────────────────────────────────────────────────────────────────
+# One JSON line per check run, so "are the hooks worth their time?" has an
+# answer: duration, pass/fail, which loop ran it, and (at the checkpoint) the
+# tests the turn-end selection would have missed. Lives in the repo's common
+# git dir, so worktrees share one log. bin/macols-check-stats summarises it.
+# MACOLS_CHECK_LOG=off turns it off.
+
+# Milliseconds since the epoch. EPOCHREALTIME needs bash 5; macOS's bash 3.2
+# falls back to whole seconds.
+now_ms() {
+    if [ -n "${EPOCHREALTIME:-}" ]; then
+        local t="${EPOCHREALTIME/[.,]/}"
+        printf '%s' "$((10#$t / 1000))"
+    else
+        printf '%s' "$(( $(date +%s) * 1000 ))"
+    fi
+}
+
+check_log_file() {
+    local dir
+    dir=$(git rev-parse --git-common-dir 2>/dev/null) || return 1
+    printf '%s/macols-checks.jsonl' "$dir"
+}
+
+_json_str() {
+    local s="$1"
+    s="${s//\\/\\\\}"; s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"; s="${s//$'\t'/\\t}"
+    printf '"%s"' "$s"
+}
+
+# log_check_run <loop> <check> <ms> <pass|fail> [escaped test...]
+log_check_run() {
+    [ "${MACOLS_CHECK_LOG:-on}" = "off" ] && return 0
+    local loop="$1" check="$2" ms="$3" result="$4" file line esc="" t
+    shift 4
+    file=$(check_log_file) || return 0
+    for t in "$@"; do esc+="${esc:+,}$(_json_str "$t")"; done
+    line="{\"ts\":$(date +%s),\"repo\":$(_json_str "$(project_root)"),\"loop\":\"$loop\",\"check\":$(_json_str "$check"),\"ms\":$ms,\"result\":\"$result\""
+    [ -n "$esc" ] && line+=",\"escaped\":[$esc]"
+    printf '%s}\n' "$line" >> "$file" 2>/dev/null || return 0
+    # Keep the log bounded: past 10k lines, keep the newest 5k.
+    if [ "$(wc -l < "$file" | tr -d ' ')" -gt 10000 ]; then
+        tail -n 5000 "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+    fi
+    return 0
 }
 
 # ── Fix hints ────────────────────────────────────────────────────────────────
