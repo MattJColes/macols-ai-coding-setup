@@ -1,0 +1,40 @@
+# Quality gates for Go (golangci-lint v2) — save as .golangci.yml at the
+# module root. golangci-lint runs at turn end on changed packages and in CI.
+version: "2"
+
+linters:
+  default: standard            # errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    - dupl                     # duplicated blocks
+    - gocyclo                  # cyclomatic complexity
+    - funlen                   # function length
+    - depguard                 # import (layer) rules
+    - errorlint                # %w wrapping, errors.Is/As
+  settings:
+    gocyclo:
+      # Go's explicit error checks inflate cyclomatic counts, so 15 here is
+      # roughly the 10 used for Python and TypeScript.
+      min-complexity: 15
+    funlen:
+      lines: 80
+      statements: 50
+    dupl:
+      threshold: 120           # tokens
+    depguard:
+      rules:
+        # Layer rule: handlers never reach the database directly. Rename the
+        # module path and packages to match the project.
+        handlers:
+          files: ["**/internal/*/handler*.go"]
+          deny:
+            - pkg: "database/sql"
+              desc: "Handlers go through the service layer. Fix: call the feature's service, which uses the repository. See docs/architecture.md#layers"
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters: [dupl, funlen, gocyclo]
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

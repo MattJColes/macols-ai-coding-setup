@@ -10,11 +10,11 @@ persona-rendering.generator:
   rule:
     kind: function_definition
     has: { field: name, regex: '^generate_personas$' }
-  files: [lib/common.sh]
+  files: [lib/personas.sh]
 
 persona-rendering.list:
   language: bash
   rule:
     kind: function_definition
     has: { field: name, regex: '^list_personas$' }
-  files: [lib/common.sh]
+  files: [lib/personas.sh]

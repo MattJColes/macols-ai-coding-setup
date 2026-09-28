@@ -8,9 +8,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 readonly REPO_ROOT
-readonly PERSONAS_DIR="$REPO_ROOT/shared/personas"
-readonly RESPONSE_FORMAT_FILE="$REPO_ROOT/shared/steering/response-format.md"
-readonly BUNDLE_PATH="$REPO_ROOT/bundles/macols-personas-claude-plugin.zip"
+readonly PERSONAS_DIR="$REPO_ROOT/config/personas"
+readonly RESPONSE_FORMAT_FILE="$REPO_ROOT/config/steering/response-format.md"
+readonly BUNDLE_PATH="$REPO_ROOT/dist/macols-personas-claude-plugin.zip"
 readonly PLUGIN_NAME="macols-personas"
 
 PACKAGE_TEMP_DIR=""
@@ -42,9 +42,20 @@ package_personas() {
         # "_"-prefixed dirs hold shared partials, not personas.
         [[ "$(basename "$persona_dir")" == _* ]] && continue
         [[ -f "$persona_dir/SKILL.md" ]] || die "missing SKILL.md in $persona_dir"
-        local dest
+        local dest bundled
         dest="$plugin_root/skills/$(basename "$persona_dir")"
-        cp -R "$persona_dir" "$dest"
+        mkdir -p "$dest"
+        cp "$persona_dir/SKILL.md" "$dest/SKILL.md"
+        # Mirror generate_personas: references/ and scripts/ travel beside
+        # SKILL.md; anything else in the persona dir stays behind.
+        for bundled in references scripts; do
+            if [[ -d "$persona_dir/$bundled" ]]; then
+                cp -R "$persona_dir/$bundled" "$dest/$bundled"
+            fi
+        done
+        # tier is a renderer hint (mapped to effort only where a target
+        # clearly supports it); Claude Desktop gets neither.
+        perl -0pi -e 's/\A(---\n.*?)^tier:[^\n]*\n(.*?^---\n)/$1$2/ms' "$dest/SKILL.md"
         # Mirror generate_personas: inline {{include: ...}} partials so the
         # bundled skill is self-contained, then append the shared response
         # format so Claude Desktop matches every other surface.

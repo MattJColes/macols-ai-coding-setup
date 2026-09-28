@@ -1,0 +1,11 @@
+{
+  "//": "Merge into the project's tsconfig.json compilerOptions. tsc --noEmit runs at turn end and in CI.",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+    "noEmit": true
+  }
+}

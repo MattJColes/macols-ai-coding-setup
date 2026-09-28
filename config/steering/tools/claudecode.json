@@ -1,0 +1,14 @@
+{
+  "TOOL_TITLE": "Claude",
+  "ASSISTANT_NOUN": "Claude assistant",
+  "PLAN_MODE_CLAUSE": " Don't enter plan mode unless asked to plan.",
+  "TRACK_CHUNK": "Track each chunk in the task list (TaskCreate).",
+  "MATCH_SPECIALIST": "Specialist knowledge (python, react, cdk, go, ship, ...) loads as skills when the work matches; it does not need a subagent.",
+  "COLLAB_SECTION": [
+    "## Subagents",
+    "",
+    "- Use subagents to isolate context, not to match specialisms: `research`, `audit`, `diagnose` and `test` are the agents. Launch independent ones in a single message, in the background for long runs.",
+    "- Agents share no context, so give each a self-contained prompt (paths, constraints, expected output), then check their results together. Tightly coupled work stays sequential."
+  ],
+  "EXTRA_SECTION": ""
+}

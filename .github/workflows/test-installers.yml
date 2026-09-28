@@ -1,6 +1,6 @@
 name: Test installers
 
-# Runs each self-contained install_<tool>.sh on a clean Ubuntu runner, then
+# Runs each self-contained installers/<tool>.sh on a clean Ubuntu runner, then
 # verifies the tool is configured correctly and that files landed in the
 # expected locations. Ubuntu-only: the installers take the Linux (npm/curl)
 # path here; the macOS/Homebrew path is exercised manually.
@@ -13,9 +13,12 @@ on:
   push:
     branches: ["**"]
     paths:
-      - "install*.sh"
+      - "install.sh"
+      - "installers/**"
       - "lib/**"
-      - "shared/**"
+      - "config/**"
+      - "hooks/**"
+      - "dist/**"
       - "tests/**"
       - "scripts/**"
       - "specs/**"
@@ -23,9 +26,12 @@ on:
       - ".github/workflows/test-installers.yml"
   pull_request:
     paths:
-      - "install*.sh"
+      - "install.sh"
+      - "installers/**"
       - "lib/**"
-      - "shared/**"
+      - "config/**"
+      - "hooks/**"
+      - "dist/**"
       - "tests/**"
       - "scripts/**"
       - "specs/**"
@@ -41,7 +47,7 @@ jobs:
       - name: Run shellcheck
         run: |
           sudo apt-get update -y && sudo apt-get install -y shellcheck zip
-          shellcheck -S warning -x install.sh install_*.sh lib/common.sh tests/*.sh shared/hooks/*.sh bin/*.sh scripts/*.sh
+          shellcheck -S warning -x install.sh installers/*.sh lib/*.sh tests/*.sh hooks/*.sh hooks/checks/*.sh hooks/adapters/*.sh bin/*.sh scripts/*.sh
 
       - name: Verify Claude Desktop persona bundle
         run: ./scripts/package_claude_desktop_personas.sh --check
@@ -66,13 +72,13 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           echo "$HOME/.npm-global/bin" >> "$GITHUB_PATH"
 
-      - name: Run install_${{ matrix.tool }}.sh
+      - name: Run ./install.sh ${{ matrix.tool }}
         run: |
-          chmod +x install_${{ matrix.tool }}.sh lib/common.sh tests/verify_install.sh
+          chmod +x install.sh installers/*.sh tests/verify_install.sh
           # ZCode is a macOS desktop app — on Linux CI only render its configs.
           args=""
           [ "${{ matrix.tool }}" = "zcode" ] && args="--no-cli"
-          ./install_${{ matrix.tool }}.sh $args
+          ./install.sh ${{ matrix.tool }} $args
 
       - name: Verify ${{ matrix.tool }} configuration
         run: ./tests/verify_install.sh ${{ matrix.tool }}

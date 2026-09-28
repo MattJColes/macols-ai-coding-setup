@@ -1,0 +1,47 @@
+# Workstation packages for macOS and Ubuntu (Homebrew on Linux).
+# Installed by `brew bundle --file machine/Brewfile` from install_macos.sh and
+# install_ubuntu26.sh. Add a tool here rather than to either script.
+# System-level pieces that need the OS package manager (Docker, Podman on
+# Linux, QEMU, zsh on Linux) stay in install_ubuntu26.sh.
+
+tap "oven-sh/bun"
+
+# Core CLI
+brew "git"
+brew "gh"
+brew "htop"
+brew "jq"
+brew "yq"
+brew "dasel"
+brew "ast-grep"
+brew "ripgrep"
+brew "fd"
+brew "tmux"
+brew "unzip"
+
+# Editor, terminal and prompt
+brew "neovim"
+brew "lazygit"
+brew "git-delta"
+brew "yazi"
+brew "starship"
+
+# Languages and toolchains (Python itself comes from `uv python install`)
+brew "uv"
+brew "go"
+brew "gopls"
+brew "oven-sh/bun/bun"
+
+# Tools the agent quality hooks call
+brew "shellcheck"
+brew "golangci-lint"
+
+# Cloud
+brew "awscli"
+
+if OS.mac?
+  brew "coreutils"            # gtimeout for the hook timeouts and herdr auto-launch
+  brew "podman"
+  cask "flutter"
+  cask "font-inconsolata"     # the font machine/ghostty_config uses
+end

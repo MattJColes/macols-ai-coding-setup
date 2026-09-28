@@ -1,0 +1,13 @@
+{
+  "TOOL_TITLE": "Codex",
+  "ASSISTANT_NOUN": "Codex assistant",
+  "PLAN_MODE_CLAUSE": "",
+  "TRACK_CHUNK": "Track each chunk with the plan (`update_plan`).",
+  "MATCH_SPECIALIST": "Specialist knowledge (python, react, cdk, go, ship, ...) loads as Agent Skills on demand: run `/skills` to list them or mention one with `$<name>`.",
+  "COLLAB_SECTION": [
+    "## Custom Agents",
+    "",
+    "- Delegate to a custom agent (`~/.codex/agents/`) to isolate context: `research`, `audit`, `diagnose` and `test`. Give each a self-contained instruction (paths, constraints, expected output). Tightly coupled work stays sequential."
+  ],
+  "EXTRA_SECTION": ""
+}

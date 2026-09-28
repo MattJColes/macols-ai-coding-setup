@@ -1,0 +1,23 @@
+{
+  "_comment": "Default MCP servers for every tool. A server with a `requires` key is registered only when that binary is on PATH (and removed again when it is not); the key itself never reaches a tool's config. Versions are pinned - bump them deliberately.",
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@0.0.82"]
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@4.1.1"]
+    },
+    "dart": {
+      "requires": "dart",
+      "command": "dart",
+      "args": ["mcp-server"]
+    },
+    "gopls": {
+      "requires": "gopls",
+      "command": "gopls",
+      "args": ["mcp"]
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "TOOL_TITLE": "OpenCode",
+  "ASSISTANT_NOUN": "OpenCode assistant",
+  "PLAN_MODE_CLAUSE": "",
+  "TRACK_CHUNK": "Track each chunk as you work through it.",
+  "MATCH_SPECIALIST": "Specialist knowledge (python, react, cdk, go, ship, ...) loads on demand through the skill tool.",
+  "COLLAB_SECTION": [
+    "## Agents",
+    "",
+    "- Use agents (via the Task tool) to isolate context: `research`, `audit`, `diagnose` and `test`. Agents share no context, so give each a self-contained prompt (paths, constraints, expected output). Tightly coupled work stays sequential."
+  ],
+  "EXTRA_SECTION": [
+    "",
+    "",
+    "## Web Search",
+    "",
+    "- For current information use the `brave-search` MCP server, registered in `~/.config/opencode/opencode.json` when a Brave Search API key is configured. If it is missing, say so rather than guessing."
+  ]
+}

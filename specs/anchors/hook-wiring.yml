@@ -6,32 +6,53 @@ hook-wiring.claude:
   rule:
     kind: function_definition
     has: { field: name, regex: '^write_claude_hooks$' }
-  files: [lib/common.sh]
+  files: [lib/hooks.sh]
 
 hook-wiring.codex:
   language: bash
   rule:
     kind: function_definition
     has: { field: name, regex: '^write_codex_hooks$' }
-  files: [lib/common.sh]
+  files: [lib/hooks.sh]
 
 hook-wiring.zcode:
   language: bash
   rule:
     kind: function_definition
     has: { field: name, regex: '^write_zcode_hooks$' }
-  files: [lib/common.sh]
+  files: [lib/hooks.sh]
 
 hook-wiring.opencode-plugin:
   language: bash
   rule:
     kind: function_definition
     has: { field: name, regex: '^install_opencode_plugin$' }
-  files: [lib/common.sh]
+  files: [lib/hooks.sh]
 
 hook-wiring.pi-extension:
   language: bash
   rule:
     kind: function_definition
     has: { field: name, regex: '^install_pi_extension$' }
-  files: [lib/common.sh]
+  files: [lib/hooks.sh]
+
+hook-wiring.turn-end-gate:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^changes_since_last_check$' }
+  files: [hooks/checks/common.sh]
+
+hook-wiring.project-trust:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^project_trusted$' }
+  files: [hooks/checks/common.sh]
+
+hook-wiring.checkpoint:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^project_check_command$' }
+  files: [hooks/checks/post_task.sh]

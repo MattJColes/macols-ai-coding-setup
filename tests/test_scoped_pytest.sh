@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Self-test for run_python_tests in shared/post_task_checks.sh.
+# Self-test for run_python_tests in hooks/checks/post_task.sh.
 #
 # Builds a scratch git repo with two modules and two test files, changes one
 # module, and asserts that the turn-end pytest step runs ONLY the matching test
@@ -9,7 +9,7 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LIB="$(dirname "$SCRIPT_DIR")/shared/post_task_checks.sh"
+LIB="$(dirname "$SCRIPT_DIR")/hooks/checks/post_task.sh"
 FAILED=0
 
 green() { printf '\033[0;32m  ✓ %s\033[0m\n' "$1"; }

@@ -43,6 +43,33 @@ has_ponytail_block() { grep -q 'ponytail:ruleset:start' "$1" 2>/dev/null; }
 # brave-search is registered for OpenCode/omp only, and only when a key file
 # exists — so assert its presence or its absence, whichever the key implies.
 has_brave_key() { [ -s "$HOME/.config/macols/brave-api-key" ]; }
+# The AWS servers are opt-in for every tool; mirrors aws_mcp_enabled in lib/common.sh.
+aws_on() {
+    case "${MACOLS_AWS_MCP:-}" in
+        1|y|Y|yes|true|on)  return 0 ;;
+        0|n|N|no|false|off) return 1 ;;
+    esac
+    [ -s "$HOME/.config/macols/aws-mcp" ] && [ "$(tr -d '[:space:]' < "$HOME/.config/macols/aws-mcp")" = on ]
+}
+
+# mcp_checks <jq path to the server map> <file> <label> — the shared server
+# list is present, retired servers are gone, and the opt-in / on-PATH servers
+# appear exactly when they should.
+mcp_checks() {
+    local m="$1" f="$2" l="$3"
+    pass "$l has context7 + playwright MCPs" "jq -e '$m | .context7 and .playwright' '$f' >/dev/null 2>&1"
+    pass "$l has no retired filesystem/puppeteer MCP" "! jq -e '$m | (.filesystem // .puppeteer)' '$f' >/dev/null 2>&1"
+    if aws_on; then
+        pass "$l has the aws-* MCPs (opted in)" "jq -e '$m | .\"aws-mcp\" and .\"aws-iac\"' '$f' >/dev/null 2>&1"
+    else
+        pass "$l omits the aws-* MCPs (not opted in)" "! jq -e '$m | (.\"aws-mcp\" // .\"aws-iac\")' '$f' >/dev/null 2>&1"
+    fi
+    if command -v gopls >/dev/null 2>&1; then
+        pass "$l has gopls MCP (gopls on PATH)" "jq -e '$m.gopls' '$f' >/dev/null 2>&1"
+    else
+        pass "$l omits gopls MCP (gopls not on PATH)" "! jq -e '$m.gopls' '$f' >/dev/null 2>&1"
+    fi
+}
 
 # The shared response-format block lands in the steering doc exactly once...
 rf_once() { [ "$(grep -c '^## Response Format' "$1" 2>/dev/null)" = 1 ]; }
@@ -55,6 +82,19 @@ rf_every() {
     [ "$total" -gt 0 ] && [ "$have" -eq "$total" ]
 }
 
+# Persona rendering contract shared by every skills dir: references/ travel
+# with the skill, no rendered file leaks the source-only `tier:` key, and
+# retired/renamed personas (review→audit, debug→diagnose, ...) are gone.
+# persona_skill_checks <skills_dir> <label>
+persona_skill_checks() {
+    local d="$1" label="$2" r
+    pass "$label editor skill ships references/" "[ -f '$d/editor/references/review-passes.md' ]"
+    pass "$label skills carry no tier: key" "! grep -rqs '^tier:' '$d'"
+    for r in coordinate linux ponytail review debug; do
+        pass "$label has no retired '$r' persona" "[ ! -e '$d/$r' ]"
+    done
+}
+
 verify_claudecode() {
     local d="$HOME/.claude"
     soft "claude --version" "command -v claude >/dev/null && claude --version >/dev/null 2>&1"
@@ -64,10 +104,17 @@ verify_claudecode() {
     pass "~/.claude/CLAUDE.md has response format (once)" "rf_once '$d/CLAUDE.md'"
     pass "every ~/.claude agent has response format" "rf_every '$d/agents' '*.md'"
     pass "every ~/.claude skill has response format"  "rf_every '$d/skills' 'SKILL.md'"
+    persona_skill_checks "$d/skills" "~/.claude"
+    pass "only agent: true personas render as agents" "[ ! -e '$d/agents/python.md' ] && [ -f '$d/agents/audit.md' ]"
+    pass "deep tier renders as effort: high (agent + skill)" \
+        "grep -q '^effort: high' '$d/agents/audit.md' && grep -q '^effort: high' '$d/skills/audit/SKILL.md'"
+    pass "light tier renders as effort: low" "grep -q '^effort: low' '$d/skills/explain/SKILL.md'"
     pass "~/.claude/bin/claude-launch is executable" "[ -x '$d/bin/claude-launch' ]"
     if has_jq; then
         pass "settings.json has PostToolUse hook"  "jq -e '.hooks.PostToolUse[0].hooks[0].command' '$d/settings.json' >/dev/null"
-        pass "~/.claude.json has filesystem MCP"    "jq -e '.mcpServers.filesystem' '$HOME/.claude.json' >/dev/null 2>&1"
+        pass "settings.json runs the commit checkpoint before git commit" "jq -e '[.hooks.PreToolUse[].hooks[].command | test(\"pre_commit_hook\")] | any' '$d/settings.json' >/dev/null"
+        pass "settings.json hooks answer in Claude JSON (--format claude)" "jq -e '[.hooks[][].hooks[].command | test(\"--format claude\")] | all' '$d/settings.json' >/dev/null"
+        mcp_checks '.mcpServers' "$HOME/.claude.json" '~/.claude.json'
     else
         warn "jq not available — skipping JSON assertions"
     fi
@@ -79,7 +126,7 @@ verify_claudecode() {
     soft "openspec CLI installed" "command -v openspec >/dev/null && openspec --version >/dev/null 2>&1"
     soft "ast-grep CLI installed" "command -v ast-grep >/dev/null && ast-grep --version >/dev/null 2>&1"
     soft "yq CLI installed" "command -v yq >/dev/null 2>&1"
-    soft "claude mcp list shows filesystem" "command -v claude >/dev/null && claude mcp list 2>/dev/null | grep -q filesystem"
+    soft "claude mcp list shows context7" "command -v claude >/dev/null && claude mcp list 2>/dev/null | grep -q context7"
 }
 
 verify_codex() {
@@ -88,18 +135,23 @@ verify_codex() {
     pass "no legacy prompts dir (~/.codex/prompts removed)" "[ ! -d '$d/prompts' ]"
     pass "skills in ~/.codex/skills/*/SKILL.md"   "count_gt0 '$d/skills' 'SKILL.md' 3"
     pass "agents in ~/.codex/agents/*.toml"       "count_gt0 '$d/agents' '*.toml' 1"
-    pass "agent toml has developer_instructions"  "grep -q 'developer_instructions' '$d/agents/review.toml'"
+    pass "agent toml has developer_instructions"  "grep -q 'developer_instructions' '$d/agents/audit.toml'"
     pass "~/.codex/AGENTS.md is System-Level Codex" "grep -q 'System-Level Codex' '$d/AGENTS.md'"
     pass "~/.codex/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
     pass "~/.codex/AGENTS.md has response format (once)" "rf_once '$d/AGENTS.md'"
     pass "every ~/.codex agent has response format"   "rf_every '$d/agents' '*.toml'"
     pass "every ~/.codex skill has response format"   "rf_every '$d/skills' 'SKILL.md'"
+    persona_skill_checks "$d/skills" "~/.codex"
+    pass "codex skills carry no effort: key" "! grep -rqs '^effort:' '$d/skills'"
+    pass "deep tier renders as model_reasoning_effort = high" "grep -q '^model_reasoning_effort = \"high\"' '$d/agents/audit.toml'"
+    pass "no retired review/debug agent TOML" "[ ! -e '$d/agents/review.toml' ] && [ ! -e '$d/agents/debug.toml' ]"
     if has_jq; then
         pass "hooks.json top level is Codex's description/hooks" "jq -e '[keys[] | select(. != \"description\" and . != \"hooks\")] | length == 0' '$d/hooks.json' >/dev/null"
         pass "hooks.json has PostToolUse hook"     "jq -e '.hooks.PostToolUse[0].hooks[0].command' '$d/hooks.json' >/dev/null"
         pass "hooks.json Stop runs post-task battery" "jq -e '.hooks.Stop[0].hooks[0].command | test(\"post_task\")' '$d/hooks.json' >/dev/null"
+        pass "hooks.json hooks answer in Codex JSON (--format codex)" "jq -e '[.hooks[][].hooks[].command | test(\"--format codex\")] | all' '$d/hooks.json' >/dev/null"
     fi
-    soft "codex mcp list shows filesystem" "command -v codex >/dev/null && codex mcp list 2>/dev/null | grep -q filesystem"
+    soft "codex mcp list shows context7" "command -v codex >/dev/null && codex mcp list 2>/dev/null | grep -q context7"
 }
 
 verify_opencode() {
@@ -112,12 +164,14 @@ verify_opencode() {
     pass "~/.config/opencode/AGENTS.md has response format (once)" "rf_once '$d/AGENTS.md'"
     pass "every ~/.config/opencode agent has response format" "rf_every '$d/agents' '*.md'"
     pass "every ~/.config/opencode skill has response format" "rf_every '$d/skills' 'SKILL.md'"
+    persona_skill_checks "$d/skills" "~/.config/opencode"
     pass "plugins/post_code_hook_plugin.js exists (.js — OpenCode ignores .mjs)" "[ -f '$d/plugins/post_code_hook_plugin.js' ]"
     pass "no stale .mjs plugin remains" "[ ! -f '$d/plugins/post_code_hook_plugin.mjs' ]"
     pass "plugin placeholders substituted" "! grep -q '__.*_PATH__' '$d/plugins/post_code_hook_plugin.js'"
     pass "plugin wires pre-deploy check" "grep -q 'pre_deploy_check.sh' '$d/plugins/post_code_hook_plugin.js'"
+    pass "plugin handles session.idle as a bus event" "grep -q 'event?.type !== \"session.idle\"' '$d/plugins/post_code_hook_plugin.js'"
     if has_jq; then
-        pass "opencode.json has filesystem MCP under .mcp" "jq -e '.mcp.filesystem' '$d/opencode.json' >/dev/null"
+        mcp_checks '.mcp' "$d/opencode.json" 'opencode.json .mcp'
         if has_brave_key; then
             pass "opencode.json has brave-search MCP reading the key file" \
                 "jq -e '.mcp[\"brave-search\"].environment.BRAVE_API_KEY_FILE' '$d/opencode.json' >/dev/null"
@@ -133,11 +187,13 @@ verify_pi_layout() {
     local d="$1" label="$2"
     pass "skills in $label/skills/*/SKILL.md" "count_gt0 '$d/skills' 'SKILL.md' 3"
     pass "$label/AGENTS.md is System-Level Pi" "grep -q 'System-Level Pi' '$d/AGENTS.md'"
-    pass "$label/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
+    pass "$label/AGENTS.md has no ponytail block (the package provides it)" "! grep -q 'ponytail:ruleset:start' '$d/AGENTS.md'"
     pass "$label/AGENTS.md has response format (once)" "rf_once '$d/AGENTS.md'"
     pass "every $label skill has response format" "rf_every '$d/skills' 'SKILL.md'"
+    persona_skill_checks "$d/skills" "$label"
     pass "$label extensions/pi-checks.ts exists" "[ -f '$d/extensions/pi-checks.ts' ]"
     pass "$label extension hooks dir substituted" "! grep -q '__PI_HOOKS_DIR__' '$d/extensions/pi-checks.ts'"
+    pass "$label extension flavour substituted" "! grep -q '__PI_FLAVOUR__' '$d/extensions/pi-checks.ts'"
     pass "$label extension wires pre-deploy check" "grep -q 'pre_deploy_check.sh' '$d/extensions/pi-checks.ts'"
 }
 
@@ -149,7 +205,7 @@ verify_pi() {
     verify_pi_layout "$HOME/.pi/agent" "~/.pi/agent"
     verify_pi_layout "$omp_d" "~/.omp/agent"
     if has_jq; then
-        pass "omp mcp.json has filesystem MCP under .mcpServers" "jq -e '.mcpServers.filesystem' '$omp_d/mcp.json' >/dev/null"
+        mcp_checks '.mcpServers' "$omp_d/mcp.json" 'omp mcp.json .mcpServers'
         if has_brave_key; then
             pass "omp mcp.json has brave-search MCP reading the key file" \
                 "jq -e '.mcpServers[\"brave-search\"].env.BRAVE_API_KEY_FILE' '$omp_d/mcp.json' >/dev/null"
@@ -181,7 +237,7 @@ verify_pi() {
         [ -f "$omp_d/models.yml" ] && pass "omp models.yml references API keys instead of inlining them" \
             "! grep -qE '^[[:space:]]+apiKey: \"?(sk-|gsk_|xai-|AIza)' '$omp_d/models.yml'"
     else
-        warn "omp models not configured — run ./install_pi.sh --models-only to pick them"
+        warn "omp models not configured — run ./install.sh pi --models-only to pick them"
     fi
 }
 
@@ -195,11 +251,14 @@ verify_zcode() {
     pass "~/.zcode/AGENTS.md has response format (once)" "rf_once '$d/AGENTS.md'"
     pass "every ~/.zcode skill has response format" "rf_every '$d/skills' 'SKILL.md'"
     pass "every ~/.zcode command has response format" "rf_every '$d/commands' '*.md'"
+    persona_skill_checks "$d/skills" "~/.zcode"
+    pass "single-file /editor command inlines its references" "grep -q '^### references/review-passes.md' '$d/commands/editor.md'"
     if has_jq; then
         pass "config.json hooks are enabled" "jq -e '.hooks.enabled == true' '$d/cli/config.json' >/dev/null"
-        pass "config.json has PostToolUse hook" "jq -e '.hooks.events.PostToolUse[0].hooks[0].command' '$d/cli/config.json' >/dev/null"
-        pass "config.json Stop runs post-task battery" "jq -e '.hooks.events.Stop[0].hooks[0].command | test(\"post_task\")' '$d/cli/config.json' >/dev/null"
-        pass "config.json has filesystem MCP under .mcp.servers" "jq -e '.mcp.servers.filesystem' '$d/cli/config.json' >/dev/null"
+        pass "config.json has PostToolUse hook" "jq -e '.hooks.events.PostToolUse[0].hooks[0].args[0]' '$d/cli/config.json' >/dev/null"
+        pass "config.json Stop runs post-task battery" "jq -e '.hooks.events.Stop[0].hooks[0].args[0] | test(\"post_task\")' '$d/cli/config.json' >/dev/null"
+        pass "config.json hooks are ZCode process hooks with timeoutMs" "jq -e '[.hooks.events[][].hooks[] | .type == \"process\" and (.timeoutMs | type == \"number\") and (.args | index(\"zcode\"))] | all' '$d/cli/config.json' >/dev/null"
+        mcp_checks '.mcp.servers' "$d/cli/config.json" 'config.json .mcp.servers'
     fi
 }
 
