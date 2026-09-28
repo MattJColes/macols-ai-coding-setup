@@ -38,6 +38,22 @@ human decision (this repo has opted in; see the spec-anchoring capability).
 - **WHEN** `openspec` is on PATH
 - **THEN** `ensure_openspec` returns success without touching npm
 
+### Requirement: The macols OpenSpec schema is available user-level
+`install_openspec_schema` SHALL copy `openspec/schemas/macols` into OpenSpec's
+user schema directory (`${XDG_DATA_HOME:-~/.local/share}/openspec/schemas/macols`),
+replacing any earlier copy, so any repo can opt in with `schema: macols`. It
+SHALL NOT write into a repository or change a repo's `openspec/config.yaml`.
+Installers SHALL also link `bin/macols-trust` and `bin/macols-openspec-adopt`
+into `~/.local/bin` and keep that directory on PATH. A repo switches only when
+the user runs `macols-openspec-adopt`, which pins in-flight changes without a
+schema line to `spec-driven` and never runs `openspec init`.
+<!-- anchor: cli-provisioning.openspec-schema -->
+
+#### Scenario: A repo opts in without copying files
+
+- **WHEN** a repo's `openspec/config.yaml` says `schema: macols` and it has no `openspec/schemas/`
+- **THEN** `openspec schema which macols` resolves from the user directory and a new change has five artifacts
+
 ### Requirement: ast-grep is provisioned and guarded on `ast-grep`, never `sg`
 `ensure_ast_grep` SHALL install `@ast-grep/cli` globally via npm and verify
 with `ast-grep --version`. The presence guard SHALL check `ast-grep`, never

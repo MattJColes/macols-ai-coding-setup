@@ -1,4 +1,7 @@
-schema: spec-driven
+# Fork of the spec-driven schema (openspec/schemas/macols): every change carries
+# intent, scope, constraints and evidence. Existing changes keep their own
+# schema line in .openspec.yaml, so they still use spec-driven.
+schema: macols
 
 # Project context — shown to AI when creating artifacts.
 context: |
@@ -14,6 +17,7 @@ context: |
   code by ast-grep anchor rules in specs/anchors/*.yml, checked by
   scripts/spec_drift_gate.sh (see the spec-anchoring capability).
   Conventional Commits; plain git + git worktrees (no jujutsu).
+  Proposals cite standing rules by id from openspec/constraints.md.
 
 # Per-artifact rules.
 rules:
@@ -21,3 +25,10 @@ rules:
     - Keep each spec section under a ~40-line soft cap; propose a split instead of appending past it
     - Anchored requirements carry their id as an HTML comment on the line after the requirement text (<!-- anchor: <id> -->), never as the first block under the heading
     - At task end, propose spec updates as a diff for a human to apply — never edit main spec prose directly
+  proposal:
+    - Scope lists both May change and Must not change
+    - Constraints cite ids from openspec/constraints.md; never copy a registered rule's text
+  evidence:
+    - Every command runs from the repo root; name the real entry point, and say so when only a unit test is practical
+    - A check that could not run is recorded as could-not-check, never pass
+    - Counts carry denominators

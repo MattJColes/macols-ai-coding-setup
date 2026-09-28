@@ -72,6 +72,38 @@ persist_local_bin_path() {
     done
 }
 
+# install_macols_commands — link this repo's user-facing commands
+# (macols-trust, macols-openspec-adopt) into ~/.local/bin, which
+# persist_local_bin_path keeps on PATH. The hooks and the OpenSpec apply step
+# refer to them by name. Symlinks, so a git pull updates them.
+install_macols_commands() {
+    local cmd
+    mkdir -p "$HOME/.local/bin"
+    for cmd in macols-trust macols-openspec-adopt; do
+        [ -x "$REPO_ROOT/bin/$cmd" ] || continue
+        ln -sf "$REPO_ROOT/bin/$cmd" "$HOME/.local/bin/$cmd"
+    done
+    persist_local_bin_path
+    printf "${GREEN}✓ macols-trust and macols-openspec-adopt linked into ~/.local/bin${NC}\n"
+}
+
+# install_openspec_schema — make this repo's OpenSpec schema fork (`macols`:
+# proposal with scope and constraints, plus an evidence artifact) available to
+# every repo as a user-level schema, in OpenSpec's user schema dir
+# (${XDG_DATA_HOME:-~/.local/share}/openspec/schemas). Repos still opt in:
+# `schema: macols` in their openspec/config.yaml, or
+# `openspec new change --schema macols`. Nothing is written into any repo.
+# The directory is repo-owned, so it is replaced on each run.
+install_openspec_schema() {
+    local src="$REPO_ROOT/openspec/schemas/macols"
+    local dest="${XDG_DATA_HOME:-$HOME/.local/share}/openspec/schemas/macols"
+    [ -f "$src/schema.yaml" ] || { printf "${RED}OpenSpec schema source missing: %s${NC}\n" "$src"; return 1; }
+    mkdir -p "$(dirname "$dest")"
+    rm -rf "$dest"
+    cp -R "$src" "$dest"
+    printf "${GREEN}✓ OpenSpec schema 'macols' installed to %s${NC}\n" "$dest"
+}
+
 # ensure_openspec — install the OpenSpec CLI (github.com/Fission-AI/openspec)
 # used for spec-driven development across every agent. Idempotent: returns
 # immediately when the CLI is on PATH. Global npm install (needs Node 20.19+;

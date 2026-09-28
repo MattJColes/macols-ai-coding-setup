@@ -37,6 +37,38 @@ never initialise projects for you.
 
 This repo has opted in: living specs are in `openspec/specs/<capability>/spec.md`.
 
+### The `macols` Schema
+
+The installers also copy this repo's OpenSpec schema fork,
+`openspec/schemas/macols`, into OpenSpec's user schema directory
+(`${XDG_DATA_HOME:-~/.local/share}/openspec/schemas/macols`). Nothing is written
+into a repo until you opt it in. In a repo that already uses OpenSpec, run:
+
+```bash
+macols-openspec-adopt            # add --dry-run to preview
+```
+
+It sets `schema: macols` in `openspec/config.yaml`, pins any in-flight change
+that doesn't name a schema to `spec-driven` (so existing work validates and
+applies exactly as before), and creates a starter `openspec/constraints.md`.
+It never runs `openspec init`, and re-running it changes nothing. You can also
+pass `--schema macols` to `openspec new change` for a one-off.
+
+`macols` extends `spec-driven` so every change carries four artifacts:
+
+- **Intent**: the proposal's Why and What Changes.
+- **Scope**: May change (paths, globs, identifiers) and Must not change.
+- **Constraints**: ids cited from the repo's `openspec/constraints.md`, a
+  register of standing rules and the checks that guard them. The first change
+  in a repo without one creates it.
+- **Evidence**: `evidence.md`, one runnable check per claim. Apply is gated on
+  it, and a change is done only when every entry is recorded against the head
+  commit as pass, fail or could-not-check.
+
+After an OpenSpec upgrade, diff `openspec/schemas/macols` against the package's
+`schemas/spec-driven/` (`openspec schema which spec-driven` prints the path),
+carry the changes across by hand, then rerun `./install.sh`.
+
 ## Spec Anchors (ast-grep)
 
 The installers also add [ast-grep](https://ast-grep.github.io) and yq.

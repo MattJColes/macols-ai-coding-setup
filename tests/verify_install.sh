@@ -124,6 +124,7 @@ verify_claudecode() {
         "grep -qs 'ponytail@ponytail' '$d/plugins/installed_plugins.json' || grep -qs 'ponytail@ponytail' '$d/settings.json'"
     soft "git worktree available" "git worktree list >/dev/null 2>&1 || git worktree --help >/dev/null 2>&1"
     soft "openspec CLI installed" "command -v openspec >/dev/null && openspec --version >/dev/null 2>&1"
+    soft "openspec 'macols' schema installed user-level" "[ -f \"\${XDG_DATA_HOME:-\$HOME/.local/share}/openspec/schemas/macols/schema.yaml\" ]"
     soft "ast-grep CLI installed" "command -v ast-grep >/dev/null && ast-grep --version >/dev/null 2>&1"
     soft "yq CLI installed" "command -v yq >/dev/null 2>&1"
     soft "claude mcp list shows context7" "command -v claude >/dev/null && claude mcp list 2>/dev/null | grep -q context7"

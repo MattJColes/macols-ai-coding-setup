@@ -155,6 +155,8 @@ banner "Pi Coding Agents Installer (pi + omp)"
 if [ "$DO_PI" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     ensure_cli pi   # installs both the `pi` and `omp` binaries
     ensure_openspec || printf "${YELLOW}⚠ openspec install skipped/failed${NC}\n"
+    install_openspec_schema || printf "${YELLOW}⚠ openspec schema install skipped/failed${NC}\n"
+    install_macols_commands || printf "${YELLOW}⚠ macols command links skipped/failed${NC}\n"
     ensure_ast_grep || printf "${YELLOW}⚠ ast-grep install skipped/failed${NC}\n"
     ensure_yq || printf "${YELLOW}⚠ yq install skipped/failed${NC}\n"
     ensure_quality_tools || true
