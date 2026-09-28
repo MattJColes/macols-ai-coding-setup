@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   # Nightly only: E2E, broad matrices, load/failure tests and the full eval
-  # suite, from NIGHTLY in .macols/checks.env. Kept out of the PR loop.
+  # suite, from NIGHTLY in .macols/checks.conf. Kept out of the PR loop.
   nightly:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
@@ -24,8 +24,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Nightly checks
         run: |
-          cmd=$(grep -E '^NIGHTLY=' .macols/checks.env 2>/dev/null | tail -1 | cut -d= -f2- | sed -e 's/^["'"'"']//' -e 's/["'"'"']$//')
-          if [ -z "$cmd" ]; then echo "No NIGHTLY command in .macols/checks.env"; exit 0; fi
+          cmd=$(grep -E '^NIGHTLY=' .macols/checks.conf 2>/dev/null | tail -1 | cut -d= -f2- | sed -e 's/^["'"'"']//' -e 's/["'"'"']$//')
+          if [ -z "$cmd" ]; then echo "No NIGHTLY command in .macols/checks.conf"; exit 0; fi
           bash -c "$cmd"
 
   python:

@@ -153,7 +153,7 @@ Every tool's PreToolUse(Bash) wiring SHALL pass the command to
 `hooks/pre_commit_check.sh`, which on `git commit` (not `--no-verify`, not
 `MACOLS_CHECKPOINT=off`, trusted projects only) runs the checkpoint battery:
 the whole test suite of each affected package, the lint/type/layer checks and
-the project's `CHECKPOINT` command from `.macols/checks.env`. A failure SHALL
+the project's `CHECKPOINT` command from `.macols/checks.conf`. A failure SHALL
 deny the commit with the findings as the reason; a pass is remembered by tree
 fingerprint so an unchanged tree is not re-checked. The turn-end battery SHALL
 run the project's `IMMEDIATE` command.

@@ -30,8 +30,8 @@ Each check runs at the cheapest loop that still catches the problem:
 | Merge/nightly | The project's `NIGHTLY` command: E2E, broad model matrix, load tests, full eval suite | Scheduled CI job |
 | Production | Traces, user failures, latency and cost, sampled quality evals | Continuously; see the `sre` skill |
 
-Projects declare their own commands in `.macols/checks.env` (template in
-`config/personas/quality/references/checks.env`). The hooks read it as data and
+Projects declare their own commands in `.macols/checks.conf` (template in
+`config/personas/quality/references/checks.conf`). The hooks read it as data and
 run the commands from the repo root in trusted projects only. The checkpoint
 skips when the tree matches the last passing checkpoint, when the command
 passes `--no-verify`, or with `MACOLS_CHECKPOINT=off`.

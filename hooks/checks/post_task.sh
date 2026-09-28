@@ -622,7 +622,7 @@ run_semgrep_scan() {
 }
 
 # ── Project-declared checks ──────────────────────────────────────────────────
-# A project can add its own commands per feedback loop in .macols/checks.env:
+# A project can add its own commands per feedback loop in .macols/checks.conf:
 #   IMMEDIATE="..."   every agent turn (schema validation, a fast smoke test)
 #   CHECKPOINT="..."  before each commit (integration tests, an eval smoke set)
 #   NIGHTLY="..."     the scheduled CI job (E2E, the full eval suite)
@@ -630,7 +630,7 @@ run_semgrep_scan() {
 # root, in trusted projects only.
 project_check_command() {
     local key="$1" file line
-    file="$(project_root)/.macols/checks.env"
+    file="$(project_root)/.macols/checks.conf"
     [ -f "$file" ] || return 0
     line=$(grep -E "^${key}=" "$file" | tail -1) || return 0
     line="${line#*=}"
