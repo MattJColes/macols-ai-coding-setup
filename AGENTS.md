@@ -108,7 +108,8 @@ Edit the single source, never the rendered output:
   recorded with the head SHA before the change counts as done). After an
   OpenSpec upgrade, diff the fork against the package's `schemas/spec-driven/`
   (`openspec schema which spec-driven` prints its path) and carry the changes
-  across by hand.
+  across by hand. Other repos opt in with `macols-openspec-adopt`
+  (`bin/`, linked into `~/.local/bin` with `macols-trust` by the installers).
 
 ## Conventions (follow these in every installer change)
 

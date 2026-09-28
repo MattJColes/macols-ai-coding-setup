@@ -41,10 +41,18 @@ This repo has opted in: living specs are in `openspec/specs/<capability>/spec.md
 
 The installers also copy this repo's OpenSpec schema fork,
 `openspec/schemas/macols`, into OpenSpec's user schema directory
-(`${XDG_DATA_HOME:-~/.local/share}/openspec/schemas/macols`). Any repo can then
-opt in without copying files: set `schema: macols` in its
-`openspec/config.yaml`, or pass `--schema macols` to `openspec new change`.
-Nothing is written into a repo until you do.
+(`${XDG_DATA_HOME:-~/.local/share}/openspec/schemas/macols`). Nothing is written
+into a repo until you opt it in. In a repo that already uses OpenSpec, run:
+
+```bash
+macols-openspec-adopt            # add --dry-run to preview
+```
+
+It sets `schema: macols` in `openspec/config.yaml`, pins any in-flight change
+that doesn't name a schema to `spec-driven` (so existing work validates and
+applies exactly as before), and creates a starter `openspec/constraints.md`.
+It never runs `openspec init`, and re-running it changes nothing. You can also
+pass `--schema macols` to `openspec new change` for a one-off.
 
 `macols` extends `spec-driven` so every change carries four artifacts:
 

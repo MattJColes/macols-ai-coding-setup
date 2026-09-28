@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+#
+# macols-openspec-adopt — switch this repo's OpenSpec workflow to the `macols`
+# schema (every change carries intent, scope, constraints and evidence). See
+# docs/workflow.md.
+#
+# - Sets `schema: macols` in openspec/config.yaml (with a comment).
+# - Pins every in-flight change that does not already name a schema to
+#   spec-driven, so switching never changes how existing work validates or
+#   applies.
+# - Creates a starter openspec/constraints.md (intro and an empty table) when
+#   the repo has none; the first proposal fills it from the repo's real rules.
+#
+# It never runs `openspec init`: the repo must already use OpenSpec. Safe to
+# re-run.
+#
+# Usage: macols-openspec-adopt [--dry-run]
+set -euo pipefail
+
+DRY_RUN=false
+case "${1:-}" in
+    --dry-run) DRY_RUN=true ;;
+    -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
+    "") ;;
+    *) echo "Unknown option: $1" >&2; exit 2 ;;
+esac
+
+root=$(git rev-parse --show-toplevel 2>/dev/null || pwd -P)
+config="$root/openspec/config.yaml"
+if [ ! -f "$config" ]; then
+    echo "No openspec/config.yaml in $root. This repo doesn't use OpenSpec yet;" >&2
+    echo "run 'openspec init' first if you want it, then re-run this." >&2
+    exit 1
+fi
+
+if command -v openspec &>/dev/null \
+    && ! (cd "$root" && OPENSPEC_TELEMETRY=0 openspec schema which macols &>/dev/null); then
+    echo "OpenSpec can't find the 'macols' schema. Re-run ./install.sh from" >&2
+    echo "macols-ai-coding-setup to install it user-level, then re-run this." >&2
+    exit 1
+fi
+
+do_write() {  # <file> <content-from-stdin>
+    if [ "$DRY_RUN" = true ]; then
+        echo "would write $1"
+        cat > /dev/null
+    else
+        cat > "$1.macols.tmp" && mv "$1.macols.tmp" "$1"
+    fi
+}
+
+# 1. Pin in-flight changes that don't name a schema (they were created under
+#    the old default, spec-driven).
+pinned=0
+for dir in "$root"/openspec/changes/*/; do
+    [ -d "$dir" ] || continue
+    case "$(basename "$dir")" in archive) continue ;; esac
+    meta="$dir.openspec.yaml"
+    if [ -f "$meta" ] && grep -q '^schema:' "$meta"; then
+        continue
+    fi
+    { [ -f "$meta" ] && cat "$meta"; echo "schema: spec-driven"; } | do_write "$meta"
+    pinned=$((pinned + 1))
+done
+
+# 2. Switch the project default.
+if grep -qx 'schema: macols' "$config"; then
+    echo "openspec/config.yaml already uses schema: macols"
+else
+    block='# Fork of the spec-driven schema: every change carries intent, scope,
+# constraints and evidence (see openspec/constraints.md). Existing changes keep
+# their own schema line in .openspec.yaml.
+schema: macols'
+    if grep -q '^schema:' "$config"; then
+        BLOCK="$block" awk '/^schema:/ && !done { print ENVIRON["BLOCK"]; done = 1; next } { print }' "$config" | do_write "$config"
+    else
+        { printf '%s\n\n' "$block"; cat "$config"; } | do_write "$config"
+    fi
+    echo "openspec/config.yaml: schema set to macols"
+fi
+
+# 3. Starter constraint register.
+register="$root/openspec/constraints.md"
+if [ -f "$register" ]; then
+    echo "openspec/constraints.md already exists"
+else
+    do_write "$register" <<'EOF'
+# Constraint Register
+
+The standing rules every change in this repo is held to. Proposals cite them by
+id in their Constraints section (one line on why each applies) instead of
+copying the text, and evidence.md proves the ones a change could break.
+
+- Ids are `C-UPPER-KEBAB`. They are never renumbered or reused.
+- To retire a rule, keep its row and mark it `Retired YYYY-MM-DD: <reason>`.
+- **Source** links the authoritative doc section. **Guard** names a test or
+  check that already fails when the rule is broken, or `Review` when nothing
+  automated catches it. Never invent a guard.
+- Build it from the repo's real rules (agent guide, CONTRIBUTING, ADRs,
+  security docs): aim for 8-15, added by the change that first relies on them.
+
+| Id | Rule | Source | Guard |
+|---|---|---|---|
+EOF
+    echo "openspec/constraints.md: starter register created (empty table)"
+fi
+
+echo "Pinned $pinned in-flight change(s) to spec-driven."
+[ "$DRY_RUN" = true ] && echo "(dry run: nothing written)"
+echo "New changes now carry proposal (with Scope and Constraints), specs, design, evidence and tasks."

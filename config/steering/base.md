@@ -42,7 +42,7 @@ System-level rules for every {{ASSISTANT_NOUN}} session: minimal, robust softwar
 
 ## Specs
 
-- If the repo has `openspec/`, use the `/opsx:*` skills (explore, propose, apply, archive) instead of coding straight from the request. Never run `openspec init` uninvited.
+- If the repo has `openspec/`, use the `/opsx:*` skills (explore, propose, apply, archive) instead of coding straight from the request. Never run `openspec init` uninvited. If its `openspec/config.yaml` still says `schema: spec-driven`, suggest `macols-openspec-adopt` once (four-artifact changes: intent, scope, constraints, evidence).
 - If the repo has `specs/anchors/*.yml`, load the `anchors` skill before and after each change.
 
 ## Version Control
