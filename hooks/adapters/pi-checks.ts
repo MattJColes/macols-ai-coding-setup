@@ -66,6 +66,18 @@ export default function (pi: any) {
     } catch {
       return; // the guard itself failing must never block normal commands
     }
+    // Local checkpoint before `git commit`: block with the findings.
+    try {
+      const res = await pi.exec("bash", [`${HOOKS_DIR}/pre_commit_check.sh`, command], {
+        signal: ctx?.signal,
+        timeout: 900_000,
+      });
+      const checkpoint = `${res.stdout || ""}`.trim();
+      if (checkpoint) return { block: true, reason: checkpoint };
+    } catch {
+      // a failing checkpoint script must never block normal commands
+    }
+
     if (!reason) return;
 
     try {

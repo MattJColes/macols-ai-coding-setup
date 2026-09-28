@@ -4,6 +4,7 @@
  * Wires the shared check scripts into OpenCode's plugin API
  * (opencode.ai/docs/plugins):
  *   tool.execute.before -> pre_deploy_check.sh  (cdk deploy/destroy guard)
+ *                          pre_commit_check.sh  (checkpoint before git commit)
  *   tool.execute.after  -> post_code_hook.sh    (fast file-scoped checks; the
  *                          findings are appended to the tool output, which is
  *                          what the model reads next)
@@ -29,6 +30,7 @@
 const HOOK_SCRIPT = "__HOOK_SCRIPT_PATH__";
 const TASK_HOOK_SCRIPT = "__TASK_HOOK_SCRIPT_PATH__";
 const PRE_DEPLOY_CHECK_SCRIPT = "__PRE_DEPLOY_CHECK_PATH__";
+const PRE_COMMIT_CHECK_SCRIPT = "__PRE_COMMIT_CHECK_PATH__";
 
 // Tools that modify files and should trigger the per-edit checks.
 // apply_patch is the edit tool GPT-family models use in OpenCode.
@@ -72,6 +74,17 @@ export const PostCodeHookPlugin = async ({ $, client, directory, worktree }) => 
       if ((input.tool || "").toLowerCase() !== "bash") return;
       const command = output?.args?.command;
       if (!command) return;
+
+      // Local checkpoint: a failing `git commit` checkpoint blocks the call
+      // with the findings, which the model reads as the tool error.
+      let checkpoint = "";
+      try {
+        const res = await $`bash ${PRE_COMMIT_CHECK_SCRIPT} ${command}`.quiet().nothrow().cwd(cwd);
+        checkpoint = res.stdout.toString().trim();
+      } catch {
+        checkpoint = "";
+      }
+      if (checkpoint) throw new Error(checkpoint);
 
       let reason = "";
       try {

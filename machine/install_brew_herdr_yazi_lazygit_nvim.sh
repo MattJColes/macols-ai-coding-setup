@@ -264,9 +264,13 @@ echo "=============================="
 echo " [4/6] Installing Yazi plugins"
 echo "=============================="
 
-ya pkg add yazi-rs/plugins:git || true
-ya pkg add yazi-rs/plugins:vcs-files || true
-ya pkg install --discard || true
+if command -v ya &>/dev/null; then
+    ya pkg add yazi-rs/plugins:git || true
+    ya pkg add yazi-rs/plugins:vcs-files || true
+    ya pkg install --discard || true
+else
+    warn "ya (yazi) missing; skipping yazi plugins"
+fi
 
 echo ""
 echo "=============================="

@@ -8,12 +8,28 @@ on:
   pull_request:
   push:
     branches: [main]
+  schedule:
+    - cron: "17 3 * * *"   # nightly: the expensive loop
 
 permissions:
   contents: read
 
 jobs:
+  # Nightly only: E2E, broad matrices, load/failure tests and the full eval
+  # suite, from NIGHTLY in .macols/checks.env. Kept out of the PR loop.
+  nightly:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Nightly checks
+        run: |
+          cmd=$(grep -E '^NIGHTLY=' .macols/checks.env 2>/dev/null | tail -1 | cut -d= -f2- | sed -e 's/^["'"'"']//' -e 's/["'"'"']$//')
+          if [ -z "$cmd" ]; then echo "No NIGHTLY command in .macols/checks.env"; exit 0; fi
+          bash -c "$cmd"
+
   python:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,6 +47,7 @@ jobs:
       - run: uvx pip-audit --strict .
 
   typescript:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,6 +67,7 @@ jobs:
       - run: npm audit --audit-level=high
 
   dart:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,6 +80,7 @@ jobs:
       - run: flutter test
 
   go:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -73,12 +92,14 @@ jobs:
       - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 
   duplication:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: npx --yes jscpd@4 .   # threshold and ignores come from .jscpd.json
 
   semgrep:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     container:
       image: semgrep/semgrep

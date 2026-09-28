@@ -163,7 +163,13 @@ run_python_tests() {
         fi
 
         local pytest_cmd="${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME }$pytest_bin -q --tb=short"
-        if [ "$scope" = "changed" ]; then
+        if [ "${CHECKPOINT_MODE:-0}" = "1" ]; then
+            # Checkpoint: the whole suite of each project this change touches.
+            if [ -n "$(changed_code_files)" ] && ! changed_code_files | grep -q "^$(pwd)/"; then
+                cd "$root_dir" || return
+                continue
+            fi
+        elif [ "$scope" = "changed" ]; then
             local targets
             targets=$(impacted_test_files "$(pwd)")
             if [ -z "$targets" ]; then
@@ -322,7 +328,9 @@ run_node_tests() {
     [ ${#files[@]} -eq 0 ] && return 0
 
     local out ec=0 bin
-    if [[ "$script" == *vitest* ]] && bin=$(_node_bin vitest) && [ -n "$bin" ]; then
+    if [ "${CHECKPOINT_MODE:-0}" = "1" ]; then
+        out=$(${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME} npm test 2>&1) || ec=$?
+    elif [[ "$script" == *vitest* ]] && bin=$(_node_bin vitest) && [ -n "$bin" ]; then
         out=$(${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME} "$bin" related --run --passWithNoTests "${files[@]}" 2>&1) || ec=$?
     elif [[ "$script" == *jest* ]] && bin=$(_node_bin jest) && [ -n "$bin" ]; then
         out=$(${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME} "$bin" --findRelatedTests "${files[@]}" --passWithNoTests 2>&1) || ec=$?
@@ -432,6 +440,7 @@ run_flutter_tests() {
                 [ -f "$cand" ] && targets+=("$cand") ;;
         esac
     done < <(changed_matching '*.dart')
+    [ "${CHECKPOINT_MODE:-0}" = "1" ] && targets=(test)
     if [ ${#targets[@]} -eq 0 ]; then
         add_warning "Flutter tests: no impacted tests for changed files"
         return 0
@@ -503,7 +512,9 @@ run_go_checks() {
         ec=0
         local -a race=()
         [ "${MACOLS_GO_RACE:-0}" = "1" ] && race=(-race)
-        out=$(cd "$mod" && ${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME} go test "${race[@]}" "${dirs[@]}" 2>&1) || ec=$?
+        local -a test_targets=("${dirs[@]}")
+        [ "${CHECKPOINT_MODE:-0}" = "1" ] && test_targets=(./...)
+        out=$(cd "$mod" && ${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME} go test ${race[@]+"${race[@]}"} "${test_targets[@]}" 2>&1) || ec=$?
         [ "$ec" -ne 0 ] && report_test_failure "go test ($label)" "$ec" "$out"
     done
     return 0
@@ -610,6 +621,35 @@ run_semgrep_scan() {
     add_critical_issue "semgrep: $n ERROR-severity finding(s)"$'\n'"$detail"$'\n'"Fix: remove the unsafe pattern (validate input, parameterise queries, avoid shell=True); do not add a nosemgrep comment."
 }
 
+# ── Project-declared checks ──────────────────────────────────────────────────
+# A project can add its own commands per feedback loop in .macols/checks.env:
+#   IMMEDIATE="..."   every agent turn (schema validation, a fast smoke test)
+#   CHECKPOINT="..."  before each commit (integration tests, an eval smoke set)
+#   NIGHTLY="..."     the scheduled CI job (E2E, the full eval suite)
+# Values are read as data (never sourced) and run with bash from the repo
+# root, in trusted projects only.
+project_check_command() {
+    local key="$1" file line
+    file="$(project_root)/.macols/checks.env"
+    [ -f "$file" ] || return 0
+    line=$(grep -E "^${key}=" "$file" | tail -1) || return 0
+    line="${line#*=}"
+    line="${line#\"}"; line="${line%\"}"
+    line="${line#\'}"; line="${line%\'}"
+    printf '%s' "$line"
+}
+
+_run_project_check() {
+    local key="$1" cmd out ec=0
+    cmd=$(project_check_command "$key")
+    [ -z "$cmd" ] && return 0
+    out=$(cd "$(project_root)" && ${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME} bash -c "$cmd" 2>&1) || ec=$?
+    [ "$ec" -ne 0 ] && add_critical_issue "$key check ($cmd): FAILED"$'\n'"$(printf '%s\n' "$out" | tail -15)"$'\n'"Fix: make '$cmd' pass before finishing."
+    return 0
+}
+run_project_immediate() { _run_project_check IMMEDIATE; }
+run_project_checkpoint() { _run_project_check CHECKPOINT; }
+
 # ── Orchestration ────────────────────────────────────────────────────────────
 
 # Run a single check function in isolation and persist its findings.
@@ -648,6 +688,11 @@ run_post_task_checks() {
     fi
     [ "$has_go" = "true" ] && checks+=(run_go_checks)
     checks+=(run_shellcheck run_duplication_check run_file_length_check run_semgrep_scan)
+    if [ "${CHECKPOINT_MODE:-0}" = "1" ]; then
+        checks+=(run_project_checkpoint)
+    else
+        checks+=(run_project_immediate)
+    fi
 
     # Untrusted project: keep only the checks that read files without running
     # repo code (see project_trusted in common.sh).

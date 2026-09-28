@@ -81,7 +81,7 @@ Options:
     --aws-mcp         Also register the AWS MCP servers (remembered; or MACOLS_AWS_MCP=1)
     --no-aws-mcp      Remove the AWS MCP servers and stop asking
     --models-only     Register LAN models for both agents and reconfigure omp roles
-    --no-pi           Skip installing/upgrading the pi and omp binaries
+    --no-pi, --no-cli Skip installing/upgrading the pi and omp binaries
     --no-packages     Skip installing agent packages
     --no-models       Skip model setup for both agents
     -p, --project     Install skills to ./.pi/skills and ./.omp/skills and AGENTS.md to ./AGENTS.md (implies --no-pi)
@@ -141,7 +141,7 @@ while [ $# -gt 0 ]; do
         # Exported because configure_omp_models lives in lib/common.sh: a plain
         # assignment reads as unused when shellcheck lints this file on its own.
         --models-only)   set_subset; DO_MODELS=true; export OMP_RECONFIGURE_MODELS=true ;;
-        --no-pi)         DO_PI=false ;;
+        --no-pi|--no-cli) DO_PI=false ;;
         --no-packages)   DO_PACKAGES=false ;;
         --no-models)     DO_MODELS=false ;;
         -p|--project)    PROJECT_INSTALL=true; DO_PI=false ;;

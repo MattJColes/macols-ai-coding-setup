@@ -32,19 +32,26 @@ apt_update() {
 }
 
 # set_rc_block <file> <name> <body> — write a marker-delimited block into an
-# rc file, replacing any earlier copy of the same block so re-runs never
-# duplicate it. Filters to a temp file and moves it back (no `sed -i`).
+# rc file. An existing copy is replaced where it stands (same position, no new
+# blank lines), so re-runs leave the file byte-for-byte unchanged; a new block
+# is appended. Filters to a temp file and moves it back (no `sed -i`).
 set_rc_block() {
     local file="$1" name="$2" body="$3"
     local start="# >>> macols: $name >>>" end="# <<< macols: $name <<<"
     touch "$file"
-    if grep -qF "$start" "$file"; then
-        awk -v s="$start" -v e="$end" '
-            $0 == s { skip = 1; next }
-            $0 == e { skip = 0; next }
-            !skip { print }' "$file" > "$file.macols.tmp" && mv "$file.macols.tmp" "$file"
+    if grep -qxF "$start" "$file"; then
+        START="$start" END="$end" BODY="$body" awk '
+            $0 == ENVIRON["START"] { print; print ENVIRON["BODY"]; skip = 1; next }
+            $0 == ENVIRON["END"]   { skip = 0 }
+            !skip { print }' "$file" > "$file.macols.tmp"
+        if cmp -s "$file" "$file.macols.tmp"; then
+            rm -f "$file.macols.tmp"
+        else
+            mv "$file.macols.tmp" "$file"
+        fi
+    else
+        printf '\n%s\n%s\n%s\n' "$start" "$body" "$end" >> "$file"
     fi
-    printf '\n%s\n%s\n%s\n' "$start" "$body" "$end" >> "$file"
 }
 
 # The rc files this user's shells read: zsh and bash on both platforms.
@@ -105,12 +112,18 @@ brew_bundle() {
 install_python() {
     command -v uv &>/dev/null || { warn "uv missing (brew bundle failed?); skipping Python"; return 0; }
     echo "Installing Python 3.14 with uv..."
-    uv python install 3.14
-    # Also expose `python` / `python3` / `python3.14` in ~/.local/bin.
-    uv python install --default 3.14 2>/dev/null \
-        || uv python install --preview --default 3.14 2>/dev/null \
-        || warn "uv could not install python shims; use 'uv run python'"
     export PATH="$HOME/.local/bin:$PATH"
+    uv python install 3.14
+    # Also expose `python` / `python3` in ~/.local/bin. Older uv only honours
+    # --default under --preview (and exits 0 without it), so check the result.
+    [ -x "$HOME/.local/bin/python3" ] || uv python install --default 3.14 >/dev/null 2>&1 || true
+    [ -x "$HOME/.local/bin/python3" ] || uv python install --preview --default 3.14 >/dev/null 2>&1 || true
+    # Last resort: point the shims at the python3.14 uv did install.
+    if [ ! -x "$HOME/.local/bin/python3" ] && [ -x "$HOME/.local/bin/python3.14" ]; then
+        ln -sf python3.14 "$HOME/.local/bin/python3"
+        ln -sf python3.14 "$HOME/.local/bin/python"
+    fi
+    [ -x "$HOME/.local/bin/python3" ] || warn "no ~/.local/bin/python3; use 'uv run python'"
     local rc
     # shellcheck disable=SC2016  # expanded at shell start, not now
     while IFS= read -r rc; do set_rc_block "$rc" local-bin 'export PATH="$HOME/.local/bin:$PATH"'; done < <(shell_rcs)

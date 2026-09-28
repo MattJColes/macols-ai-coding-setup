@@ -14,6 +14,9 @@ CODE_HOOK="$HOOKS_DIR/post_code_hook.sh"
 TASK_HOOK="$HOOKS_DIR/post_task_hook.sh"
 PRE_DEPLOY_HOOK="$HOOKS_DIR/pre_deploy_hook.sh"
 PRE_DEPLOY_CHECK="$HOOKS_DIR/pre_deploy_check.sh"
+# Local checkpoint: `git commit` runs the checkpoint battery first.
+PRE_COMMIT_HOOK="$HOOKS_DIR/pre_commit_hook.sh"
+PRE_COMMIT_CHECK="$HOOKS_DIR/pre_commit_check.sh"
 
 check_hook_sources() {
     local f
@@ -26,9 +29,9 @@ check_hook_sources() {
 # write_claude_hooks <settings_file>
 write_claude_hooks() {
     require_node || return 1
-    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_HOOK" || return 1
+    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_HOOK" "$PRE_COMMIT_HOOK" "$PRE_COMMIT_CHECK" || return 1
     mkdir -p "$(dirname "$1")"
-    SETTINGS_FILE="$1" HOOK_SCRIPT="$CODE_HOOK" TASK_HOOK_SCRIPT="$TASK_HOOK" PRE_DEPLOY_HOOK_SCRIPT="$PRE_DEPLOY_HOOK" node -e '
+    SETTINGS_FILE="$1" HOOK_SCRIPT="$CODE_HOOK" TASK_HOOK_SCRIPT="$TASK_HOOK" PRE_DEPLOY_HOOK_SCRIPT="$PRE_DEPLOY_HOOK" PRE_COMMIT_HOOK_SCRIPT="$PRE_COMMIT_HOOK" node -e '
 const fs = require("fs"), env = process.env;
 let existing = {};
 if (fs.existsSync(env.SETTINGS_FILE)) { try { existing = JSON.parse(fs.readFileSync(env.SETTINGS_FILE, "utf8")); } catch (e) {} }
@@ -36,7 +39,10 @@ if (fs.existsSync(env.SETTINGS_FILE)) { try { existing = JSON.parse(fs.readFileS
 // additionalContext and a one-shot Stop decision:block, both model-visible
 // (plain stdout on exit 0 only reaches the debug log).
 existing.hooks = {
-    PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT + " --format claude", timeout: 30 }] }],
+    PreToolUse: [{ matcher: "Bash", hooks: [
+        { type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT + " --format claude", timeout: 30 },
+        { type: "command", command: env.PRE_COMMIT_HOOK_SCRIPT + " --format claude", timeout: 900 }
+    ] }],
     PostToolUse: [{ matcher: "Edit|Write|NotebookEdit", hooks: [{ type: "command", command: env.HOOK_SCRIPT + " --format claude", timeout: 120 }] }],
     Stop: [{ hooks: [
         { type: "command", command: env.TASK_HOOK_SCRIPT + " --format claude", timeout: 600 }
@@ -68,9 +74,9 @@ install_claude_launcher() {
 # write_codex_hooks <hooks_json>
 write_codex_hooks() {
     require_node || return 1
-    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_HOOK" || return 1
+    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_HOOK" "$PRE_COMMIT_HOOK" "$PRE_COMMIT_CHECK" || return 1
     mkdir -p "$(dirname "$1")"
-    HOOKS_JSON="$1" HOOK_SCRIPT="$CODE_HOOK" TASK_HOOK_SCRIPT="$TASK_HOOK" PRE_DEPLOY_HOOK_SCRIPT="$PRE_DEPLOY_HOOK" node -e '
+    HOOKS_JSON="$1" HOOK_SCRIPT="$CODE_HOOK" TASK_HOOK_SCRIPT="$TASK_HOOK" PRE_DEPLOY_HOOK_SCRIPT="$PRE_DEPLOY_HOOK" PRE_COMMIT_HOOK_SCRIPT="$PRE_COMMIT_HOOK" node -e '
 const fs = require("fs"), env = process.env;
 // Codex deserialises hooks.json into a struct with deny_unknown_fields that
 // accepts only "description" and "hooks". The event map is nested under
@@ -83,7 +89,10 @@ const fs = require("fs"), env = process.env;
 const config = {
     description: "macols-ai-coding-setup quality and safety hooks",
     hooks: {
-        PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT + " --format codex", timeout: 30 }] }],
+        PreToolUse: [{ matcher: "Bash", hooks: [
+            { type: "command", command: env.PRE_DEPLOY_HOOK_SCRIPT + " --format codex", timeout: 30 },
+            { type: "command", command: env.PRE_COMMIT_HOOK_SCRIPT + " --format codex", timeout: 900 }
+        ] }],
         PostToolUse: [{ matcher: "Edit|Write", hooks: [{ type: "command", command: env.HOOK_SCRIPT + " --format codex", timeout: 120 }] }],
         // Stop mirrors Claude: the turn-end battery, one decision:block nudge.
         Stop: [{ hooks: [
@@ -104,9 +113,9 @@ fs.writeFileSync(env.HOOKS_JSON, JSON.stringify(config, null, 2) + "\n");
 # (mcp, plugins, …) survive.
 write_zcode_hooks() {
     require_node || return 1
-    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_HOOK" || return 1
+    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_HOOK" "$PRE_COMMIT_HOOK" "$PRE_COMMIT_CHECK" || return 1
     mkdir -p "$(dirname "$1")"
-    HOOKS_JSON="$1" HOOK_SCRIPT="$CODE_HOOK" TASK_HOOK_SCRIPT="$TASK_HOOK" PRE_DEPLOY_HOOK_SCRIPT="$PRE_DEPLOY_HOOK" node -e '
+    HOOKS_JSON="$1" HOOK_SCRIPT="$CODE_HOOK" TASK_HOOK_SCRIPT="$TASK_HOOK" PRE_DEPLOY_HOOK_SCRIPT="$PRE_DEPLOY_HOOK" PRE_COMMIT_HOOK_SCRIPT="$PRE_COMMIT_HOOK" node -e '
 const fs = require("fs"), env = process.env;
 let cfg = {};
 if (fs.existsSync(env.HOOKS_JSON)) { try { cfg = JSON.parse(fs.readFileSync(env.HOOKS_JSON, "utf8")); } catch (e) {} }
@@ -117,7 +126,7 @@ cfg.hooks = {
     ...(cfg.hooks || {}),
     enabled: true,
     events: {
-        PreToolUse: [{ matcher: "Bash", hooks: [hook(env.PRE_DEPLOY_HOOK_SCRIPT, 30000)] }],
+        PreToolUse: [{ matcher: "Bash", hooks: [hook(env.PRE_DEPLOY_HOOK_SCRIPT, 30000), hook(env.PRE_COMMIT_HOOK_SCRIPT, 900000)] }],
         PostToolUse: [{ matcher: "Edit|Write|NotebookEdit", hooks: [hook(env.HOOK_SCRIPT, 120000)] }],
         Stop: [{ hooks: [hook(env.TASK_HOOK_SCRIPT, 600000)] }]
     }
@@ -131,12 +140,13 @@ fs.writeFileSync(env.HOOKS_JSON, JSON.stringify(cfg, null, 2) + "\n");
 # The installed file must be .js — OpenCode's plugin loader scans only
 # *.ts and *.js, so a .mjs plugin is silently never loaded.
 install_opencode_plugin() {
-    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_CHECK" "$ADAPTERS_DIR/opencode_plugin.mjs" || return 1
+    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_CHECK" "$PRE_COMMIT_CHECK" "$ADAPTERS_DIR/opencode_plugin.mjs" || return 1
     mkdir -p "$1"
     rm -f "$1/post_code_hook_plugin.mjs" "$1/post_code_hook_env.mjs"
     sed -e "s|__HOOK_SCRIPT_PATH__|${CODE_HOOK}|g" \
         -e "s|__TASK_HOOK_SCRIPT_PATH__|${TASK_HOOK}|g" \
         -e "s|__PRE_DEPLOY_CHECK_PATH__|${PRE_DEPLOY_CHECK}|g" \
+        -e "s|__PRE_COMMIT_CHECK_PATH__|${PRE_COMMIT_CHECK}|g" \
         "$ADAPTERS_DIR/opencode_plugin.mjs" > "$1/post_code_hook_plugin.js"
     printf "${GREEN}✓ Plugin installed to %s${NC}\n" "$1/post_code_hook_plugin.js"
 }
@@ -145,7 +155,7 @@ install_opencode_plugin() {
 # the agent flavour into pi-checks.ts (the turn-end event differs: pi's
 # agent_before_settle vs omp's session_stop).
 install_pi_extension() {
-    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_CHECK" "$ADAPTERS_DIR/pi-checks.ts" || return 1
+    check_hook_sources "$CODE_HOOK" "$TASK_HOOK" "$PRE_DEPLOY_CHECK" "$PRE_COMMIT_CHECK" "$ADAPTERS_DIR/pi-checks.ts" || return 1
     mkdir -p "$1"
     sed -e "s#__PI_HOOKS_DIR__#$HOOKS_DIR#g" -e "s#__PI_FLAVOUR__#${2:-pi}#g" "$ADAPTERS_DIR/pi-checks.ts" > "$1/pi-checks.ts"
     printf "${GREEN}✓ Extension installed to %s${NC}\n" "$1/pi-checks.ts"

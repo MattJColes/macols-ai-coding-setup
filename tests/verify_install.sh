@@ -112,6 +112,7 @@ verify_claudecode() {
     pass "~/.claude/bin/claude-launch is executable" "[ -x '$d/bin/claude-launch' ]"
     if has_jq; then
         pass "settings.json has PostToolUse hook"  "jq -e '.hooks.PostToolUse[0].hooks[0].command' '$d/settings.json' >/dev/null"
+        pass "settings.json runs the commit checkpoint before git commit" "jq -e '[.hooks.PreToolUse[].hooks[].command | test(\"pre_commit_hook\")] | any' '$d/settings.json' >/dev/null"
         pass "settings.json hooks answer in Claude JSON (--format claude)" "jq -e '[.hooks[][].hooks[].command | test(\"--format claude\")] | all' '$d/settings.json' >/dev/null"
         mcp_checks '.mcpServers' "$HOME/.claude.json" '~/.claude.json'
     else

@@ -61,7 +61,12 @@ CI job, so local and CI results agree.
    the project's package manager.
 6. Add `references/quality-ci.yml` as `.github/workflows/quality.yml`, trimming
    the jobs for languages the repo doesn't use.
-7. Run every gate once over the whole repo and report the baseline.
+7. Put the project's own per-loop commands in `.macols/checks.env` from
+   `references/checks.env`: `IMMEDIATE` (every turn, fast: schema validation),
+   `CHECKPOINT` (before each commit: integration tests, an eval smoke set) and
+   `NIGHTLY` (the scheduled CI job: E2E, full evals). Keep each loop's budget:
+   seconds, then a minute or two, then as long as it takes.
+8. Run every gate once over the whole repo and report the baseline.
 
 ## Adopting in an Existing Codebase
 
