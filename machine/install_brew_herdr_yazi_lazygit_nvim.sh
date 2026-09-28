@@ -442,6 +442,50 @@ echo "=============================="
 echo " [6/6] Shell configuration"
 echo "=============================="
 
+HERDR_AUTOLAUNCH_BLOCK=$(cat << 'EOF'
+# HERDR_AUTOLAUNCH: drop into herdr on each interactive SSH login.
+# Guards: interactive SSH shell, herdr installed, not already in a herdr
+# session, and no ~/.no_herdr escape-hatch file. Only after confirming the
+# herdr service is healthy do we launch it; a stopped/hung service falls
+# through to a normal shell so it can't lock you out. The health check is
+# time-bounded so a wedged daemon can't stall login.
+#
+# We intentionally do NOT `exec herdr`. herdr runs as a child of this shell
+# and we ALWAYS `stty sane` afterward, so if herdr crashes, exits, or leaves
+# the terminal in raw mode you land back in a normal shell with a working
+# keyboard instead of a wedged session you can't type into. Detaching/quitting
+# herdr therefore drops you to a shell rather than closing the SSH connection.
+if [[ $- == *i* ]] && [[ -n "${SSH_CONNECTION:-}" ]] \
+    && [[ -z "${HERDR_SESSION:-}" ]] && [[ ! -f "$HOME/.no_herdr" ]] \
+    && command -v herdr &>/dev/null; then
+    # Bound the health check: prefer GNU `timeout`, then macOS `gtimeout`,
+    # else run unbounded. Written explicitly (not via a command-in-a-var) so
+    # it behaves identically under bash and zsh.
+    if command -v timeout &>/dev/null; then
+        timeout 5 herdr service status >/dev/null 2>&1
+    elif command -v gtimeout &>/dev/null; then
+        gtimeout 5 herdr service status >/dev/null 2>&1
+    else
+        herdr service status >/dev/null 2>&1
+    fi
+    if [[ $? -eq 0 ]]; then
+        # Mark the session so panes herdr spawns don't recurse into this block.
+        export HERDR_SESSION=1
+        herdr
+        # herdr has detached/exited (or failed to take the tty). Restore the
+        # line discipline so the fall-through shell is always usable, then clear
+        # the marker so a manual `herdr` relaunch in this shell still works.
+        stty sane 2>/dev/null || true
+        unset HERDR_SESSION
+    else
+        echo "herdr: service not healthy -- starting a normal shell instead." >&2
+        echo "       Fix with 'herdr service start' then re-login, or run" >&2
+        echo "       'touch ~/.no_herdr' to disable auto-launch entirely." >&2
+    fi
+fi
+EOF
+)
+
 for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
     if [[ -f "$rc" ]]; then
         # Homebrew's shellenv is written by ensure_homebrew (common.sh) with
@@ -489,57 +533,15 @@ for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
         # macOS) so a wedged daemon can't stall login. Two escape hatches remain
         # for any other breakage: the ~/.no_herdr file, and an rc-skipping login
         # (`ssh -t host 'exec /bin/zsh -f'`).
-        if grep -qF 'HERDR_AUTOLAUNCH' "$rc"; then
-            # Avoid `sed -i`: GNU sed and BSD/macOS sed disagree on whether it
-            # takes a backup-suffix argument, so the in-place form is not
-            # portable. Filter to a temp file and move it back instead.
-            sed '/# HERDR_AUTOLAUNCH/,/^fi$/d' "$rc" > "$rc.tmp" && mv "$rc.tmp" "$rc"
-            echo "  Refreshing herdr auto-launch in $rc"
+        # Retire the pre-marker copy (a bare "# HERDR_AUTOLAUNCH" ... "fi"
+        # block) if an older run left one outside the managed blocks.
+        if grep -qF '# HERDR_AUTOLAUNCH' "$rc" && ! grep -qF '# >>> macols: herdr-autolaunch >>>' "$rc"; then
+            awk '/^# HERDR_AUTOLAUNCH/ { skip = 1 }
+                 skip && /^fi$/ { skip = 0; next }
+                 !skip { print }' "$rc" > "$rc.macols.tmp" && mv "$rc.macols.tmp" "$rc"
         fi
-        cat >> "$rc" << 'EOF'
-
-# HERDR_AUTOLAUNCH: drop into herdr on each interactive SSH login.
-# Guards: interactive SSH shell, herdr installed, not already in a herdr
-# session, and no ~/.no_herdr escape-hatch file. Only after confirming the
-# herdr service is healthy do we launch it; a stopped/hung service falls
-# through to a normal shell so it can't lock you out. The health check is
-# time-bounded so a wedged daemon can't stall login.
-#
-# We intentionally do NOT `exec herdr`. herdr runs as a child of this shell
-# and we ALWAYS `stty sane` afterward, so if herdr crashes, exits, or leaves
-# the terminal in raw mode you land back in a normal shell with a working
-# keyboard instead of a wedged session you can't type into. Detaching/quitting
-# herdr therefore drops you to a shell rather than closing the SSH connection.
-if [[ $- == *i* ]] && [[ -n "${SSH_CONNECTION:-}" ]] \
-    && [[ -z "${HERDR_SESSION:-}" ]] && [[ ! -f "$HOME/.no_herdr" ]] \
-    && command -v herdr &>/dev/null; then
-    # Bound the health check: prefer GNU `timeout`, then macOS `gtimeout`,
-    # else run unbounded. Written explicitly (not via a command-in-a-var) so
-    # it behaves identically under bash and zsh.
-    if command -v timeout &>/dev/null; then
-        timeout 5 herdr service status >/dev/null 2>&1
-    elif command -v gtimeout &>/dev/null; then
-        gtimeout 5 herdr service status >/dev/null 2>&1
-    else
-        herdr service status >/dev/null 2>&1
-    fi
-    if [[ $? -eq 0 ]]; then
-        # Mark the session so panes herdr spawns don't recurse into this block.
-        export HERDR_SESSION=1
-        herdr
-        # herdr has detached/exited (or failed to take the tty). Restore the
-        # line discipline so the fall-through shell is always usable, then clear
-        # the marker so a manual `herdr` relaunch in this shell still works.
-        stty sane 2>/dev/null || true
-        unset HERDR_SESSION
-    else
-        echo "herdr: service not healthy -- starting a normal shell instead." >&2
-        echo "       Fix with 'herdr service start' then re-login, or run" >&2
-        echo "       'touch ~/.no_herdr' to disable auto-launch entirely." >&2
-    fi
-fi
-EOF
-        echo "  Added herdr auto-launch to $rc"
+        set_rc_block "$rc" herdr-autolaunch "$HERDR_AUTOLAUNCH_BLOCK"
+        echo "  herdr auto-launch set in $rc"
     fi
 done
 
