@@ -3,7 +3,7 @@
 ## Purpose
 
 Installers idempotently provision the agent CLI plus companion tooling
-(OpenSpec, ast-grep, yq, node symlinks). Every install is
+(OpenSpec, ast-grep, yq, revdiff, node symlinks). Every install is
 `command -v`-guarded so re-runs are no-ops, and optional steps are non-fatal
 (`ensure_foo || printf "⚠ … skipped"`).
 
@@ -77,3 +77,20 @@ kislyuk jq-wrapper yq).
 
 - **WHEN** any yq flavor is on PATH
 - **THEN** `ensure_yq` returns success without installing
+
+### Requirement: revdiff is provisioned with each tool's upstream plugin
+`ensure_revdiff` SHALL install the revdiff binary with
+`brew install umputun/apps/revdiff` when it is not on PATH, and warn
+non-fatally when Homebrew is missing. The Claude Code, Codex, OpenCode and Pi
+installers SHALL then add upstream's diff-review integration for their tool
+(Claude and Codex marketplace plugin `revdiff@revdiff`, OpenCode's
+`plugins/opencode/setup.sh`, the pi package for both `pi` and `omp`). The
+auto-firing `revdiff-planning` plugin SHALL NOT be installed for Claude Code or
+Codex. Re-runs SHALL NOT duplicate any of it. `machine/Brewfile` SHALL carry
+the formula so the machine setup installs it regardless of tool.
+<!-- anchor: cli-provisioning.revdiff -->
+
+#### Scenario: revdiff already installed
+
+- **WHEN** `revdiff` is on PATH
+- **THEN** `ensure_revdiff` returns success without calling brew

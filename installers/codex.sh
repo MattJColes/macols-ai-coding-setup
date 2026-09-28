@@ -105,6 +105,7 @@ if [ "$DO_CLI" = true ]; then
     install_macols_commands || printf "${YELLOW}⚠ macols command links skipped/failed${NC}\n"
     ensure_ast_grep || printf "${YELLOW}⚠ ast-grep install skipped/failed${NC}\n"
     ensure_yq || printf "${YELLOW}⚠ yq install skipped/failed${NC}\n"
+    ensure_revdiff || printf "${YELLOW}⚠ revdiff install skipped/failed${NC}\n"
     ensure_quality_tools || true
     ensure_node_on_noninteractive_path || printf "${YELLOW}⚠ node PATH linking skipped/failed${NC}\n"
     echo ""
@@ -127,6 +128,7 @@ if [ "$DO_HOOKS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     write_codex_hooks "$HOOKS_JSON"
     echo ""
 fi
+if [ "$PROJECT_INSTALL" = false ] && [ "$SUBSET" = false ]; then install_codex_revdiff || printf "${YELLOW}⚠ revdiff plugin install skipped/failed${NC}\n"; echo ""; fi
 
 done_banner
 echo "Next steps:"
@@ -134,5 +136,6 @@ echo "  • Restart Codex to load the new configuration"
 echo "  • Skills load on demand — run /skills or mention one with \$<name>"
 echo "  • Agents live in ~/.codex/agents/*.toml — ask Codex to delegate to one by name"
 echo "  • Run 'codex mcp list' to inspect registered MCP servers"
+echo "  • /revdiff opens the current diff for annotation (needs tmux, herdr, kitty, wezterm, Zellij or similar)"
 [ "$DO_MCPS" = true ] && aws_mcp_enabled && echo "  • Configure AWS credentials (~/.aws/credentials) for the aws-* MCPs"
 echo ""

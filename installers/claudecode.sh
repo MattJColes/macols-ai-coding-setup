@@ -85,6 +85,7 @@ if [ "$DO_CLI" = true ]; then
     install_macols_commands || printf "${YELLOW}⚠ macols command links skipped/failed${NC}\n"
     ensure_ast_grep || printf "${YELLOW}⚠ ast-grep install skipped/failed${NC}\n"
     ensure_yq || printf "${YELLOW}⚠ yq install skipped/failed${NC}\n"
+    ensure_revdiff || printf "${YELLOW}⚠ revdiff install skipped/failed${NC}\n"
     ensure_quality_tools || true
     ensure_node_on_noninteractive_path || printf "${YELLOW}⚠ node PATH linking skipped/failed${NC}\n"
     echo ""
@@ -101,6 +102,7 @@ if [ "$DO_HOOKS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     echo ""
 fi
 if [ "$PROJECT_INSTALL" = false ] && [ "$SUBSET" = false ]; then install_claude_ponytail || printf "${YELLOW}⚠ ponytail plugin install skipped/failed${NC}\n"; echo ""; fi
+if [ "$PROJECT_INSTALL" = false ] && [ "$SUBSET" = false ]; then install_claude_plugin revdiff "$REVDIFF_REPO" revdiff || printf "${YELLOW}⚠ revdiff plugin install skipped/failed${NC}\n"; echo ""; fi
 
 done_banner
 echo "Next steps:"
@@ -109,6 +111,7 @@ echo "  • Restart Claude Code to load the new configuration"
 [ "$DO_CLI" = true ] && echo "    (drops root → non-root automatically; alias it, e.g. alias cc=$CLAUDE_DIR/bin/claude-launch)"
 echo "  • Agents run automatically or via 'Use the <agent> agent ...'"
 echo "  • Skills are available as slash commands (e.g. /python)"
-echo "  • Ponytail is installed as a plugin (run '/plugin' in Claude Code to inspect)"
+echo "  • Ponytail and revdiff are installed as plugins (run '/plugin' in Claude Code to inspect)"
+echo "  • /revdiff opens the current diff for annotation (needs tmux, herdr, kitty, wezterm, Zellij or similar)"
 [ "$DO_MCPS" = true ] && aws_mcp_enabled && echo "  • Configure AWS credentials (~/.aws/credentials) for the aws-* MCPs"
 echo ""

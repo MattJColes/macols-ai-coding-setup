@@ -66,33 +66,8 @@ append_ponytail_ruleset() {
 }
 
 # install_claude_ponytail — add the ponytail marketplace + plugin for Claude
-# Code, non-interactively. Prefers the `claude plugin` CLI (idempotent: re-add
-# and re-install are no-ops); if the CLI is missing or cannot fetch the repo,
-# falls back to declaring the marketplace + plugin in user settings, which
-# Claude Code resolves on next launch.
+# Code (install_claude_plugin in lib/plugins.sh; falls back to a settings.json
+# declaration when offline).
 install_claude_ponytail() {
-    printf "${BLUE}Installing ponytail plugin (Claude Code)...${NC}\n"
-    if command -v claude &> /dev/null && claude plugin --help &> /dev/null; then
-        if { claude plugin marketplace list 2>/dev/null | grep -qi ponytail \
-              || claude plugin marketplace add "$PONYTAIL_REPO"; } \
-           && { claude plugin list 2>/dev/null | grep -q "ponytail@ponytail" \
-              || claude plugin install ponytail@ponytail; }; then
-            printf "${GREEN}✓ ponytail plugin installed (ponytail@ponytail)${NC}\n"
-            return 0
-        fi
-        printf "${YELLOW}⚠ claude plugin CLI could not fetch %s — declaring it in settings.json instead${NC}\n" "$PONYTAIL_REPO"
-    fi
-    require_node || return 1
-    mkdir -p "$HOME/.claude"
-    SETTINGS_FILE="$HOME/.claude/settings.json" PONYTAIL_REPO="$PONYTAIL_REPO" node -e '
-const fs = require("fs"), env = process.env;
-let s = {};
-if (fs.existsSync(env.SETTINGS_FILE)) { try { s = JSON.parse(fs.readFileSync(env.SETTINGS_FILE, "utf8")); } catch (e) {} }
-s.extraKnownMarketplaces = s.extraKnownMarketplaces || {};
-s.extraKnownMarketplaces.ponytail = { source: { source: "github", repo: env.PONYTAIL_REPO } };
-s.enabledPlugins = s.enabledPlugins || {};
-s.enabledPlugins["ponytail@ponytail"] = true;
-fs.writeFileSync(env.SETTINGS_FILE, JSON.stringify(s, null, 2) + "\n");
-'
-    printf "${GREEN}✓ ponytail marketplace + plugin declared in ~/.claude/settings.json (fetched on next launch)${NC}\n"
+    install_claude_plugin ponytail "$PONYTAIL_REPO" ponytail
 }
