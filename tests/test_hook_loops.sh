@@ -10,6 +10,8 @@
 #   - go test covers the whole changed module at turn end
 #   - the pre-deploy guard summarises `cdk diff` for a deploy, and says why
 #     when it doesn't run it
+#   - the pre-tool hooks speak the pi-yaml-hooks contract (--format pi-yaml):
+#     a block is the reason on stderr with exit 2
 # Everything the checks call (pytest, python, go, cdk) is a stub on PATH or in
 # a scratch .venv, so this needs bash, git and jq only.
 # shellcheck disable=SC1090,SC2034  # $LIB is computed; check() evals conditions that read $out/$esc/$stats
@@ -180,5 +182,29 @@ out=$(bash "$REPO/hooks/pre_deploy_check.sh" "cd infra && cdk deploy")
 check "cd <dir> && cdk deploy diffs in <dir>" "printf '%s' \"\$out\" | grep -q 'remove: Api'"
 out=$(bash "$REPO/hooks/pre_deploy_check.sh" "cdk diff")
 check "cdk diff itself passes untouched" "[ -z \"\$out\" ]"
+
+# ── pi-yaml-hooks contract ───────────────────────────────────────────────────
+echo "pi-yaml-hooks contract"
+pi_yaml() {  # <hook> <command> — run a hook on a tool.before.bash payload; sets $ec, prints stderr
+    ec=0
+    jq -n --arg c "$2" --arg d "$PWD" '{event: "tool.before.bash", tool_name: "bash", tool_args: {command: $c}, cwd: $d}' \
+        | TMPDIR="$FIXTURE" bash "$REPO/hooks/$1" --format pi-yaml >/dev/null 2>"$FIXTURE/stderr" || ec=$?
+    cat "$FIXTURE/stderr"
+}
+out=$(pi_yaml pre_deploy_hook.sh "cdk destroy Api"; echo "ec=$ec")
+check "deploy guard blocks with exit 2 and the reason on stderr" \
+    "printf '%s' \"\$out\" | grep -q 're-run the exact same command' && printf '%s' \"\$out\" | grep -q 'ec=2\$'"
+out=$(pi_yaml pre_deploy_hook.sh "cdk destroy Api"; echo "ec=$ec")
+check "deploy guard lets the identical retry through" "[ \"\$out\" = 'ec=0' ]"
+new_repo "$FIXTURE/commit"
+mkdir -p .macols && printf 'CHECKPOINT="echo integration broke; exit 1"\n' > .macols/checks.conf
+printf 'echo a\n' > a.sh && git add -A && git commit -qm fixture && printf 'echo b\n' > a.sh
+out=$(pi_yaml pre_commit_hook.sh "git commit -am wip"; echo "ec=$ec")
+check "checkpoint blocks the commit with exit 2 and the findings on stderr" \
+    "printf '%s' \"\$out\" | grep -q 'integration broke' && printf '%s' \"\$out\" | grep -q 'ec=2\$'"
+out=$(pi_yaml pre_commit_hook.sh "git status"; echo "ec=$ec")
+check "other commands pass" "[ \"\$out\" = 'ec=0' ]"
+out=$(printf '{"tool_name":"bash","tool_args":{"command":"git commit"}}' | bash "$REPO/hooks/pre_commit_hook.sh" --format claude)
+check "--format claude ignores the lowercase pi-yaml payload" "[ -z \"\$out\" ]"
 
 exit $FAILED

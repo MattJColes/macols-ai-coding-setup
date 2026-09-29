@@ -40,7 +40,7 @@ process.exit(new Function("doc", `return (${process.env.OMP_VERIFY_EXPR})`)(doc)
 ' 2>/dev/null
 }
 has_ponytail_block() { grep -q 'ponytail:ruleset:start' "$1" 2>/dev/null; }
-# brave-search is registered for OpenCode/omp only, and only when a key file
+# brave-search is registered for OpenCode/pi/omp only, and only when a key file
 # exists — so assert its presence or its absence, whichever the key implies.
 has_brave_key() { [ -s "$HOME/.config/macols/brave-api-key" ]; }
 # The AWS servers are opt-in for every tool; mirrors aws_mcp_enabled in lib/common.sh.
@@ -210,17 +210,24 @@ verify_pi() {
     pass "plain pi binary is installed" "command -v pi >/dev/null"
     soft "pi revdiff package installed" "grep -qs 'umputun/revdiff' '$HOME/.pi/agent/settings.json'"
     soft "omp revdiff package installed" "grep -qs 'revdiff' '$HOME/.omp/plugins/package.json'"
+    soft "pi pi-yaml-hooks package installed" "grep -qs 'pi-yaml-hooks' '$HOME/.pi/agent/settings.json'"
+    soft "omp pi-yaml-hooks package installed" "grep -qs 'pi-yaml-hooks' '$HOME/.omp/plugins/package.json'"
+    soft "pi pi-mcp-adapter package installed" "grep -qs 'pi-mcp-adapter' '$HOME/.pi/agent/settings.json'"
     verify_pi_layout "$HOME/.pi/agent" "~/.pi/agent"
     verify_pi_layout "$omp_d" "~/.omp/agent"
     if has_jq; then
-        mcp_checks '.mcpServers' "$omp_d/mcp.json" 'omp mcp.json .mcpServers'
-        if has_brave_key; then
-            pass "omp mcp.json has brave-search MCP reading the key file" \
-                "jq -e '.mcpServers[\"brave-search\"].env.BRAVE_API_KEY_FILE' '$omp_d/mcp.json' >/dev/null"
-        else
-            pass "omp mcp.json omits brave-search MCP without a key" \
-                "! jq -e '.mcpServers[\"brave-search\"]' '$omp_d/mcp.json' >/dev/null"
-        fi
+        local f l
+        for f in "$omp_d/mcp.json" "$HOME/.pi/agent/mcp-adapter.json"; do
+            l="$(basename "$(dirname "$(dirname "$f")")")/$(basename "$f")"
+            mcp_checks '.mcpServers' "$f" "$l .mcpServers"
+            if has_brave_key; then
+                pass "$l has brave-search MCP reading the key file" \
+                    "jq -e '.mcpServers[\"brave-search\"].env.BRAVE_API_KEY_FILE' '$f' >/dev/null"
+            else
+                pass "$l omits brave-search MCP without a key" \
+                    "! jq -e '.mcpServers[\"brave-search\"]' '$f' >/dev/null"
+            fi
+        done
     fi
     if has_bun; then
         local model_file

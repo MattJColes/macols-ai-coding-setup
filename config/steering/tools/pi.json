@@ -14,8 +14,8 @@
     "",
     "## Pi Agents (pi / omp)",
     "",
-    "- MCP servers live in `~/.omp/agent/mcp.json` (omp only; plain `pi` has no MCP support). For one-off capabilities a documented CLI, a skill or `omp install <pkg>` is often simpler.",
-    "- For current information use the `brave-search` MCP server (omp only, when a Brave Search API key is configured). If it is missing, say so rather than guessing.",
+    "- MCP servers live in `~/.omp/agent/mcp.json` for omp and `~/.pi/agent/mcp-adapter.json` for plain `pi`. Plain `pi` reaches them through the `mcp` proxy tool: search with `mcp({ search: \"...\" })`, then call `mcp({ tool: \"...\", args: {...} })`. For one-off capabilities a documented CLI, a skill or a package is often simpler.",
+    "- For current information use the `brave-search` MCP server (when a Brave Search API key is configured). If it is missing, say so rather than guessing.",
     "- The `pi-checks` extension runs tests, lint and type-checks after edits and at turn end. It does not block, so read its findings and fix real issues."
   ]
 }

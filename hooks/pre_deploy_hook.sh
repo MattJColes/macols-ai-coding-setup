@@ -24,7 +24,11 @@
 # the user's confirmation, and lets an identical retry within 15 minutes
 # through (the same confirm-by-retry the OpenCode plugin uses).
 #
-# Usage: pre_deploy_hook.sh [--format claude|codex|zcode]
+# pi-yaml-hooks (--format pi-yaml) can only block: exit 2 with the reason on
+# stderr. It gets the same confirm-by-retry as Codex. Its payload names the
+# tool "bash" and carries the command in tool_args.command.
+#
+# Usage: pre_deploy_hook.sh [--format claude|codex|zcode|pi-yaml]
 #
 # The tool passes JSON via stdin with tool_name and tool_input.command.
 #
@@ -46,7 +50,7 @@ COMMAND=""
 TOOL_NAME=""
 if command -v jq &> /dev/null; then
     TOOL_NAME=$(echo "$HOOK_INPUT" | jq -r '.tool_name // empty' 2>/dev/null || true)
-    COMMAND=$(echo "$HOOK_INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null || true)
+    COMMAND=$(echo "$HOOK_INPUT" | jq -r '(.tool_input // .tool_args).command // empty' 2>/dev/null || true)
     HOOK_CWD=$(echo "$HOOK_INPUT" | jq -r '.cwd // empty' 2>/dev/null || true)
     [ -n "$HOOK_CWD" ] && [ -d "$HOOK_CWD" ] && cd "$HOOK_CWD"
 else
@@ -54,14 +58,15 @@ else
     COMMAND=$(echo "$HOOK_INPUT" | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"//;s/"$//' || true)
 fi
 
-# Only act on Bash tool calls.
+# Only act on Bash tool calls (pi-yaml-hooks reports the lowercase host name).
+[ "$FORMAT" = "pi-yaml" ] && [ "$TOOL_NAME" = "bash" ] && TOOL_NAME="Bash"
 if [ "$TOOL_NAME" != "Bash" ]; then
     exit 0
 fi
 
 # Delegate matching to the shared, protocol-neutral core (single source for
 # the cdk regex + reason across all four tools' wirings).
-if [ "$FORMAT" = "codex" ]; then
+if [ "$FORMAT" = "codex" ] || [ "$FORMAT" = "pi-yaml" ]; then
     # Confirm-by-retry: an identical retry of a command this guard denied in
     # the last 15 minutes passes without re-running the check (or cdk diff).
     STATE_DIR="${TMPDIR:-/tmp}/macols-predeploy-$(id -u)"
@@ -76,10 +81,14 @@ fi
 REASON="$(bash "$SCRIPT_DIR/pre_deploy_check.sh" "$COMMAND")"
 if [ -n "$REASON" ]; then
     DECISION="ask"
-    if [ "$FORMAT" = "codex" ]; then
+    if [ "$FORMAT" = "codex" ] || [ "$FORMAT" = "pi-yaml" ]; then
         : > "$STATE_DIR/$KEY"
         DECISION="deny"
         REASON="$REASON Ask the user to confirm, then re-run the exact same command to proceed."
+    fi
+    if [ "$FORMAT" = "pi-yaml" ]; then
+        printf '%s\n' "$REASON" >&2
+        exit 2
     fi
     if command -v jq &> /dev/null; then
         jq -n --arg reason "$REASON" --arg decision "$DECISION" '{

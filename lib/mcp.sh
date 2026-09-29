@@ -9,7 +9,7 @@
 # ── Brave Search API key ─────────────────────────────────────────────────────
 
 # ensure_brave_api_key — make sure a Brave Search API key is on disk so the
-# brave-search MCP can be registered (OpenCode and omp only).
+# brave-search MCP can be registered (OpenCode and the Pi agents only).
 #
 # Returns 0 when $BRAVE_KEY_FILE holds a key, 1 otherwise — callers treat 1 as
 # non-fatal, the registration writers then simply leave brave-search out.
@@ -228,7 +228,8 @@ const shapes = {
         map: (c) => { c["$schema"] = c["$schema"] || "https://opencode.ai/config.json"; return (c.mcp = c.mcp || {}); },
         entry: (s) => Object.assign({ type: "local", command: [s.command, ...s.args], enabled: true }, s.env ? { environment: s.env } : {}),
     },
-    // Oh My Pi: {"mcpServers": {name: {command, args, env}}}, the Claude shape.
+    // Pi agents (omp mcp.json, the pi-mcp-adapter mcp-adapter.json):
+    // {"mcpServers": {name: {command, args, env}}}, the Claude shape.
     pi: {
         map: (c) => (c.mcpServers = c.mcpServers || {}),
         entry: (s) => Object.assign({ command: s.command, args: s.args }, s.env ? { env: s.env } : {}),
@@ -263,17 +264,20 @@ register_mcps_opencode() {
     printf "${GREEN}✓ MCP servers written to %s${NC}\n" "$dest"
 }
 
-# register_mcps_pi <agent_dir> — merge the servers into the "mcpServers" key of
-# <agent_dir>/mcp.json. Oh My Pi reads MCP config from ~/.omp/agent/mcp.json;
-# other keys in the file (e.g. disabledServers) are preserved. brave-search is
-# included when a Brave API key is configured.
+# register_mcps_pi <config_json> — merge the servers into the "mcpServers" key
+# of a Pi-agent MCP file. Both agents use the Claude shape:
+#   ~/.omp/agent/mcp.json         Oh My Pi's native MCP config
+#   ~/.pi/agent/mcp-adapter.json  plain pi, read by the pi-mcp-adapter package
+#                                 (which never reads ~/.pi/agent/mcp.json)
+# Other keys in the file (disabledServers, the adapter's settings) are
+# preserved. brave-search is included when a Brave API key is configured.
 register_mcps_pi() {
-    printf "${BLUE}Writing MCP config into mcp.json...${NC}\n"
+    printf "${BLUE}Writing MCP config into %s...${NC}\n" "$(basename "$1")"
     ensure_aws_mcp_choice || true
     local resolved
     resolved="$(mcp_resolve pi)" || return 1
-    mcp_merge_json pi "$1/mcp.json" "$resolved" || return 1
-    printf "${GREEN}✓ MCP servers written to %s${NC}\n" "$1/mcp.json"
+    mcp_merge_json pi "$1" "$resolved" || return 1
+    printf "${GREEN}✓ MCP servers written to %s${NC}\n" "$1"
 }
 
 # register_mcps_zcode — merge the servers into the "mcp.servers" key of
