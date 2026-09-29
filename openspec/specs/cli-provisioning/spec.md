@@ -3,7 +3,7 @@
 ## Purpose
 
 Installers idempotently provision the agent CLI plus companion tooling
-(OpenSpec, ast-grep, yq, revdiff, node symlinks). Every install is
+(OpenSpec, ast-grep, yq, hunk, node symlinks). Every install is
 `command -v`-guarded so re-runs are no-ops, and optional steps are non-fatal
 (`ensure_foo || printf "⚠ … skipped"`).
 
@@ -78,19 +78,33 @@ kislyuk jq-wrapper yq).
 - **WHEN** any yq flavor is on PATH
 - **THEN** `ensure_yq` returns success without installing
 
-### Requirement: revdiff is provisioned with each tool's upstream plugin
-`ensure_revdiff` SHALL install the revdiff binary with
-`brew install umputun/apps/revdiff` when it is not on PATH, and warn
-non-fatally when Homebrew is missing. The Claude Code, Codex, OpenCode and Pi
-installers SHALL then add upstream's diff-review integration for their tool
-(Claude and Codex marketplace plugin `revdiff@revdiff`, OpenCode's
-`plugins/opencode/setup.sh`, the pi package for both `pi` and `omp`). The
-auto-firing `revdiff-planning` plugin SHALL NOT be installed for Claude Code or
-Codex. Re-runs SHALL NOT duplicate any of it. `machine/Brewfile` SHALL carry
+### Requirement: hunk is provisioned for diff review
+`ensure_hunk` SHALL install the hunk binary when it is not on PATH:
+`brew install hunk` when Homebrew is available, otherwise the `hunkdiff` npm
+package, and warn non-fatally when neither is. `machine/Brewfile` SHALL carry
 the formula so the machine setup installs it regardless of tool.
-<!-- anchor: cli-provisioning.revdiff -->
+<!-- anchor: cli-provisioning.hunk -->
 
-#### Scenario: revdiff already installed
+#### Scenario: hunk already installed
 
-- **WHEN** `revdiff` is on PATH
-- **THEN** `ensure_revdiff` returns success without calling brew
+- **WHEN** `hunk` is on PATH
+- **THEN** `ensure_hunk` returns success without calling brew or npm
+
+### Requirement: Every agent gets the hunk-review skill, and revdiff is retired
+`install_hunk_skill <skills_dir>` SHALL copy the skill printed by
+`hunk skill path hunk-review` to `<skills_dir>/hunk-review/SKILL.md` (a copy,
+not a symlink, since agents skip symlinked entries when scanning for skills),
+and warn non-fatally when hunk is missing. Each installer SHALL call it for its
+user-level skills dir after rendering the personas there: Claude Code, Codex,
+OpenCode, ZCode, and both `~/.pi/agent/skills` and `~/.omp/agent/skills`.
+Project installs SHALL NOT get it (the path is machine-local). Re-runs SHALL
+remove the revdiff integrations earlier versions installed (the Claude and
+Codex `revdiff@revdiff` plugin and marketplace, OpenCode's copied tool,
+command and auto-loaded plan-review plugin with its `opencode.json` entry, the
+pi and omp packages) and SHALL NOT touch anything else.
+<!-- anchor: cli-provisioning.hunk-skill -->
+
+#### Scenario: Upgrading a machine that had revdiff
+
+- **WHEN** an installer re-runs on a machine where an earlier version installed the revdiff plugin
+- **THEN** the revdiff plugin is gone, and the skills dir holds the rendered personas plus `hunk-review/SKILL.md`
