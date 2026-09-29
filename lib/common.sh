@@ -11,6 +11,7 @@
 #   mcp.sh         MCP registration and the Brave/AWS opt-ins (config/mcp)
 #   omp-models.sh  Oh My Pi / pi model and provider setup
 #   hooks.sh       hook wiring for every tool (hooks/)
+#   quality-tools.sh  per-language toolchains and linters the hooks call
 #   plugins.sh     third-party agent plugins (Claude marketplace helper, revdiff)
 #
 # Not meant to be executed directly.
@@ -100,5 +101,7 @@ source "$LIB_DIR/mcp.sh"
 source "$LIB_DIR/omp-models.sh"
 # shellcheck source=lib/hooks.sh
 source "$LIB_DIR/hooks.sh"
+# shellcheck source=lib/quality-tools.sh
+source "$LIB_DIR/quality-tools.sh"
 # shellcheck source=lib/plugins.sh
 source "$LIB_DIR/plugins.sh"

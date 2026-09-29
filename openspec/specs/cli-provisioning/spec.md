@@ -78,6 +78,25 @@ kislyuk jq-wrapper yq).
 - **WHEN** any yq flavor is on PATH
 - **THEN** `ensure_yq` returns success without installing
 
+### Requirement: The hook batteries' tools are provisioned per language
+`ensure_quality_tools` SHALL put on PATH the tools the post-code and post-task
+checks fall back to when a project has no local copy: shellcheck and jscpd;
+for Python ruff, pyright, mypy, pytest and import-linter as `uv tool`s
+(installing uv first when missing); for JS/TS typescript, eslint,
+dependency-cruiser, vitest and jest as global npm packages; for Go the Go
+toolchain and golangci-lint (Homebrew, else the go.dev tarball under
+`~/.local/share/go` and `GOBIN=~/.local/bin go install`); and Flutter, which
+provides `dart` (Homebrew cask on macOS, else a shallow stable-channel clone
+under `~/.local/share/flutter` linked into `~/.local/bin`). Each install SHALL
+be skipped when the binary is already on PATH, and a failed install SHALL be
+non-fatal. Every installer SHALL call it in its CLI step.
+<!-- anchor: cli-provisioning.quality-tools -->
+
+#### Scenario: Re-running on a provisioned machine
+
+- **WHEN** every tool is already on PATH
+- **THEN** `ensure_quality_tools` installs nothing and returns success
+
 ### Requirement: revdiff is provisioned with each tool's upstream plugin
 `ensure_revdiff` SHALL install the revdiff binary with
 `brew install umputun/apps/revdiff` when it is not on PATH, and warn
