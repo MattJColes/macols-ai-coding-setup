@@ -167,6 +167,7 @@ if [ "$DO_PI" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     ensure_ast_grep || printf "${YELLOW}⚠ ast-grep install skipped/failed${NC}\n"
     ensure_yq || printf "${YELLOW}⚠ yq install skipped/failed${NC}\n"
     ensure_hunk || printf "${YELLOW}⚠ hunk install skipped/failed${NC}\n"
+    ensure_fresh || printf "${YELLOW}⚠ fresh install skipped/failed${NC}\n"
     ensure_quality_tools || true
     ensure_node_on_noninteractive_path || printf "${YELLOW}⚠ node PATH linking skipped/failed${NC}\n"
     echo ""

@@ -63,6 +63,9 @@ PONYTAIL_MARKER_START="<!-- ponytail:ruleset:start (managed by macols-configs �
 PONYTAIL_MARKER_END="<!-- ponytail:ruleset:end -->"
 # hunk (https://hunk.dev) — terminal diff review the agents steer through its
 # bundled hunk-review skill. Homebrew formula, or the npm package without brew.
+# Fresh (https://github.com/sinelaw/fresh) — terminal IDE. Upstream's
+# installer when there is no Homebrew (formula fresh-editor).
+FRESH_INSTALLER="https://raw.githubusercontent.com/sinelaw/fresh/refs/heads/master/scripts/install.sh"
 HUNK_FORMULA="hunk"
 HUNK_NPM="hunkdiff"
 # revdiff — retired in favour of hunk. Kept only so remove_revdiff_* can find

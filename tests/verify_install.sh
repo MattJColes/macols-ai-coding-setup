@@ -85,11 +85,13 @@ rf_every() {
 }
 
 # quality_tool_checks — the per-language tools ensure_quality_tools installs
-# for the hook batteries (lib/quality-tools.sh). Only for installs that ran the
-# CLI step; ~/.local/bin is where the uv tools, Go and Flutter links land.
+# for the hook batteries and Fresh's language servers (lib/quality-tools.sh),
+# and Fresh itself. Only for installs that ran the CLI step; ~/.local/bin is
+# where the uv tools, Go, Flutter and Fresh links land.
 quality_tool_checks() {
     local t
-    for t in shellcheck jscpd ruff pyright mypy pytest lint-imports tsc eslint depcruise vitest jest go gofmt golangci-lint flutter dart; do
+    for t in shellcheck jscpd ruff pyright mypy pytest lint-imports pylsp tsc eslint depcruise vitest jest \
+             typescript-language-server prettier go gofmt golangci-lint gopls flutter dart fresh; do
         pass "hook tool on PATH: $t" "PATH=\"\$HOME/.local/bin:\$PATH\" command -v $t >/dev/null"
     done
 }

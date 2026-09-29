@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
 # lib/quality-tools.sh — the toolchains and linters the hook batteries
-# (hooks/checks/post_code.sh, post_task.sh) call, per language.
+# (hooks/checks/post_code.sh, post_task.sh) call, per language, the language
+# servers the Fresh editor starts for those languages, and Fresh itself.
 #
 # The checks prefer a project's own copy (.venv/bin, node_modules/.bin) and
 # fall back to PATH, so these global installs are what runs when a project
@@ -59,8 +60,9 @@ ensure_shell_tools() {
 }
 
 # ensure_python_tools — ruff, pyright, mypy, pytest and import-linter
-# (lint-imports) as uv tools, each in its own isolated environment. uv is
-# installed first when missing (its installer puts it in ~/.local/bin).
+# (lint-imports) as uv tools, each in its own isolated environment, plus pylsp
+# (python-lsp-server), Fresh's Python language server. uv is installed first
+# when missing (its installer puts it in ~/.local/bin).
 ensure_python_tools() {
     local failed=0 pkg bin spec
     if ! command -v uv &> /dev/null; then
@@ -70,7 +72,7 @@ ensure_python_tools() {
         command -v uv &> /dev/null || return 1
     fi
     # <binary>:<package>
-    for spec in ruff:ruff pyright:pyright mypy:mypy pytest:pytest lint-imports:import-linter; do
+    for spec in ruff:ruff pyright:pyright mypy:mypy pytest:pytest lint-imports:import-linter pylsp:python-lsp-server; do
         bin="${spec%%:*}" pkg="${spec#*:}"
         command -v "$bin" &> /dev/null && continue
         printf "${BLUE}Installing %s (uv tool)...${NC}\n" "$pkg"
@@ -80,14 +82,16 @@ ensure_python_tools() {
 }
 
 # ensure_node_tools — tsc, eslint, dependency-cruiser and the vitest/jest
-# runners, as global npm packages. The checks still prefer a project's own
-# node_modules/.bin, which is what matches its config.
+# runners, as global npm packages, plus Fresh's JS/TS language server and
+# formatter (typescript-language-server, prettier). The checks still prefer a
+# project's own node_modules/.bin, which is what matches its config.
 ensure_node_tools() {
     command -v npm &> /dev/null || { printf "${YELLOW}npm not found — skipping JS/TS tools${NC}\n"; return 1; }
     local -a pkgs=()
     local spec
     # <binary>:<package>
-    for spec in tsc:typescript eslint:eslint depcruise:dependency-cruiser vitest:vitest jest:jest; do
+    for spec in tsc:typescript eslint:eslint depcruise:dependency-cruiser vitest:vitest jest:jest \
+                typescript-language-server:typescript-language-server prettier:prettier; do
         command -v "${spec%%:*}" &> /dev/null || pkgs+=("${spec#*:}")
     done
     [ ${#pkgs[@]} -eq 0 ] && return 0
@@ -104,7 +108,8 @@ _go_arch() {
     esac
 }
 
-# ensure_go_tools — Go (go, gofmt, go vet, go test) and golangci-lint.
+# ensure_go_tools — Go (go, gofmt, go vet, go test), golangci-lint and gopls
+# (Fresh's Go language server, and the gopls MCP server in config/mcp).
 # Homebrew when present; otherwise the official go.dev tarball in
 # ~/.local/share/go (distro packages lag the Go versions golangci-lint v2
 # builds with) and golangci-lint built into ~/.local/bin, which is on PATH
@@ -135,6 +140,11 @@ ensure_go_tools() {
         if command -v brew &> /dev/null; then brew install golangci-lint || failed=1
         else GOBIN="$LOCAL_BIN" go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest || failed=1; fi
     fi
+    if ! command -v gopls &> /dev/null; then
+        printf "${BLUE}Installing gopls...${NC}\n"
+        if command -v brew &> /dev/null; then brew install gopls || failed=1
+        else GOBIN="$LOCAL_BIN" go install golang.org/x/tools/gopls@latest || failed=1; fi
+    fi
     return "$failed"
 }
 
@@ -163,4 +173,24 @@ ensure_flutter() {
     flutter --version > /dev/null 2>&1 || return 1
     command -v dart &> /dev/null || return 1
     printf "${GREEN}✓ %s${NC}\n" "$(flutter --version 2>/dev/null | head -1)"
+}
+
+# ensure_fresh — Fresh (https://github.com/sinelaw/fresh), the terminal IDE.
+# Homebrew when present; otherwise upstream's installer, which unpacks a
+# static binary under ~/.local and links ~/.local/bin/fresh without root (and
+# can then update itself with `fresh --cmd update`). Its language servers for
+# Python, JS/TS, Go and Dart come from the ensure_*_tools above.
+ensure_fresh() {
+    if command -v fresh &> /dev/null; then
+        printf "${GREEN}✓ fresh already installed${NC}\n"
+        return 0
+    fi
+    printf "${BLUE}Installing Fresh (terminal IDE)...${NC}\n"
+    if command -v brew &> /dev/null; then
+        brew install fresh-editor || return 1
+    else
+        curl -fsSL "$FRESH_INSTALLER" | sh || return 1
+    fi
+    command -v fresh &> /dev/null || return 1
+    printf "${GREEN}✓ fresh installed: %s${NC}\n" "$(command -v fresh)"
 }

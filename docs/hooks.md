@@ -42,8 +42,11 @@ Every tool gets the findings in its own model-visible format
 (`--format claude|codex|zcode|text`), not just a log line:
 
 - post-code: after each edit, the file's formatter, linter and type check
-  (ruff + pyright/mypy, eslint, dart analyze, gofmt, shellcheck) plus a
-  file-length limit. Findings come back with the edit and never block it.
+  (ruff + pyright/mypy, eslint, dart analyze, gofmt + go vet, shellcheck) plus
+  a file-length limit. Findings come back with the edit and never block it.
+  For Go that means a compile or type error in the edited package shows up
+  with the edit, not at turn end; go vet builds the package, so it runs in
+  trusted projects only.
 - post-task: at the end of a turn, tests related to the changed files, lint
   and strict types, golangci-lint, jscpd duplication, and layer rules
   (import-linter, dependency-cruiser) when the project configures them. Test
@@ -116,11 +119,17 @@ checked:
 
 | Language | Tools | How |
 |---|---|---|
-| Python | ruff, pyright, mypy, pytest, import-linter (`lint-imports`) | `uv tool install`, after installing uv if needed |
-| JS/TS | typescript (`tsc`), eslint, dependency-cruiser (`depcruise`), vitest, jest | `npm install -g` |
-| Go | go, gofmt, golangci-lint | Homebrew; without it the go.dev tarball in `~/.local/share/go` and `go install` into `~/.local/bin` |
+| Python | ruff, pyright, mypy, pytest, import-linter (`lint-imports`), pylsp | `uv tool install`, after installing uv if needed |
+| JS/TS | typescript (`tsc`), eslint, dependency-cruiser (`depcruise`), vitest, jest, typescript-language-server, prettier | `npm install -g` |
+| Go | go, gofmt, go vet, golangci-lint, gopls | Homebrew; without it the go.dev tarball in `~/.local/share/go` and `go install` into `~/.local/bin` |
 | Dart/Flutter | flutter, dart | Homebrew cask on macOS; on Linux a shallow clone of the stable channel in `~/.local/share/flutter` |
 | Every language | shellcheck, jscpd | Homebrew or apt; npm |
+
+pylsp, typescript-language-server, prettier and gopls are for the
+[Fresh](https://github.com/sinelaw/fresh) terminal IDE the installers also add
+(`brew install fresh-editor`, or upstream's installer into `~/.local` without
+Homebrew): they are the servers Fresh starts for Python, JS/TS and Go, and
+Dart's comes with Flutter. gopls also lets the gopls MCP server register.
 
 Each install is skipped when the tool is already on PATH, and a failure only
 skips that gate. Flutter is the heavy one (the SDK plus a Dart download on
