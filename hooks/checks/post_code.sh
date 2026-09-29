@@ -160,6 +160,23 @@ run_gofmt_check() {
     fi
 }
 
+# go vet on the edited file's package: compile and type errors plus vet's own
+# checks at edit time, the parity of pyright/eslint/dart analyze for the other
+# languages (golangci-lint and go test still run at turn end). Building a
+# package can run repo-controlled tools (cgo), so trusted projects only.
+# GOTOOLCHAIN=local keeps a go.mod `toolchain` line from downloading a Go.
+run_go_vet() {
+    command -v go &> /dev/null || return 0
+    project_trusted || return 0
+    local dir mod out ec=0
+    dir=$(cd "$(dirname "$FILE_PATH")" && pwd) || return 0
+    mod="$dir"
+    while [ "$mod" != "/" ] && [ ! -f "$mod/go.mod" ]; do mod=$(dirname "$mod"); done
+    [ -f "$mod/go.mod" ] || return 0
+    out=$(cd "$dir" && GOTOOLCHAIN=local ${TIMEOUT_CMD:+$TIMEOUT_CMD 60} go vet . 2>&1) || ec=$?
+    report_check_result "go vet" "$ec" "$out" "^(vet: )?[^[:space:]]+\.go:[0-9]+(:[0-9]+)?: " "issues"
+}
+
 # Main orchestrator — fast, file-scoped checks only. Prints the report.
 run_post_code_checks() {
     setup_timeout_cmd
@@ -179,6 +196,7 @@ run_post_code_checks() {
             ;;
         *.go)
             run_gofmt_check || true
+            run_go_vet || true
             ;;
         *.sh|*.bash)
             run_shellcheck || true

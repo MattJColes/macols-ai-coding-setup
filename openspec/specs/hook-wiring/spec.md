@@ -184,7 +184,8 @@ SHALL summarise time, failure rate, repeated failures and escapes per check.
 
 ### Requirement: Repo code only runs in trusted projects
 The hook batteries SHALL run checks that execute repository-controlled code
-(tests, cdk synth, go checks, eslint, tsc, dependency-cruiser, import-linter,
+(tests, cdk synth, go checks including the edit-time `go vet`, eslint, tsc,
+dependency-cruiser, import-linter,
 mypy, dart analyze, and any tool resolved from `.venv/bin` or
 `node_modules/.bin`) only when `project_trusted` accepts the project root,
 from `~/.config/macols/trusted-projects` (paths or globs, managed by

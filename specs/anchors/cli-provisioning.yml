@@ -56,3 +56,10 @@ cli-provisioning.quality-tools:
     kind: function_definition
     has: { field: name, regex: '^ensure_quality_tools$' }
   files: [lib/quality-tools.sh]
+
+cli-provisioning.fresh:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^ensure_fresh$' }
+  files: [lib/quality-tools.sh]

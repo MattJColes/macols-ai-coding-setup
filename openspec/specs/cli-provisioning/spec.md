@@ -89,13 +89,31 @@ toolchain and golangci-lint (Homebrew, else the go.dev tarball under
 provides `dart` (Homebrew cask on macOS, else a shallow stable-channel clone
 under `~/.local/share/flutter` linked into `~/.local/bin`). Each install SHALL
 be skipped when the binary is already on PATH, and a failed install SHALL be
-non-fatal. Every installer SHALL call it in its CLI step.
+non-fatal. Every installer SHALL call it in its CLI step. The same functions
+SHALL also install the language servers Fresh starts for those languages:
+pylsp (`python-lsp-server`, a uv tool), typescript-language-server and
+prettier (npm), and gopls (Homebrew, else `go install` into `~/.local/bin`);
+Dart's server ships with the Flutter SDK.
 <!-- anchor: cli-provisioning.quality-tools -->
 
 #### Scenario: Re-running on a provisioned machine
 
 - **WHEN** every tool is already on PATH
 - **THEN** `ensure_quality_tools` installs nothing and returns success
+
+### Requirement: Fresh is provisioned as the terminal IDE
+`ensure_fresh` SHALL install Fresh when `fresh` is not on PATH:
+`brew install fresh-editor` when Homebrew is available, otherwise upstream's
+`scripts/install.sh`, which installs a static binary under `~/.local` and
+links `~/.local/bin/fresh` without root. A failed install SHALL be non-fatal.
+Every installer SHALL call it in its CLI step, and `machine/Brewfile` SHALL
+carry the formula.
+<!-- anchor: cli-provisioning.fresh -->
+
+#### Scenario: Fresh already installed
+
+- **WHEN** `fresh` is on PATH
+- **THEN** `ensure_fresh` returns success without installing
 
 ### Requirement: hunk is provisioned for diff review
 `ensure_hunk` SHALL install the hunk binary when it is not on PATH:

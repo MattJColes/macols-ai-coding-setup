@@ -24,6 +24,7 @@ brew "unzip"
 brew "neovim"
 brew "lazygit"
 brew "git-delta"
+brew "fresh-editor"  # Fresh, the terminal IDE
 brew "hunk"  # terminal diff review; agents steer it through the hunk-review skill
 brew "yazi"
 brew "starship"

@@ -7,7 +7,8 @@
 #     --testmon-noselect at the checkpoint)
 #   - a checkpoint failure the name-based selection would have missed is
 #     recorded as an escape
-#   - go test covers the whole changed module at turn end
+#   - go test covers the whole changed module at turn end, and an edit gets
+#     go vet on its package
 #   - the pre-deploy guard summarises `cdk diff` for a deploy, and says why
 #     when it doesn't run it
 #   - the pre-tool hooks speak the pi-yaml-hooks contract (--format pi-yaml):
@@ -128,6 +129,19 @@ check "lint stays on the changed package" "grep -qx 'golangci-lint run ./a' '$GO
 : > "$GOARGV"
 ( source "$LIB"; MACOLS_GO_TEST_SCOPE=changed run_go_checks )
 check "MACOLS_GO_TEST_SCOPE=changed tests the changed package" "grep -qx 'test ./a' '$GOARGV'"
+# Edit time: go vet on the edited package, reported with its type errors
+# (which go vet prefixes with "vet: "), in trusted projects only.
+cat > "$FIXTURE/stubbin/go" <<'STUB'
+#!/usr/bin/env bash
+[ "$1" = vet ] || exit 0
+printf '# example.com/m/a\nvet: ./a.go:3:9: invalid operation: mismatched types\n./a.go:4:2: fmt.Printf format %%d has arg of wrong type\n' >&2
+exit 1
+STUB
+out=$(bash "$REPO/hooks/post_code_hook.sh" --format text "$PWD/a/a.go")
+check "edit-time go vet reports type errors and vet findings" \
+    "printf '%s' \"\$out\" | grep -q 'go vet: 2 issues' && printf '%s' \"\$out\" | grep -q 'invalid operation'"
+out=$(MACOLS_TRUST_ALL=0 bash "$REPO/hooks/post_code_hook.sh" --format text "$PWD/a/a.go")
+check "edit-time go vet skipped in an untrusted project" "! printf '%s' \"\$out\" | grep -q 'go vet'"
 rm "$FIXTURE/stubbin/go" "$FIXTURE/stubbin/golangci-lint"
 
 # ── Pre-deploy cdk diff ──────────────────────────────────────────────────────
