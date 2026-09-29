@@ -24,7 +24,57 @@ set -eo pipefail
 COMMAND="${1:-}"
 HOOKS_DIR="${MACOLS_HOOKS_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 
-echo "$COMMAND" | grep -Eq '(^|[^[:alnum:]_-])cdk[[:space:]]+(deploy|destroy)([[:space:]]|$)' || exit 0
+# Prints `deploy` or `destroy` when the command RUNS that cdk verb, else nothing.
+# Only a command word counts: the phrase inside a quoted string, a heredoc
+# body, a grep pattern or a commit message is not a deploy, and prompting on it
+# stalled unattended agent sessions until a human woke up to approve a grep.
+cdk_verb() {
+    CDK_GUARD_COMMAND="$COMMAND" python3 - <<'PY'
+import os
+import re
+
+cmd = os.environ.get("CDK_GUARD_COMMAND", "")
+
+# Drop heredoc bodies: everything between a `<<WORD` line and its terminator.
+out, lines, i = [], cmd.split("\n"), 0
+while i < len(lines):
+    out.append(lines[i])
+    m = re.search(r"<<-?\s*['\"]?([A-Za-z_][A-Za-z0-9_]*)['\"]?", lines[i])
+    if m:
+        i += 1
+        while i < len(lines) and lines[i].strip() != m.group(1):
+            i += 1
+    i += 1
+text = "\n".join(out)
+
+# Blank out quoted strings so their contents never read as commands.
+text = re.sub(r"'[^']*'", "''", text)
+text = re.sub(r'"(?:\\.|[^"\\])*"', '""', text)
+
+CDK_VERBS = {"deploy", "destroy", "diff", "synth", "synthesize", "ls", "list", "bootstrap", "init", "doctor",
+             "context", "docs", "watch", "import", "acknowledge", "notices", "metadata", "gc", "rollback", "migrate",
+             "drift", "refactor"}
+WRAPPERS = {"npx", "pnpm", "yarn", "bunx", "exec", "time", "sudo", "env", "command", "nice", "nohup"}
+for segment in re.split(r"[\n;&|()`]|\$\(", text):
+    tokens = segment.split()
+    while tokens and (re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=\S*", tokens[0]) or tokens[0] in WRAPPERS
+                      or tokens[0].startswith("-")):
+        tokens.pop(0)
+    if tokens[:2] in (["uv", "run"], ["poetry", "run"], ["npm", "exec"]):
+        tokens = tokens[2:]
+    if not tokens or os.path.basename(tokens[0]) != "cdk":
+        continue
+    # Global options may take values (`--profile dev`), so the verb is the
+    # first known cdk verb rather than the first non-option token.
+    verb = next((t for t in tokens[1:] if t in CDK_VERBS), "")
+    if verb in ("deploy", "destroy"):
+        print(verb)
+        break
+PY
+}
+
+VERB="$(cdk_verb)"
+[ -n "$VERB" ] || exit 0
 
 REASON="cdk deploy/destroy detected. Renaming a Construct ID forces resource REPLACEMENT/DESTRUCTION — confirm you reviewed 'cdk diff' for replacements (look for 'requires replacement' and resources marked for removal) before approving."
 
@@ -95,7 +145,7 @@ deploy_diff_note() {
     return 0
 }
 
-if echo "$COMMAND" | grep -Eq '(^|[^[:alnum:]_-])cdk[[:space:]]+deploy([[:space:]]|$)'; then
+if [ "$VERB" = deploy ]; then
     REASON+="$(deploy_diff_note || true)"
 fi
 printf '%s\n' "$REASON"
