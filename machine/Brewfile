@@ -24,7 +24,7 @@ brew "unzip"
 brew "neovim"
 brew "lazygit"
 brew "git-delta"
-brew "umputun/apps/revdiff"  # TUI diff review; the agent plugins open it
+brew "hunk"  # terminal diff review; agents steer it through the hunk-review skill
 brew "yazi"
 brew "starship"
 

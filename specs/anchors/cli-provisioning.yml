@@ -36,11 +36,18 @@ cli-provisioning.openspec-schema:
     has: { field: name, regex: '^install_openspec_schema$' }
   files: [lib/os.sh]
 
-cli-provisioning.revdiff:
+cli-provisioning.hunk:
   language: bash
   rule:
     kind: function_definition
-    has: { field: name, regex: '^ensure_revdiff$' }
+    has: { field: name, regex: '^ensure_hunk$' }
+  files: [lib/plugins.sh]
+
+cli-provisioning.hunk-skill:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^install_hunk_skill$' }
   files: [lib/plugins.sh]
 
 cli-provisioning.quality-tools:
