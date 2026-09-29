@@ -43,16 +43,14 @@ OMP_DIR="${PI_CODING_AGENT_DIR:-$HOME/.omp/agent}"
 # which ignores try blocks, so it reports "Missing 'default' export" and the
 # install rolls back — it never installs. Re-add if fixed upstream.
 #   • ponytail — lazy/YAGNI mode extension (github.com/DietrichGebert/ponytail)
-#   • revdiff — /revdiff diff review (github.com/umputun/revdiff); omp loads
-#     this pi package through its legacy-pi shim (typebox + @earendil-works)
 #   • pi-yaml-hooks — YAML hooks (~/.<agent>/agent/hook/hooks.yaml) for the
 #     user's own rules. Our hooks stay in pi-checks: pi-yaml-hooks cannot hand
 #     post-edit or turn-end output to the model, and omp caps its synchronous
 #     hooks at 20s, which would let the commit checkpoint fail open.
 #   • pi-mcp-adapter (pi only) — MCP for plain pi through one `mcp` proxy tool;
 #     omp has native MCP
-PI_PACKAGES="npm:pi-subagents git:github.com/$PONYTAIL_REPO git:github.com/$REVDIFF_REPO npm:pi-yaml-hooks npm:pi-mcp-adapter"
-OMP_PACKAGES="github:$PONYTAIL_REPO github:$REVDIFF_REPO pi-yaml-hooks"
+PI_PACKAGES="npm:pi-subagents git:github.com/$PONYTAIL_REPO npm:pi-yaml-hooks npm:pi-mcp-adapter"
+OMP_PACKAGES="github:$PONYTAIL_REPO pi-yaml-hooks"
 
 usage() {
     cat << EOF
@@ -109,6 +107,7 @@ install_skills() {
 
 install_packages() {
     local pkg
+    remove_revdiff_pi   # replaced by hunk and its hunk-review skill
     if command -v pi &> /dev/null; then
         printf "${BLUE}Installing pi packages...${NC}\n"
         for pkg in $PI_PACKAGES; do
@@ -167,7 +166,7 @@ if [ "$DO_PI" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     install_macols_commands || printf "${YELLOW}⚠ macols command links skipped/failed${NC}\n"
     ensure_ast_grep || printf "${YELLOW}⚠ ast-grep install skipped/failed${NC}\n"
     ensure_yq || printf "${YELLOW}⚠ yq install skipped/failed${NC}\n"
-    ensure_revdiff || printf "${YELLOW}⚠ revdiff install skipped/failed${NC}\n"
+    ensure_hunk || printf "${YELLOW}⚠ hunk install skipped/failed${NC}\n"
     ensure_quality_tools || true
     ensure_node_on_noninteractive_path || printf "${YELLOW}⚠ node PATH linking skipped/failed${NC}\n"
     echo ""
@@ -178,6 +177,7 @@ if [ "$DO_SKILLS" = true ]; then
         install_skills "./.pi/skills"; install_skills "./.omp/skills"
     else
         install_skills "$PI_AGENT_DIR/skills"; install_skills "$OMP_DIR/skills"
+        install_hunk_skill "$PI_AGENT_DIR/skills" || true; install_hunk_skill "$OMP_DIR/skills" || true
     fi; echo ""
 fi
 if [ "$DO_CONTEXT" = true ]; then
@@ -213,7 +213,7 @@ done_banner
 echo "Next steps:"
 echo "  • Run 'pi' or 'omp' to start either agent (or '/reload' inside either to pick up the extension)"
 echo "  • Skills are available as /skill:<name> (e.g. /skill:python)"
-echo "  • /revdiff hands the terminal to revdiff for diff review (both agents)"
+echo "  • Run 'hunk diff' in a second terminal, then ask either agent to review it with /skill:hunk-review"
 echo "  • The pi-checks extension runs tests/lint/security advisories after edits and turns,"
 echo "    and a cdk deploy/destroy confirmation guard"
 echo "  • MCP servers are configured in $OMP_DIR/mcp.json (omp) and $PI_AGENT_DIR/mcp-adapter.json"

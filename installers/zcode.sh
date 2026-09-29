@@ -95,12 +95,17 @@ if [ "$DO_CLI" = true ]; then
     install_macols_commands || printf "${YELLOW}⚠ macols command links skipped/failed${NC}\n"
     ensure_ast_grep || printf "${YELLOW}⚠ ast-grep install skipped/failed${NC}\n"
     ensure_yq || printf "${YELLOW}⚠ yq install skipped/failed${NC}\n"
+    ensure_hunk || printf "${YELLOW}⚠ hunk install skipped/failed${NC}\n"
     ensure_quality_tools || true
     ensure_node_on_noninteractive_path || printf "${YELLOW}⚠ node PATH linking skipped/failed${NC}\n"
     echo ""
 fi
 if [ "$DO_SKILLS" = true ]; then
-    if [ "$PROJECT_INSTALL" = true ]; then install_skills "./.zcode/skills"; else install_skills "$SKILLS_DIR"; fi; echo ""
+    if [ "$PROJECT_INSTALL" = true ]; then
+        install_skills "./.zcode/skills"
+    else
+        install_skills "$SKILLS_DIR"; install_hunk_skill "$SKILLS_DIR" || true
+    fi; echo ""
 fi
 if [ "$DO_COMMANDS" = true ]; then
     if [ "$PROJECT_INSTALL" = true ]; then install_commands "./.zcode/commands"; else install_commands "$COMMANDS_DIR"; fi; echo ""
@@ -123,5 +128,6 @@ echo "Next steps:"
 echo "  • Restart ZCode to load the new configuration"
 echo "  • Skills load automatically when their description matches the work"
 echo "  • Commands are available as slash commands (e.g. /python, /audit)"
+echo "  • Run 'hunk diff' in a second terminal, then ask ZCode to review it with the hunk-review skill"
 echo "  • MCP servers and hooks live in $CONFIG_JSON$(aws_mcp_enabled && echo ' (aws-* MCPs need ~/.aws/credentials)')"
 echo ""

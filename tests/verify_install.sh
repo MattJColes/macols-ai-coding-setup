@@ -74,12 +74,24 @@ mcp_checks() {
 # The shared response-format block lands in the steering doc exactly once...
 rf_once() { [ "$(grep -c '^## Response Format' "$1" 2>/dev/null)" = 1 ]; }
 # ...and in every rendered persona, which carries its own system prompt.
+# Upstream skills copied in beside the personas (hunk-review) are not ours
+# to render, so they are left out of the count.
 # rf_every <dir> <find-name-pattern>
 rf_every() {
     local have total
-    have=$(grep -rl '^## Response Format' "$1" 2>/dev/null | wc -l)
-    total=$(find "$1" -type f -name "$2" 2>/dev/null | wc -l)
+    have=$(grep -rl --exclude-dir=hunk-review '^## Response Format' "$1" 2>/dev/null | wc -l)
+    total=$(find "$1" -type f -name "$2" -not -path '*/hunk-review/*' 2>/dev/null | wc -l)
     [ "$total" -gt 0 ] && [ "$have" -eq "$total" ]
+}
+
+# hunk_checks <skills_dir> <label> — the hunk-review skill is copied from the
+# installed binary, so it is required whenever hunk is on PATH.
+hunk_checks() {
+    if command -v hunk >/dev/null 2>&1; then
+        pass "$2 has the hunk-review skill" "grep -qs '^name: hunk-review' '$1/hunk-review/SKILL.md'"
+    else
+        warn "hunk not on PATH — skipping the $2 hunk-review skill check"
+    fi
 }
 
 # Persona rendering contract shared by every skills dir: references/ travel
@@ -122,9 +134,9 @@ verify_claudecode() {
     # declaration (offline fallback) — either satisfies the check.
     pass "ponytail plugin installed or declared" \
         "grep -qs 'ponytail@ponytail' '$d/plugins/installed_plugins.json' || grep -qs 'ponytail@ponytail' '$d/settings.json'"
-    pass "revdiff plugin installed or declared" \
-        "grep -qs 'revdiff@revdiff' '$d/plugins/installed_plugins.json' || grep -qs 'revdiff@revdiff' '$d/settings.json'"
-    soft "revdiff binary installed" "command -v revdiff >/dev/null 2>&1"
+    pass "no retired revdiff plugin declared" "! grep -qs 'revdiff@revdiff' '$d/settings.json'"
+    soft "hunk binary installed" "command -v hunk >/dev/null 2>&1"
+    hunk_checks "$d/skills" "~/.claude"
     soft "git worktree available" "git worktree list >/dev/null 2>&1 || git worktree --help >/dev/null 2>&1"
     soft "openspec CLI installed" "command -v openspec >/dev/null && openspec --version >/dev/null 2>&1"
     soft "openspec 'macols' schema installed user-level" "[ -f \"\${XDG_DATA_HOME:-\$HOME/.local/share}/openspec/schemas/macols/schema.yaml\" ]"
@@ -156,7 +168,8 @@ verify_codex() {
         pass "hooks.json hooks answer in Codex JSON (--format codex)" "jq -e '[.hooks[][].hooks[].command | test(\"--format codex\")] | all' '$d/hooks.json' >/dev/null"
     fi
     soft "codex mcp list shows context7" "command -v codex >/dev/null && codex mcp list 2>/dev/null | grep -q context7"
-    soft "codex revdiff plugin enabled" "grep -qs 'revdiff@revdiff' '$d/config.toml'"
+    pass "no retired revdiff plugin enabled" "! grep -qs 'revdiff@revdiff' '$d/config.toml'"
+    hunk_checks "$d/skills" "~/.codex"
 }
 
 verify_opencode() {
@@ -175,7 +188,8 @@ verify_opencode() {
     pass "plugin placeholders substituted" "! grep -q '__.*_PATH__' '$d/plugins/post_code_hook_plugin.js'"
     pass "plugin wires pre-deploy check" "grep -q 'pre_deploy_check.sh' '$d/plugins/post_code_hook_plugin.js'"
     pass "plugin handles session.idle as a bus event" "grep -q 'event?.type !== \"session.idle\"' '$d/plugins/post_code_hook_plugin.js'"
-    soft "revdiff tool + command installed" "[ -f '$d/tools/revdiff.ts' ] && [ -x '$d/tools/launch-revdiff.sh' ] && [ -f '$d/commands/revdiff.md' ]"
+    pass "no retired revdiff plan-review plugin" "[ ! -e '$d/plugins/revdiff-plan-review.ts' ] && ! grep -qs 'revdiff-plan-review' '$d/opencode.json'"
+    hunk_checks "$d/skills" "~/.config/opencode"
     if has_jq; then
         mcp_checks '.mcp' "$d/opencode.json" 'opencode.json .mcp'
         if has_brave_key; then
@@ -197,6 +211,7 @@ verify_pi_layout() {
     pass "$label/AGENTS.md has response format (once)" "rf_once '$d/AGENTS.md'"
     pass "every $label skill has response format" "rf_every '$d/skills' 'SKILL.md'"
     persona_skill_checks "$d/skills" "$label"
+    hunk_checks "$d/skills" "$label"
     pass "$label extensions/pi-checks.ts exists" "[ -f '$d/extensions/pi-checks.ts' ]"
     pass "$label extension hooks dir substituted" "! grep -q '__PI_HOOKS_DIR__' '$d/extensions/pi-checks.ts'"
     pass "$label extension flavour substituted" "! grep -q '__PI_FLAVOUR__' '$d/extensions/pi-checks.ts'"
@@ -208,8 +223,8 @@ verify_pi() {
     soft "omp --version" "command -v omp >/dev/null && omp --version >/dev/null 2>&1"
     soft "pi --version" "command -v pi >/dev/null && pi --version >/dev/null 2>&1"
     pass "plain pi binary is installed" "command -v pi >/dev/null"
-    soft "pi revdiff package installed" "grep -qs 'umputun/revdiff' '$HOME/.pi/agent/settings.json'"
-    soft "omp revdiff package installed" "grep -qs 'revdiff' '$HOME/.omp/plugins/package.json'"
+    pass "no retired revdiff package (pi)" "! grep -qs 'umputun/revdiff' '$HOME/.pi/agent/settings.json'"
+    pass "no retired revdiff package (omp)" "! grep -qs 'revdiff-pi' '$HOME/.omp/plugins/package.json'"
     soft "pi pi-yaml-hooks package installed" "grep -qs 'pi-yaml-hooks' '$HOME/.pi/agent/settings.json'"
     soft "omp pi-yaml-hooks package installed" "grep -qs 'pi-yaml-hooks' '$HOME/.omp/plugins/package.json'"
     soft "pi pi-mcp-adapter package installed" "grep -qs 'pi-mcp-adapter' '$HOME/.pi/agent/settings.json'"
@@ -267,6 +282,7 @@ verify_zcode() {
     pass "every ~/.zcode skill has response format" "rf_every '$d/skills' 'SKILL.md'"
     pass "every ~/.zcode command has response format" "rf_every '$d/commands' '*.md'"
     persona_skill_checks "$d/skills" "~/.zcode"
+    hunk_checks "$d/skills" "~/.zcode"
     pass "single-file /editor command inlines its references" "grep -q '^### references/review-passes.md' '$d/commands/editor.md'"
     if has_jq; then
         pass "config.json hooks are enabled" "jq -e '.hooks.enabled == true' '$d/cli/config.json' >/dev/null"
