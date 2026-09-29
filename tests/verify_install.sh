@@ -213,6 +213,10 @@ verify_pi() {
     soft "pi pi-yaml-hooks package installed" "grep -qs 'pi-yaml-hooks' '$HOME/.pi/agent/settings.json'"
     soft "omp pi-yaml-hooks package installed" "grep -qs 'pi-yaml-hooks' '$HOME/.omp/plugins/package.json'"
     soft "pi pi-mcp-adapter package installed" "grep -qs 'pi-mcp-adapter' '$HOME/.pi/agent/settings.json'"
+    local p
+    for p in pi-subagents ponytail pi-web-search pi-lens; do
+        soft "pi $p package installed" "grep -qs '$p' '$HOME/.pi/agent/settings.json'"
+    done
     verify_pi_layout "$HOME/.pi/agent" "~/.pi/agent"
     verify_pi_layout "$omp_d" "~/.omp/agent"
     if has_jq; then

@@ -109,9 +109,20 @@ omp needs. It also writes model providers for both agents and omp's model
 roles (see [Models](models.md)).
 
 Each agent also gets its packages. Both get ponytail, revdiff and
-[pi-yaml-hooks](hooks.md#pi-yaml-hooks-pi-and-omp). Plain `pi` also gets
-pi-subagents and [pi-mcp-adapter](mcp.md#plain-pi-pi-mcp-adapter), which
-gives it the MCP servers omp reads natively.
+[pi-yaml-hooks](hooks.md#pi-yaml-hooks-pi-and-omp). Plain `pi` also gets the
+capabilities omp ships natively:
+
+- pi-subagents, which the steering delegates parallel and chained work to
+- [pi-mcp-adapter](mcp.md#plain-pi-pi-mcp-adapter), for the MCP servers
+- pi-web-search, a `web_search` tool that uses the current model's own search
+  (Gemini, xAI, OpenAI, Anthropic, OpenCode). On a local model such as the
+  vllm-lan default it errors unless `~/.pi/agent/web-search.json` names a
+  supported `provider` and `model`; brave-search still works there.
+- pi-lens, LSP diagnostics and linters after every edit plus a guard that
+  blocks editing a file the agent hasn't read. It overlaps with pi-checks'
+  post-edit check, so some findings show up twice, and it installs its own
+  tools per project without pi-checks' [trusted-project](hooks.md#trusted-projects)
+  gate. `pi remove npm:pi-lens` if you'd rather not have it.
 
 Codex removed custom prompts (`~/.codex/prompts/`) upstream in favour of Agent
 Skills. The installer cleans up prompts left by earlier versions of this repo.

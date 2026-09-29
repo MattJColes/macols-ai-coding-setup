@@ -51,7 +51,16 @@ OMP_DIR="${PI_CODING_AGENT_DIR:-$HOME/.omp/agent}"
 #     hooks at 20s, which would let the commit checkpoint fail open.
 #   • pi-mcp-adapter (pi only) — MCP for plain pi through one `mcp` proxy tool;
 #     omp has native MCP
-PI_PACKAGES="npm:pi-subagents git:github.com/$PONYTAIL_REPO git:github.com/$REVDIFF_REPO npm:pi-yaml-hooks npm:pi-mcp-adapter"
+#   • pi-web-search (pi only) — provider-native web_search (Gemini, xAI,
+#     OpenAI, Anthropic, OpenCode). It uses the current model, so on a local
+#     model (the vllm-lan default) it errors unless ~/.pi/agent/web-search.json
+#     names a supported one; brave-search via pi-mcp-adapter still works there.
+#     omp has native web search.
+#   • pi-lens (pi only) — LSP diagnostics, linters and a read-before-edit
+#     guard on every write/edit. It overlaps with pi-checks' post-edit check
+#     (both report ruff/tsc/eslint findings) and auto-installs its own tools
+#     without pi-checks' trusted-project gate.
+PI_PACKAGES="npm:pi-subagents git:github.com/$PONYTAIL_REPO git:github.com/$REVDIFF_REPO npm:pi-yaml-hooks npm:pi-mcp-adapter npm:pi-web-search npm:pi-lens"
 OMP_PACKAGES="github:$PONYTAIL_REPO github:$REVDIFF_REPO pi-yaml-hooks"
 
 usage() {
