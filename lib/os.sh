@@ -178,37 +178,6 @@ ensure_yq() {
     fi
 }
 
-# ensure_quality_tools — the linters the hooks' quality gates call when a
-# project has no local copy: shellcheck (shell scripts), jscpd (duplication)
-# and, when Go is installed, golangci-lint. Project-level tools (ruff,
-# pyright, eslint, tsc, dependency-cruiser, import-linter) come from each
-# project's own dev dependencies. Each install is independent and non-fatal;
-# a missing tool just means that gate is skipped.
-ensure_quality_tools() {
-    local failed=0
-    if ! command -v shellcheck &> /dev/null; then
-        printf "${BLUE}Installing shellcheck...${NC}\n"
-        if command -v brew &> /dev/null; then brew install shellcheck || failed=1
-        elif [ "$(detect_os)" = "linux" ]; then { { sudo apt-get update -y || true; } && sudo apt-get install -y shellcheck; } || failed=1
-        else failed=1; fi
-    fi
-    if ! command -v jscpd &> /dev/null; then
-        printf "${BLUE}Installing jscpd (duplication check)...${NC}\n"
-        if command -v npm &> /dev/null; then npm install -g jscpd@4 || failed=1; else failed=1; fi
-    fi
-    if command -v go &> /dev/null && ! command -v golangci-lint &> /dev/null; then
-        printf "${BLUE}Installing golangci-lint...${NC}\n"
-        if command -v brew &> /dev/null; then brew install golangci-lint || failed=1
-        else go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest || failed=1; fi
-    fi
-    if [ "$failed" -eq 0 ]; then
-        printf "${GREEN}✓ Quality-gate tools available${NC}\n"
-    else
-        printf "${YELLOW}⚠ Some quality-gate tools could not be installed; those gates are skipped${NC}\n"
-        return 1
-    fi
-}
-
 # ensure_node_on_noninteractive_path — ponytail's hooks (and our JSON config
 # writers) invoke node outside interactive shells, where NVM/fnm rc wiring
 # never loads. Symlink the resolved node/npm/npx into ~/.local/bin, which is on

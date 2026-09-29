@@ -84,6 +84,16 @@ rf_every() {
     [ "$total" -gt 0 ] && [ "$have" -eq "$total" ]
 }
 
+# quality_tool_checks — the per-language tools ensure_quality_tools installs
+# for the hook batteries (lib/quality-tools.sh). Only for installs that ran the
+# CLI step; ~/.local/bin is where the uv tools, Go and Flutter links land.
+quality_tool_checks() {
+    local t
+    for t in shellcheck jscpd ruff pyright mypy pytest lint-imports tsc eslint depcruise vitest jest go gofmt golangci-lint flutter dart; do
+        pass "hook tool on PATH: $t" "PATH=\"\$HOME/.local/bin:\$PATH\" command -v $t >/dev/null"
+    done
+}
+
 # hunk_checks <skills_dir> <label> — the hunk-review skill is copied from the
 # installed binary, so it is required whenever hunk is on PATH.
 hunk_checks() {
@@ -143,6 +153,7 @@ verify_claudecode() {
     soft "ast-grep CLI installed" "command -v ast-grep >/dev/null && ast-grep --version >/dev/null 2>&1"
     soft "yq CLI installed" "command -v yq >/dev/null 2>&1"
     soft "claude mcp list shows context7" "command -v claude >/dev/null && claude mcp list 2>/dev/null | grep -q context7"
+    quality_tool_checks
 }
 
 verify_codex() {
@@ -170,6 +181,7 @@ verify_codex() {
     soft "codex mcp list shows context7" "command -v codex >/dev/null && codex mcp list 2>/dev/null | grep -q context7"
     pass "no retired revdiff plugin enabled" "! grep -qs 'revdiff@revdiff' '$d/config.toml'"
     hunk_checks "$d/skills" "~/.codex"
+    quality_tool_checks
 }
 
 verify_opencode() {
@@ -200,6 +212,7 @@ verify_opencode() {
                 "! jq -e '.mcp[\"brave-search\"]' '$d/opencode.json' >/dev/null"
         fi
     fi
+    quality_tool_checks
 }
 
 # verify_pi_layout <dir> <label> — assert one Pi agent dir is fully provisioned.
@@ -273,6 +286,7 @@ verify_pi() {
     else
         warn "omp models not configured — run ./install.sh pi --models-only to pick them"
     fi
+    quality_tool_checks
 }
 
 verify_zcode() {

@@ -105,6 +105,27 @@ hooks:
           timeout: 300000
 ```
 
+## Tools the Checks Need
+
+The checks prefer a project's own copy of a tool (`.venv/bin`,
+`node_modules/.bin`), because that one matches the project's config and
+dependencies, and fall back to your PATH. Every installer's CLI step
+(`ensure_quality_tools` in `lib/quality-tools.sh`) puts the fallbacks there,
+so a project with no local copy, and every Go and Dart project, still gets
+checked:
+
+| Language | Tools | How |
+|---|---|---|
+| Python | ruff, pyright, mypy, pytest, import-linter (`lint-imports`) | `uv tool install`, after installing uv if needed |
+| JS/TS | typescript (`tsc`), eslint, dependency-cruiser (`depcruise`), vitest, jest | `npm install -g` |
+| Go | go, gofmt, golangci-lint | Homebrew; without it the go.dev tarball in `~/.local/share/go` and `go install` into `~/.local/bin` |
+| Dart/Flutter | flutter, dart | Homebrew cask on macOS; on Linux a shallow clone of the stable channel in `~/.local/share/flutter` |
+| Every language | shellcheck, jscpd | Homebrew or apt; npm |
+
+Each install is skipped when the tool is already on PATH, and a failure only
+skips that gate. Flutter is the heavy one (the SDK plus a Dart download on
+first run). Pass `--no-cli` to skip the whole step.
+
 ## Is It Worth the Time?
 
 Every turn-end and checkpoint run appends one JSON line per check to

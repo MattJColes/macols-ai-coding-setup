@@ -49,3 +49,10 @@ cli-provisioning.hunk-skill:
     kind: function_definition
     has: { field: name, regex: '^install_hunk_skill$' }
   files: [lib/plugins.sh]
+
+cli-provisioning.quality-tools:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^ensure_quality_tools$' }
+  files: [lib/quality-tools.sh]
