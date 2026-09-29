@@ -108,6 +108,24 @@ to the post-task battery as one continuation: `agent_before_settle` in pi,
 - **WHEN** `installers/pi.sh` completes
 - **THEN** `pi-checks.ts` exists in both agent dirs and contains no `__PI_HOOKS_DIR__` or `__PI_FLAVOUR__` placeholder
 
+### Requirement: pi-yaml-hooks is installed beside pi-checks, not instead of it
+`installers/pi.sh` SHALL install the `pi-yaml-hooks` package for both `pi`
+and `omp` so users can add their own YAML hooks, and SHALL NOT write the
+macols hooks into any `hooks.yaml`: pi-yaml-hooks shows the model only a
+block reason (never `tool.after.*` or `session.idle` output), and omp gives
+synchronous hooks a 20-second budget, after which a hook fails open. The
+`pi-checks` extension SHALL stay the only carrier of the macols hooks in both
+agents. `pre_commit_hook.sh` and `pre_deploy_hook.sh` SHALL accept
+`--format pi-yaml` (tool name `bash`, command in `tool_args.command`, a block
+as the reason on stderr with exit 2; the deploy guard as Codex's
+deny-then-retry), and `post_code_hook.sh` SHALL read edited paths from
+`tool_args` and `files`, so a user's own YAML hook can call them.
+
+#### Scenario: A commit fails the checkpoint under pi-yaml-hooks
+
+- **WHEN** `pre_commit_hook.sh --format pi-yaml` receives a `tool.before.bash` payload for `git commit` and the checkpoint fails
+- **THEN** it prints the findings on stderr and exits 2, which pi-yaml-hooks turns into the block reason
+
 ### Requirement: The pre-deploy matcher is single-sourced
 The cdk deploy/destroy pattern and confirmation reason SHALL live only in
 `hooks/pre_deploy_check.sh` (prints the reason on match, nothing

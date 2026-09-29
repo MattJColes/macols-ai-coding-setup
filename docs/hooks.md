@@ -11,9 +11,9 @@ location if you move them. Wiring for each tool lives in `lib/hooks.sh`.
 |---|---|
 | `hooks/post_code_hook.sh` | After each edit |
 | `hooks/post_task_hook.sh` | At the end of a turn |
-| `hooks/pre_deploy_hook.sh` | Before `cdk deploy` / `cdk destroy` (Claude Code, Codex) |
+| `hooks/pre_deploy_hook.sh` | Before `cdk deploy` / `cdk destroy` (Claude Code, Codex, ZCode, pi-yaml-hooks) |
 | `hooks/pre_deploy_check.sh` | Shared deploy matcher every tool's wiring calls |
-| `hooks/pre_commit_hook.sh` | Before `git commit`: the local checkpoint (Claude Code, Codex, ZCode) |
+| `hooks/pre_commit_hook.sh` | Before `git commit`: the local checkpoint (Claude Code, Codex, ZCode, pi-yaml-hooks) |
 | `hooks/pre_commit_check.sh` | Shared checkpoint core every tool's wiring calls |
 | `hooks/checks/` | The check batteries (`post_code.sh`, `post_task.sh`), shared helpers (`common.sh`) and `ensure_node.sh` |
 | `hooks/adapters/` | Output formats (`hook_output.sh`), the OpenCode plugin and the `pi-checks` extension for pi and omp |
@@ -69,6 +69,41 @@ not per turn. `MACOLS_SEMGREP=1` turns local semgrep back on.
 
 Codex only runs hooks you have trusted, so approve them in Codex after
 installing (and again after they change).
+
+## pi-yaml-hooks (pi and omp)
+
+The Pi installer also adds [pi-yaml-hooks](https://github.com/KristjanPikhof/pi-yaml-hooks)
+to both agents, for your own YAML hooks in `~/.pi/agent/hook/hooks.yaml`,
+`~/.omp/agent/hook/hooks.yaml` or a trusted project's `.pi/hook/hooks.yaml` /
+`.omp/hook/hooks.yaml`. `/hooks-status` inside either agent shows what loaded.
+
+The macols checks stay in the `pi-checks` extension and are not written into
+any `hooks.yaml`, because pi-yaml-hooks can't carry them all:
+
+- it only feeds the model the reason for a blocked tool call. Output from
+  `tool.after.*` and `session.idle` hooks goes to its log, so post-edit and
+  turn-end findings would never reach the agent.
+- omp gives synchronous hooks a 20-second budget. The commit checkpoint can
+  run for minutes, and a timed-out hook doesn't block, so the checkpoint
+  would fail open.
+- it has no interactive confirm with dynamic text, so the deploy prompt
+  couldn't show the `cdk diff` summary.
+
+The pre-tool hooks do understand its contract (`--format pi-yaml`: the
+lowercase `bash` tool name, `tool_args.command`, and a block as exit 2 with the
+reason on stderr), so a hook of your own can call them. Wiring one of them
+while `pi-checks` is loaded runs that check twice. The deploy guard uses the
+same deny-then-retry as Codex:
+
+```yaml
+hooks:
+  - id: macols-pre-deploy
+    event: tool.before.bash
+    actions:
+      - bash:
+          command: "~/path/to/macols-ai-coding-setup/hooks/pre_deploy_hook.sh --format pi-yaml"
+          timeout: 300000
+```
 
 ## Is It Worth the Time?
 
@@ -141,6 +176,7 @@ workflow. Existing layer breaks are approved explicitly: a
 ```bash
 ./install.sh claudecode --hooks-only --no-cli
 ./install.sh pi --hooks-only --no-pi       # the pi-checks extension, both agents
+./install.sh pi --packages-only            # pi-yaml-hooks and the other agent packages
 ```
 
 `tests/test_scoped_pytest.sh` covers the pytest scoping. See

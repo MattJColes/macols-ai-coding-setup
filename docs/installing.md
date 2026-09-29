@@ -99,7 +99,7 @@ You can combine `--project` with component selection, such as
 | Claude Code | agents `~/.claude/agents/`, skills `~/.claude/skills/` | `~/.claude/CLAUDE.md` | `claude mcp add-json` into `~/.claude.json` | `~/.claude/settings.json` |
 | Codex | skills `~/.codex/skills/`, agents `~/.codex/agents/*.toml` | `~/.codex/AGENTS.md` | `codex mcp add` into `~/.codex/config.toml` | `~/.codex/hooks.json` |
 | OpenCode | agents `~/.config/opencode/agents/`, skills `.../skills/` | `~/.config/opencode/AGENTS.md` | `mcp` key in `~/.config/opencode/opencode.json` | plugin in `.../plugins/` |
-| Pi (`pi` + `omp`) | Agent Skills in `~/.pi/agent/skills/` and `~/.omp/agent/skills/` (`/skill:<name>`) | both `.../agent/AGENTS.md` | `mcpServers` key in `~/.omp/agent/mcp.json` (omp only) | `pi-checks` extension in both agent dirs |
+| Pi (`pi` + `omp`) | Agent Skills in `~/.pi/agent/skills/` and `~/.omp/agent/skills/` (`/skill:<name>`) | both `.../agent/AGENTS.md` | `mcpServers` key in `~/.omp/agent/mcp.json` (omp) and `~/.pi/agent/mcp-adapter.json` (pi, via pi-mcp-adapter) | `pi-checks` extension in both agent dirs, plus pi-yaml-hooks for your own YAML hooks |
 | ZCode | skills `~/.zcode/skills/`, commands `~/.zcode/commands/` | `~/.zcode/AGENTS.md` | `mcp.servers` in `~/.zcode/cli/config.json` | `hooks.events` in `~/.zcode/cli/config.json` |
 
 The two Pi agents share no config directories: plain `pi` reads `~/.pi/agent`
@@ -107,6 +107,11 @@ and Oh My Pi (`omp`) reads `~/.omp/agent`. The installer writes skills,
 steering and the pi-checks extension into both, and installs the Bun runtime
 omp needs. It also writes model providers for both agents and omp's model
 roles (see [Models](models.md)).
+
+Each agent also gets its packages. Both get ponytail, revdiff and
+[pi-yaml-hooks](hooks.md#pi-yaml-hooks-pi-and-omp). Plain `pi` also gets
+pi-subagents and [pi-mcp-adapter](mcp.md#plain-pi-pi-mcp-adapter), which
+gives it the MCP servers omp reads natively.
 
 Codex removed custom prompts (`~/.codex/prompts/`) upstream in favour of Agent
 Skills. The installer cleans up prompts left by earlier versions of this repo.
@@ -183,6 +188,7 @@ aws configure                                   # AWS credentials (only with --a
 podman machine init && podman machine start     # containers (macOS)
 claude --version && codex --version             # sanity check
 pi --version && omp --version                   # pi agents
+pi list                                         # pi packages, incl. pi-yaml-hooks + pi-mcp-adapter
 ls -d /Applications/ZCode.app                   # ZCode (desktop app)
 openspec --version                              # spec-driven dev CLI (auto-installed)
 openspec init                                   # opt a project into OpenSpec (per repo)
@@ -200,6 +206,7 @@ claude mcp list                                 # Claude
 codex mcp list                                  # Codex
 jq .mcp ~/.config/opencode/opencode.json        # OpenCode (mcp key, not mcp.json)
 jq .mcpServers ~/.omp/agent/mcp.json            # Oh My Pi
+jq .mcpServers ~/.pi/agent/mcp-adapter.json     # plain pi (pi-mcp-adapter)
 
 # PATH not updated
 source ~/.zshrc   # or ~/.bashrc

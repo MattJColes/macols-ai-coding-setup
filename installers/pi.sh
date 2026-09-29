@@ -8,9 +8,9 @@
 # The two agents share no config directories — `pi` reads ~/.pi/agent and
 # `omp` reads ~/.omp/agent — so every shared resource is provisioned twice:
 # Agent Skills, the system AGENTS.md and the pi-checks extension land in both
-# agent dirs. MCP servers are omp-only (plain pi has no MCP support) and are
-# written to ~/.omp/agent/mcp.json. Packages are installed per agent through
-# each binary's own installer.
+# agent dirs. MCP servers go to ~/.omp/agent/mcp.json (omp's native MCP) and
+# ~/.pi/agent/mcp-adapter.json (plain pi, through the pi-mcp-adapter package).
+# Packages are installed per agent through each binary's own installer.
 #
 set -euo pipefail
 
@@ -45,15 +45,21 @@ OMP_DIR="${PI_CODING_AGENT_DIR:-$HOME/.omp/agent}"
 #   • ponytail — lazy/YAGNI mode extension (github.com/DietrichGebert/ponytail)
 #   • revdiff — /revdiff diff review (github.com/umputun/revdiff); omp loads
 #     this pi package through its legacy-pi shim (typebox + @earendil-works)
-PI_PACKAGES="npm:pi-subagents git:github.com/$PONYTAIL_REPO git:github.com/$REVDIFF_REPO"
-OMP_PACKAGES="github:$PONYTAIL_REPO github:$REVDIFF_REPO"
+#   • pi-yaml-hooks — YAML hooks (~/.<agent>/agent/hook/hooks.yaml) for the
+#     user's own rules. Our hooks stay in pi-checks: pi-yaml-hooks cannot hand
+#     post-edit or turn-end output to the model, and omp caps its synchronous
+#     hooks at 20s, which would let the commit checkpoint fail open.
+#   • pi-mcp-adapter (pi only) — MCP for plain pi through one `mcp` proxy tool;
+#     omp has native MCP
+PI_PACKAGES="npm:pi-subagents git:github.com/$PONYTAIL_REPO git:github.com/$REVDIFF_REPO npm:pi-yaml-hooks npm:pi-mcp-adapter"
+OMP_PACKAGES="github:$PONYTAIL_REPO github:$REVDIFF_REPO pi-yaml-hooks"
 
 usage() {
     cat << EOF
 Usage: ./install.sh pi [OPTIONS]
 
 Installs (and, unless told otherwise, both agent binaries) Agent Skills, the
-system AGENTS.md, MCP servers (omp only), model providers for both agents, the
+system AGENTS.md, MCP servers (both agents), model providers for both agents, the
 pi-checks extension and each agent's packages from config/ and hooks/. Registering MCP
 servers also asks for a Brave Search API key (blank to skip); set
 BRAVE_API_KEY in the environment to supply it non-interactively.
@@ -79,7 +85,7 @@ Options:
     --context-only    Install only the system AGENTS.md (both agents)
     --hooks-only      Install only the pi-checks extension (both agents)
     --packages-only   Install only the agent packages
-    --mcps-only       Install only omp MCP servers (~/.omp/agent/mcp.json; asks for the Brave Search API key)
+    --mcps-only       Install only MCP servers (omp mcp.json + pi mcp-adapter.json; asks for the Brave Search API key)
     --aws-mcp         Also register the AWS MCP servers (remembered; or MACOLS_AWS_MCP=1)
     --no-aws-mcp      Remove the AWS MCP servers and stop asking
     --models-only     Register LAN models for both agents and reconfigure omp roles
@@ -183,9 +189,11 @@ if [ "$DO_CONTEXT" = true ]; then
     fi; echo ""
 fi
 if [ "$DO_MCPS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
-    # Plain pi has no MCP support — omp only, Brave Search included.
+    # omp reads mcp.json natively; plain pi reads mcp-adapter.json through the
+    # pi-mcp-adapter package (it never reads ~/.pi/agent/mcp.json).
     ensure_brave_api_key || printf "${YELLOW}⚠ Brave Search not configured — brave-search MCP left out${NC}\n"
-    register_mcps_pi "$OMP_DIR" || printf "${YELLOW}⚠ MCP registration skipped/failed${NC}\n"; echo ""
+    register_mcps_pi "$OMP_DIR/mcp.json" || printf "${YELLOW}⚠ omp MCP registration skipped/failed${NC}\n"
+    register_mcps_pi "$PI_AGENT_DIR/mcp-adapter.json" || printf "${YELLOW}⚠ pi MCP registration skipped/failed${NC}\n"; echo ""
 fi
 if [ "$DO_MODELS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     if configure_pi_lan_models "$PI_AGENT_DIR" "$OMP_DIR"; then
@@ -208,14 +216,17 @@ echo "  • Skills are available as /skill:<name> (e.g. /skill:python)"
 echo "  • /revdiff hands the terminal to revdiff for diff review (both agents)"
 echo "  • The pi-checks extension runs tests/lint/security advisories after edits and turns,"
 echo "    and a cdk deploy/destroy confirmation guard"
-echo "  • MCP servers are configured in $OMP_DIR/mcp.json (omp only$(aws_mcp_enabled && echo '; aws-* MCPs need ~/.aws/credentials'))"
+echo "  • MCP servers are configured in $OMP_DIR/mcp.json (omp) and $PI_AGENT_DIR/mcp-adapter.json"
+echo "    (pi, via pi-mcp-adapter's mcp proxy tool)$(aws_mcp_enabled && echo '; aws-* MCPs need ~/.aws/credentials')"
+echo "  • pi-yaml-hooks reads your own hooks from ~/.pi/agent/hook/hooks.yaml and ~/.omp/agent/hook/hooks.yaml"
+echo "    (/hooks-status inside either agent); the macols checks stay in pi-checks"
 echo "  • omp providers live in $OMP_DIR/models.yml and model roles in $OMP_DIR/config.yml"
 echo "  • pi providers live in $PI_AGENT_DIR/models.json; both agents receive the Swift Qwen LAN model"
 echo "      change them with './install.sh pi --models-only', or from inside omp with /model"
 if [ -s "$BRAVE_KEY_FILE" ]; then
-    echo "  • omp web search runs through the brave-search MCP (key in $BRAVE_KEY_FILE); plain pi has no MCP support"
+    echo "  • Web search runs through the brave-search MCP in both agents (key in $BRAVE_KEY_FILE)"
 else
-    echo "  • For omp web search, get a Brave key (https://brave.com/search/api/) then run:"
+    echo "  • For web search, get a Brave key (https://brave.com/search/api/) then run:"
     echo "      BRAVE_API_KEY=<key> ./install.sh pi --mcps-only"
 fi
 echo ""

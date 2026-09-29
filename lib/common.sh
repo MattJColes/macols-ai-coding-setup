@@ -40,7 +40,7 @@ ADAPTERS_DIR="$HOOKS_DIR/adapters"
 MCP_DIR="$CONFIG_DIR/mcp"
 MCP_CONFIG_FILE="$MCP_DIR/servers.json"
 # Brave Search MCP — a second, opt-in MCP source merged in by the OpenCode and
-# Oh My Pi writers only, and only when the key file below holds a key. The
+# Pi-agent writers only, and only when the key file below holds a key. The
 # server reads the key from the file (BRAVE_API_KEY_FILE takes precedence over
 # BRAVE_API_KEY upstream), so no secret is ever written into a config file.
 # Keep BRAVE_KEY_FILE in sync with the path in config/mcp/brave.json.

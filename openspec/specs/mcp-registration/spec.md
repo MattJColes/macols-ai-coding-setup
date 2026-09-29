@@ -9,7 +9,7 @@ context7, dart, gopls), with pinned package versions. A server with a
 Two opt-in sources sit beside it. `config/mcp/aws.json` holds
 `aws-mcp` and `aws-iac`, registered for every tool only when the user opts in.
 `config/mcp/brave.json` holds `brave-search`, merged only by the
-OpenCode and Oh My Pi writers and only when a Brave Search API key is on disk.
+OpenCode and Pi-agent writers and only when a Brave Search API key is on disk.
 
 Every writer takes its list from `mcp_resolve`, so all five tools see the
 same servers, and each writer removes the stale entries this repo owns while
@@ -99,18 +99,26 @@ ignored by OpenCode and SHALL NOT be used.
 - **WHEN** the key file is missing or empty
 - **THEN** `brave-search` is absent from the `mcp` key and the rest of the servers are registered as usual
 
-### Requirement: Oh My Pi servers are merged into mcp.json
-`register_mcps_pi` SHALL merge the servers under the `mcpServers` key of
-`~/.omp/agent/mcp.json` (Claude-style `command`/`args`/`env`), keeping other
-keys such as `disabledServers` - omp reads MCP config from `mcp.json`, not
-from `config.yml`. Plain `pi` has no MCP support and therefore gets no web
-search.
+### Requirement: Pi-agent servers are merged into mcp.json and mcp-adapter.json
+`register_mcps_pi <config_json>` SHALL merge the servers under the
+`mcpServers` key of the given file (Claude-style `command`/`args`/`env`),
+keeping other keys. `installers/pi.sh` SHALL call it for
+`~/.omp/agent/mcp.json` (omp reads MCP config natively from `mcp.json`, not
+from `config.yml`) and for `~/.pi/agent/mcp-adapter.json`, which plain `pi`
+reads through the `pi-mcp-adapter` package the installer adds. The adapter
+never reads `~/.pi/agent/mcp.json`, so that file SHALL NOT be the plain-pi
+target. Both files SHALL receive the same server list.
 <!-- anchor: mcp-registration.pi -->
 
 #### Scenario: Existing mcp.json with disabled servers
 
 - **WHEN** the file already contains other keys (e.g. `disabledServers`)
 - **THEN** those keys survive and only owned entries under `mcpServers` change
+
+#### Scenario: Existing adapter settings
+
+- **WHEN** `~/.pi/agent/mcp-adapter.json` already holds adapter `settings` and a server of the user's own
+- **THEN** both survive a re-run, and the owned servers match those in `~/.omp/agent/mcp.json`
 
 ### Requirement: ZCode servers are merged into config.json under mcp.servers
 `register_mcps_zcode` SHALL merge the servers under the `mcp.servers` key of
@@ -126,7 +134,7 @@ drops the whole server), keeping `hooks`, `plugins` and other keys.
 
 ### Requirement: The Brave Search API key is prompted for and stored outside config
 `ensure_brave_api_key` SHALL obtain a Brave Search API key for the OpenCode and
-Oh My Pi installers, in this order: an existing non-empty key file
+Pi installers, in this order: an existing non-empty key file
 (`~/.config/macols/brave-api-key`), then `$BRAVE_API_KEY` from the environment,
 then an interactive prompt when stdin is a tty. A blank answer or a
 non-interactive install SHALL be non-fatal and leave `brave-search` unregistered.

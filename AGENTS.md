@@ -62,9 +62,11 @@ Edit the single source, never the rendered output:
 - **MCP servers:** `config/mcp/servers.json` (playwright, context7, dart,
   gopls; versions pinned; a `requires` key registers a server only when that
   binary is on PATH). Registered for Claude Code, Codex, OpenCode, Oh My Pi
-  (written to `~/.omp/agent/mcp.json`) and ZCode (written to
+  (written to `~/.omp/agent/mcp.json`), plain pi (written to
+  `~/.pi/agent/mcp-adapter.json`, read by the pi-mcp-adapter package, which
+  ignores `~/.pi/agent/mcp.json`) and ZCode (written to
   `~/.zcode/cli/config.json`), all through `mcp_resolve`; writers merge and
-  remove only stale servers this repo owns. Plain pi has no MCP support.
+  remove only stale servers this repo owns.
   `config/mcp/aws.json` (aws-mcp, aws-iac) is opt-in for every tool
   (`--aws-mcp` / `MACOLS_AWS_MCP=1`, remembered in `~/.config/macols/aws-mcp`).
   `config/mcp/brave.json` is a third, opt-in source holding
@@ -86,7 +88,12 @@ Edit the single source, never the rendered output:
   referenced in place, wired by `write_*_hooks` in `lib/hooks.sh`. Every
   wiring passes `--format <tool>`; `hooks/adapters/hook_output.sh` renders
   findings in the shape that tool shows the model. Plain stdout on exit 0 is
-  invisible to Claude Code, Codex and ZCode, so never rely on it. The
+  invisible to Claude Code, Codex and ZCode, so never rely on it. pi and omp
+  also get the pi-yaml-hooks package for the user's own YAML hooks, but the
+  macols hooks stay in the `pi-checks` extension: pi-yaml-hooks only shows the
+  model a block reason (post-edit/turn-end output never reaches it) and omp
+  caps its synchronous hooks at 20s, which lets the checkpoint fail open. The
+  pre-tool hooks still accept its payload via `--format pi-yaml`. The
   checks live in `hooks/checks/post_code.sh` / `post_task.sh`; gate
   configs for projects ship in `config/personas/quality/references/`.
   Anything that runs repo-controlled code (tests, repo-local binaries,

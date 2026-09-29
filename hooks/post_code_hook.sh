@@ -15,8 +15,9 @@
 #
 # Edited paths come from, in order: positional args, then the hook JSON on
 # stdin — Claude's tool_input.file_path / notebook_path, OpenCode's filePath,
-# or the "*** Add File:" / "*** Update File:" headers of a Codex apply_patch
-# (whose tool_input.command is the patch text).
+# pi-yaml-hooks' tool_args.path and files list, or the "*** Add File:" /
+# "*** Update File:" headers of a Codex apply_patch (whose tool_input.command
+# is the patch text).
 #
 # Referenced in place from the repo (not copied); the check libraries sit in
 # hooks/checks/ and the output adapters in hooks/adapters/ next to this file.
@@ -47,9 +48,9 @@ if [ ${#FILES[@]} -eq 0 ] && [ ! -t 0 ]; then
         while IFS= read -r f; do
             [ -n "$f" ] && FILES+=("$f")
         done < <(printf '%s' "$HOOK_INPUT" | jq -r '
-            (.tool_input // .input // {}) as $in
+            (.tool_input // .tool_args // .input // {}) as $in
             | ([$in.file_path, $in.notebook_path, $in.filePath, $in.path, $in.filename,
-                .file_path, .path] | map(select(type == "string" and . != "")))
+                .file_path, .path] + (.files // []) | map(select(type == "string" and . != "")))
               + ([$in.command, $in.patch, $in.patchText, $in.input]
                  | map(select(type == "string"))
                  | map(split("\n")[]
