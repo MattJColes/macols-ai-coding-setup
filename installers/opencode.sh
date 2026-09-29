@@ -88,7 +88,7 @@ if [ "$DO_CLI" = true ]; then
     install_macols_commands || printf "${YELLOW}⚠ macols command links skipped/failed${NC}\n"
     ensure_ast_grep || printf "${YELLOW}⚠ ast-grep install skipped/failed${NC}\n"
     ensure_yq || printf "${YELLOW}⚠ yq install skipped/failed${NC}\n"
-    ensure_revdiff || printf "${YELLOW}⚠ revdiff install skipped/failed${NC}\n"
+    ensure_hunk || printf "${YELLOW}⚠ hunk install skipped/failed${NC}\n"
     ensure_quality_tools || true
     ensure_node_on_noninteractive_path || printf "${YELLOW}⚠ node PATH linking skipped/failed${NC}\n"
     echo ""
@@ -97,7 +97,11 @@ if [ "$DO_AGENTS" = true ]; then
     if [ "$PROJECT_INSTALL" = true ]; then install_agents "./.opencode/agents"; else install_agents "$AGENTS_DIR"; fi; echo ""
 fi
 if [ "$DO_SKILLS" = true ]; then
-    if [ "$PROJECT_INSTALL" = true ]; then install_skills "./.opencode/skills"; else install_skills "$SKILLS_DIR"; fi; echo ""
+    if [ "$PROJECT_INSTALL" = true ]; then
+        install_skills "./.opencode/skills"
+    else
+        install_skills "$SKILLS_DIR"; install_hunk_skill "$SKILLS_DIR" || true
+    fi; echo ""
 fi
 if [ "$DO_MCPS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     ensure_brave_api_key || printf "${YELLOW}⚠ Brave Search not configured — brave-search MCP left out${NC}\n"
@@ -107,13 +111,13 @@ if [ "$DO_HOOKS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     install_opencode_plugin "$PLUGINS_DIR"
     echo ""
 fi
-if [ "$PROJECT_INSTALL" = false ] && [ "$SUBSET" = false ]; then install_opencode_revdiff || printf "${YELLOW}⚠ revdiff install skipped/failed${NC}\n"; echo ""; fi
+if [ "$PROJECT_INSTALL" = false ] && [ "$SUBSET" = false ]; then remove_revdiff_opencode; fi
 
 done_banner
 echo "Next steps:"
 echo "  • Restart OpenCode to load agents, skills, MCPs and the plugin"
 echo "  • Skills load on-demand via the skill tool; agents via the Task tool"
-echo "  • /revdiff opens the current diff for annotation (needs tmux, herdr, kitty, wezterm, Zellij or similar)"
+echo "  • Run 'hunk diff' in a second terminal, then ask the agent to review it with the hunk-review skill"
 if [ "$DO_MCPS" = true ]; then
     echo "  • Ensure AWS credentials are configured (~/.aws/credentials)"
     if [ -s "$BRAVE_KEY_FILE" ]; then

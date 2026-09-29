@@ -108,7 +108,7 @@ steering and the pi-checks extension into both, and installs the Bun runtime
 omp needs. It also writes model providers for both agents and omp's model
 roles (see [Models](models.md)).
 
-Each agent also gets its packages. Both get ponytail, revdiff and
+Each agent also gets its packages. Both get ponytail and
 [pi-yaml-hooks](hooks.md#pi-yaml-hooks-pi-and-omp). Plain `pi` also gets the
 capabilities omp ships natively:
 
@@ -134,26 +134,32 @@ duplicate of every persona.
 Hooks are referenced in place from this repo's `hooks/` directory, so keep the
 clone where it is after installing. See [Hooks](hooks.md).
 
-### revdiff
+### hunk
 
-[revdiff](https://revdiff.com) is a terminal UI for annotating diffs, files and
-plans. Each agent's plugin opens it in an overlay (tmux, herdr, kitty,
-wezterm, Zellij and others) and hands your annotations back to the agent. The
-installers add the binary with `brew install umputun/apps/revdiff` (it is also
-in `machine/Brewfile`) and then the upstream plugin for each tool that has one:
+[hunk](https://hunk.dev) is a review-first terminal diff viewer. You open it
+in a second terminal (`hunk diff`, `hunk diff --watch`, `hunk show`) and the
+agent steers that live window: it moves you to the hunk that matters, adds
+inline notes beside the code and highlights the expression it is explaining.
+The agent does this with `hunk session ...` commands, taught by the
+`hunk-review` skill that ships with hunk.
 
-| Tool | How |
-|------|-----|
-| Claude Code | `claude plugin marketplace add umputun/revdiff` + `claude plugin install revdiff@revdiff` |
-| Codex | `codex plugin marketplace add umputun/revdiff` + `codex plugin add revdiff@revdiff` |
-| OpenCode | upstream `plugins/opencode/setup.sh`, run from a clone cached in `~/.cache/macols/revdiff` |
-| Pi (`pi` + `omp`) | `pi install git:github.com/umputun/revdiff`, `omp install github:umputun/revdiff` |
+The installers add the binary with `brew install hunk` (it is also in
+`machine/Brewfile`), or `npm install -g hunkdiff` without Homebrew. They then
+copy the bundled skill (`hunk skill path`) into each agent's skills dir as
+`hunk-review/SKILL.md`, so every tool gets it the same way, ZCode included.
+Re-run the installer after `hunk update` to refresh the copy. Project installs
+don't get the skill.
 
-ZCode has no revdiff integration. The auto-firing `revdiff-planning` plugin is
-left out for Claude Code and Codex; add it by hand if you want every plan
-opened for review. OpenCode's setup script includes its plan-review plugin.
-Without Homebrew the binary step is skipped with a warning, and the plugins
-report an error until `revdiff` is on PATH.
+Ask for a review with something like "review my changes in hunk", or name the
+skill (`/hunk-review`, `/skill:hunk-review` in pi and omp). If the agent reports
+no live session while hunk is open, its sandbox is probably blocking loopback;
+allow it for that command.
+
+hunk replaced revdiff. Re-running an installer removes the revdiff
+integrations earlier versions added: the `revdiff@revdiff` plugin and
+marketplace (Claude Code, Codex), the copied tool, command and auto-loaded
+plan-review plugin (OpenCode), and the pi and omp packages. The revdiff binary
+itself is left alone (`brew uninstall revdiff` if you no longer want it).
 
 ## Machine Setup
 
