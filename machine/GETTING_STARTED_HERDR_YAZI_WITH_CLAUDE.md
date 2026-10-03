@@ -79,12 +79,26 @@ All Herdr commands start with the prefix key `Ctrl+b`.
 | Action | Keys |
 |--------|------|
 | herdr-plus project picker | `Ctrl+b` then `p` |
-| Toggle reviewr | `Cmd+r` |
+| Toggle reviewr (diff review) | `Ctrl+b` then `d`, or `Cmd+r` on macOS |
+| Review plans and docs in this folder | `Ctrl+b` then `Ctrl+p` |
+| Review the agent's recent replies | `Ctrl+b` then `Ctrl+l` |
+| Review the agent's newest reply | `Ctrl+b` then `Ctrl+o` |
+| Hand a tab's name back to automatic naming | `Ctrl+b` then `a` |
 | Browser in a right split | `Ctrl+b` then `Shift+b` |
 | Browser overlay | `Ctrl+b` then `Shift+o` |
 
 The browser keys are `Shift`-ed because plain `Ctrl+b` then `b` is herdr's own
 sidebar toggle.
+
+Over `herdr --remote`, the client uses your local keybindings and never sends
+plugin bindings, so these keys do nothing there. The same actions are shell
+aliases that work in any herdr pane: `rv` (reviewr), `rplan` (review docs),
+`rlast` (recent replies) and `rnew` (newest reply). In a review pane, `S` sends
+your comments to the agent and `q` closes.
+
+Tabs name themselves after the running program or the agent session
+(herdr-automatic-rename); the setup turns off herdr's new-tab name prompt so
+that works for new tabs.
 
 The herdr-plus **worktree layout** (`repo = "*"`) applies to every repo: each
 new worktree opens with Claude Code (`--dangerously-skip-permissions`) on the

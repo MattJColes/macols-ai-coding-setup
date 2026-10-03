@@ -102,7 +102,10 @@ Edit the single source, never the rendered output:
   Each battery run logs per-check timings to `.git/macols-checks.jsonl`
   (`bin/macols-check-stats`), so measure a new check's cost before and after.
 - **Machine setup:** `machine/` (macOS + Ubuntu 24/26). The herdr script
-  also installs the herdr-plus/herdr-reviewr/herdr-browser plugins, their
+  (`install_herdr_plugins.sh`) also installs the herdr-plus, herdr-reviewr,
+  herdr-browser, herdr-automatic-rename and herdr-annotate plugins, the
+  claude/codex/omp herdr integrations, their keybindings and review aliases,
+  the
   Claude+yazi project/worktree layouts, and herdr-browser's prerequisites
   (bun, Chrome/Chromium, `[experimental] kitty_graphics`).
 - **Specs:** this repo dogfoods OpenSpec and spec anchors. Living specs are in
