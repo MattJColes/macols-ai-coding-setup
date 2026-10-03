@@ -3,11 +3,37 @@
 ## Purpose
 
 Installers idempotently provision the agent CLI plus companion tooling
-(OpenSpec, ast-grep, yq, hunk, node symlinks). Every install is
+(Node 24, OpenSpec, ast-grep, yq, hunk, node symlinks). Every install is
 `command -v`-guarded so re-runs are no-ops, and optional steps are non-fatal
 (`ensure_foo || printf "⚠ … skipped"`).
 
 ## Requirements
+
+### Requirement: Node 24 runs every global npm install, into a writable prefix
+Every installer's CLI step SHALL call `ensure_node_runtime` before anything
+runs `npm install -g`. When the node on PATH is older than Node 24
+(`NODE_VERSION`), it SHALL install Node 24 through nvm per-user (installing
+nvm first when missing, without sudo), make it nvm's default, and source nvm
+from the shell rcs under the `macols: nvm` marker the machine setup also
+writes, grep-guarded so neither duplicates it. An nvm Node 24 from an earlier
+run SHALL be reused without reinstalling. A failure SHALL be non-fatal.
+Every global npm install in `lib/` SHALL go through `npm_global_install`,
+which installs into npm's own global prefix when the user can write it and
+otherwise into `~/.local` (bins in `~/.local/bin`), so a root-owned prefix
+such as apt's `/usr/local` never fails with EACCES. It SHALL NOT use sudo or
+write `~/.npmrc`.
+<!-- anchor: cli-provisioning.node-runtime -->
+<!-- anchor: cli-provisioning.npm-global -->
+
+#### Scenario: Ubuntu with apt's Node 18
+
+- **WHEN** an installer runs as a non-root user whose node is apt's v18 with its global prefix in `/usr/local`
+- **THEN** Node 24 is installed with nvm, the npm CLIs install under nvm's prefix, and no EACCES error occurs
+
+#### Scenario: Re-run after Node 24 is in place
+
+- **WHEN** an installer runs again in a fresh shell where the old system node is first on PATH
+- **THEN** `ensure_node_runtime` switches to nvm's Node 24 without downloading it again, and the rc block appears once
 
 ### Requirement: Each tool's CLI installs through its native channel
 `ensure_cli <tool>` SHALL return immediately when the native CLI install is
@@ -28,7 +54,7 @@ install, not a package-managed CLI).
 
 ### Requirement: OpenSpec CLI is provisioned; project setup stays per-repo
 `ensure_openspec` SHALL install `@fission-ai/openspec` globally via npm
-(Node >= 20.19) and verify with `openspec --version`. Installers SHALL NOT
+(Node >= 20.19, which `ensure_node_runtime` guarantees) and verify with `openspec --version`. Installers SHALL NOT
 run `openspec init` for the user — adopting the workflow is a per-repo,
 human decision (this repo has opted in; see the spec-anchoring capability).
 <!-- anchor: cli-provisioning.openspec -->

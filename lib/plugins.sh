@@ -61,7 +61,7 @@ ensure_hunk() {
     if command -v brew &> /dev/null; then
         brew install "$HUNK_FORMULA" || return 1
     elif command -v npm &> /dev/null; then
-        npm install -g "$HUNK_NPM" || return 1
+        npm_global_install "$HUNK_NPM" || return 1
     else
         printf "${YELLOW}No Homebrew or npm — install hunk by hand: https://hunk.dev${NC}\n"
         return 1

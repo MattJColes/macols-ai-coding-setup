@@ -8,6 +8,20 @@ cli-provisioning.cli:
     has: { field: name, regex: '^ensure_cli$' }
   files: [lib/os.sh]
 
+cli-provisioning.node-runtime:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^ensure_node_runtime$' }
+  files: [lib/os.sh]
+
+cli-provisioning.npm-global:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^npm_global_install$' }
+  files: [lib/os.sh]
+
 cli-provisioning.openspec:
   language: bash
   rule:

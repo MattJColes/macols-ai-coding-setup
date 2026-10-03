@@ -54,7 +54,7 @@ ensure_shell_tools() {
     fi
     if ! command -v jscpd &> /dev/null; then
         printf "${BLUE}Installing jscpd (duplication check)...${NC}\n"
-        if command -v npm &> /dev/null; then npm install -g jscpd@4 || failed=1; else failed=1; fi
+        if command -v npm &> /dev/null; then npm_global_install jscpd@4 || failed=1; else failed=1; fi
     fi
     return "$failed"
 }
@@ -96,7 +96,7 @@ ensure_node_tools() {
     done
     [ ${#pkgs[@]} -eq 0 ] && return 0
     printf "${BLUE}Installing %s (npm -g)...${NC}\n" "${pkgs[*]}"
-    npm install -g "${pkgs[@]}"
+    npm_global_install "${pkgs[@]}"
 }
 
 # _go_arch — Go's name for this machine's CPU.

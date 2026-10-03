@@ -135,7 +135,7 @@ install_python() {
     done
 }
 
-# install_node — NVM, the latest Node, and the global CLIs.
+# install_node — NVM, Node 24 (the version lib/os.sh NODE_VERSION pins), and the global CLIs.
 install_node() {
     echo "Installing NVM..."
     export NVM_DIR="$HOME/.nvm"
@@ -159,9 +159,9 @@ install_node() {
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"'
     done < <(shell_rcs)
 
-    echo "Installing the latest Node.js..."
-    nvm install node
-    nvm alias default node
+    echo "Installing Node.js 24..."
+    nvm install 24
+    nvm alias default 24
     nvm use default >/dev/null
     [ "$had_u" = 1 ] && set -u
 
