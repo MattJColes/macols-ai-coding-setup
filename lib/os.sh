@@ -94,6 +94,7 @@ _install_node_with_nvm() {
 ensure_node_runtime() {
     if node_meets_min; then
         ensure_node_on_noninteractive_path > /dev/null
+        _npm_bin_on_path
         return 0
     fi
     local had_u=0 ok=0
@@ -110,7 +111,20 @@ ensure_node_runtime() {
     hash -r
     [ "$ok" = 1 ] || { printf "${RED}Could not put Node %s on PATH (have %s).${NC}\n" "$NODE_VERSION" "$(node --version 2>/dev/null || echo none)"; return 1; }
     ensure_node_on_noninteractive_path > /dev/null
+    _npm_bin_on_path
     printf "${GREEN}✓ node %s (%s)${NC}\n" "$(node --version)" "$(command -v node)"
+}
+
+# _npm_bin_on_path [prefix] — put <prefix>/bin (default: npm's global prefix)
+# on PATH for the rest of the run. Node reached through the ~/.local/bin links
+# leaves nvm unloaded and its bin dir, where npm puts the global CLIs, off
+# PATH: the `command -v` guards would then reinstall them on every run, and
+# the checks straight after an install (omp --version) would miss them.
+_npm_bin_on_path() {
+    local prefix="${1:-}"
+    [ -n "$prefix" ] || prefix="$(npm prefix -g 2>/dev/null)" || return 0
+    case ":$PATH:" in *":$prefix/bin:"*) ;; *) export PATH="$prefix/bin:$PATH" ;; esac
+    hash -r
 }
 
 # npm_global_install <npm args...> — `npm install -g`, into a prefix this user
@@ -118,7 +132,8 @@ ensure_node_runtime() {
 # NodeSource node keep theirs in root-owned /usr/local, where npm fails with
 # EACCES, so there the packages go to ~/.local instead (bins in ~/.local/bin,
 # which persist_local_bin_path keeps on PATH). No sudo, and ~/.npmrc is left
-# alone (nvm refuses to run with a prefix set there).
+# alone (nvm refuses to run with a prefix set there). The prefix's bin dir is
+# put on PATH afterwards (see _npm_bin_on_path).
 npm_global_install() {
     local prefix dir
     prefix="$(npm prefix -g 2>/dev/null)" || return 1
@@ -126,12 +141,13 @@ npm_global_install() {
     [ -d "$dir" ] || dir="$prefix/lib"
     [ -d "$dir" ] || dir="$prefix"
     if [ -w "$dir" ]; then
-        npm install -g "$@"
+        npm install -g "$@" || return 1
     else
-        mkdir -p "$HOME/.local/bin"
-        case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac
-        NPM_CONFIG_PREFIX="$HOME/.local" npm install -g "$@"
+        prefix="$HOME/.local"
+        mkdir -p "$prefix/bin"
+        NPM_CONFIG_PREFIX="$prefix" npm install -g "$@" || return 1
     fi
+    _npm_bin_on_path "$prefix"
 }
 
 # Install jq, which the Claude Code / Codex MCP registration needs. uv (for the
@@ -343,14 +359,14 @@ ensure_cli() {
                 # so make sure a current bun is on PATH first.
                 if ! command -v bun &> /dev/null; then
                     printf "${BLUE}Installing bun (omp runtime)...${NC}\n"
-                    npm_global_install bun || { printf "${RED}Could not install bun (required by omp).${NC}\n"; return 1; }
+                    npm_global_install --allow-scripts=bun bun || { printf "${RED}Could not install bun (required by omp).${NC}\n"; return 1; }
                 fi
                 npm_global_install --ignore-scripts @oh-my-pi/pi-coding-agent || { printf "${RED}Could not install omp via npm.${NC}\n"; return 1; }
                 if ! omp --version &> /dev/null; then
                     # An older pre-existing bun can be too old for omp's bundle —
                     # upgrade it and re-check before giving up.
                     printf "${YELLOW}omp failed to run; upgrading bun and retrying...${NC}\n"
-                    npm_global_install bun || true
+                    npm_global_install --allow-scripts=bun bun || true
                     omp --version &> /dev/null || { printf "${RED}omp installed but does not run — check 'bun --version' (needs >= 1.3.14).${NC}\n"; return 1; }
                 fi
             fi

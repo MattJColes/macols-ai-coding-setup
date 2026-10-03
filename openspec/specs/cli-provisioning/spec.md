@@ -19,12 +19,16 @@ writes, grep-guarded so neither duplicates it. An nvm Node 24 from an earlier
 run SHALL be reused without reinstalling. On success it SHALL re-point the
 `~/.local/bin` node/npm/npx links at the active node at once, because later
 steps put that directory first on PATH and a link an earlier run left to the
-old node would otherwise bring it back. A failure SHALL be non-fatal.
+old node would otherwise bring it back, and it SHALL put npm's global `bin`
+directory on PATH so the `command -v` guards see CLIs earlier runs installed
+there. A failure SHALL be non-fatal.
 Every global npm install in `lib/` SHALL go through `npm_global_install`,
 which installs into npm's own global prefix when the user can write it and
 otherwise into `~/.local` (bins in `~/.local/bin`), so a root-owned prefix
 such as apt's `/usr/local` never fails with EACCES. It SHALL NOT use sudo or
-write `~/.npmrc`.
+write `~/.npmrc`, and SHALL put the prefix's `bin` directory on PATH for the
+rest of the run, so a CLI is runnable straight after its install even when
+node was reached through the `~/.local/bin` links with nvm not loaded.
 <!-- anchor: cli-provisioning.node-runtime -->
 <!-- anchor: cli-provisioning.npm-global -->
 
@@ -49,7 +53,8 @@ already present, otherwise install: claude via the official curl installer;
 codex via the official standalone installer with brew (macOS) or npm as
 fallbacks; opencode via brew, npm, or the curl installer; pi installs both
 Pi agents — plain `pi` (`@earendil-works/pi-coding-agent`) and omp (via npm
-`--ignore-scripts` after ensuring the bun runtime, upgrading bun and retrying
+`--ignore-scripts` after ensuring the bun runtime, whose npm install allows
+bun's own postinstall with `--allow-scripts=bun`, upgrading bun and retrying
 once if omp fails to run); zcode verifies the ZCode desktop app is present
 and warns non-fatally when it isn't (nothing is downloaded — it is a desktop
 install, not a package-managed CLI).
