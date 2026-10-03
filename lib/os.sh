@@ -127,6 +127,26 @@ _npm_bin_on_path() {
     hash -r
 }
 
+# reload_shell_if_needed — the installers run as child processes, so the PATH
+# they set up (nvm's Node, npm's global bin dir) never reaches the shell that
+# ran install.sh, and a CLI just installed there reads as "command not found".
+# When npm's global bin dir is not on the caller's PATH, replace this process
+# with a fresh login shell, which loads the rc files the same way
+# `source ~/.zshrc` would. Only in an interactive terminal; CI and other
+# non-interactive callers, or MACOLS_NO_RELOAD=1, get the command to run instead.
+reload_shell_if_needed() {
+    local prefix rc
+    command -v npm &> /dev/null || return 0
+    prefix="$(npm prefix -g 2>/dev/null)" || return 0
+    case ":$PATH:" in *":$prefix/bin:"*) return 0 ;; esac
+    case "${SHELL:-}" in */zsh) rc=".zshrc" ;; *) rc=".bashrc" ;; esac
+    if [ -t 0 ] && [ -t 1 ] && [ -n "${SHELL:-}" ] && [ "${MACOLS_NO_RELOAD:-0}" != 1 ]; then
+        printf "${BLUE}Starting a fresh %s so this terminal picks up Node and the new CLIs (same as 'source ~/%s')...${NC}\n" "${SHELL##*/}" "$rc"
+        exec "$SHELL" -l
+    fi
+    printf "${YELLOW}Run 'source ~/%s' or open a new terminal to put Node and the new CLIs on PATH.${NC}\n" "$rc"
+}
+
 # npm_global_install <npm args...> — `npm install -g`, into a prefix this user
 # can write. nvm, fnm, volta and Homebrew prefixes are the user's own; apt and
 # NodeSource node keep theirs in root-owned /usr/local, where npm fails with

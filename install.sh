@@ -105,3 +105,4 @@ done
 done_banner
 echo "Configured tools: ${TOOLS[*]}"
 echo ""
+reload_shell_if_needed
