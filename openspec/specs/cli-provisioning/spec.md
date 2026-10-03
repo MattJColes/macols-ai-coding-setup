@@ -21,7 +21,12 @@ run SHALL be reused without reinstalling. On success it SHALL re-point the
 steps put that directory first on PATH and a link an earlier run left to the
 old node would otherwise bring it back, and it SHALL put npm's global `bin`
 directory on PATH so the `command -v` guards see CLIs earlier runs installed
-there. A failure SHALL be non-fatal.
+there. A failure SHALL be non-fatal. Because the installers run as child
+processes, `install.sh` SHALL finish with `reload_shell_if_needed`: when npm's
+global `bin` directory is not on the caller's PATH, it replaces itself with a
+fresh login shell (`exec "$SHELL" -l`) in an interactive terminal, and
+otherwise (non-interactive, or `MACOLS_NO_RELOAD=1`) prints the `source`
+command to run.
 Every global npm install in `lib/` SHALL go through `npm_global_install`,
 which installs into npm's own global prefix when the user can write it and
 otherwise into `~/.local` (bins in `~/.local/bin`), so a root-owned prefix
@@ -41,6 +46,11 @@ node was reached through the `~/.local/bin` links with nvm not loaded.
 
 - **WHEN** an installer runs again in a fresh shell where the old system node is first on PATH
 - **THEN** `ensure_node_runtime` switches to nvm's Node 24 without downloading it again, and the rc block appears once
+
+#### Scenario: Installing from a shell that has not loaded nvm
+
+- **WHEN** `./install.sh` runs in an interactive terminal whose PATH lacks nvm's bin directory
+- **THEN** it ends in a fresh login shell where `pi`, `omp` and the other npm CLIs are found
 
 #### Scenario: Links from an earlier run point at the old node
 
