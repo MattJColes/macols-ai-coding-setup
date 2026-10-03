@@ -89,7 +89,8 @@ done
 banner "ZCode Installer"
 
 if [ "$DO_CLI" = true ]; then
-    ensure_brew; ensure_cli zcode
+    ensure_brew; ensure_node_runtime || printf "${YELLOW}⚠ Node $NODE_VERSION setup skipped/failed${NC}\n"
+    ensure_cli zcode
     ensure_openspec || printf "${YELLOW}⚠ openspec install skipped/failed${NC}\n"
     install_openspec_schema || printf "${YELLOW}⚠ openspec schema install skipped/failed${NC}\n"
     install_macols_commands || printf "${YELLOW}⚠ macols command links skipped/failed${NC}\n"

@@ -169,6 +169,7 @@ done
 banner "Pi Coding Agents Installer (pi + omp)"
 
 if [ "$DO_PI" = true ] && [ "$PROJECT_INSTALL" = false ]; then
+    ensure_node_runtime || printf "${YELLOW}⚠ Node $NODE_VERSION setup skipped/failed${NC}\n"
     ensure_cli pi   # installs both the `pi` and `omp` binaries
     ensure_openspec || printf "${YELLOW}⚠ openspec install skipped/failed${NC}\n"
     install_openspec_schema || printf "${YELLOW}⚠ openspec schema install skipped/failed${NC}\n"

@@ -37,8 +37,94 @@ ensure_brew() {
 
 require_node() {
     if ! command -v node &> /dev/null; then
-        printf "${RED}Node.js is required but not found. Install Node 18+ and re-run.${NC}\n"
+        printf "${RED}Node.js is required but not found. Install Node %s+ and re-run.${NC}\n" "$NODE_VERSION"
         return 1
+    fi
+}
+
+# The Node major this repo runs on. The global npm CLIs need 22.12+ (commander
+# 15, vitest 5, vite 8) and Ubuntu 24.04's apt nodejs is 18, which npm installs
+# against with EBADENGINE warnings and which then fails at runtime.
+NODE_VERSION="24"
+
+# node_meets_min — true when the node on PATH is NODE_VERSION or newer.
+node_meets_min() {
+    local v
+    v="$(node --version 2>/dev/null)" || return 1
+    v="${v#v}"
+    [ "${v%%.*}" -ge "$NODE_VERSION" ] 2>/dev/null
+}
+
+# _load_nvm — source nvm.sh when it is installed.
+_load_nvm() {
+    export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+    [ -s "$NVM_DIR/nvm.sh" ] || return 1
+    # shellcheck source=/dev/null
+    . "$NVM_DIR/nvm.sh"
+}
+
+# _install_node_with_nvm — install nvm when missing, then Node NODE_VERSION as
+# nvm's default, and source nvm from the shell rcs under the same marker the
+# machine setup writes (grep-guarded, so neither duplicates it). Per-user, no
+# sudo. Runs with `set -u` relaxed by the caller: nvm is not safe under it.
+_install_node_with_nvm() {
+    local nvm_latest rc
+    if ! _load_nvm; then
+        nvm_latest=$(curl -fsSL https://api.github.com/repos/nvm-sh/nvm/releases/latest | grep -oE '"tag_name": *"[^"]+"' | cut -d'"' -f4 || true)
+        PROFILE=/dev/null bash -c "$(curl -fsSL "https://raw.githubusercontent.com/nvm-sh/nvm/${nvm_latest:-v0.40.3}/install.sh")" || return 1
+        _load_nvm || return 1
+    fi
+    nvm install "$NODE_VERSION" > /dev/null || return 1
+    nvm alias default "$NODE_VERSION" > /dev/null || return 1
+    nvm use --silent default || return 1
+    for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do
+        [ -f "$rc" ] || continue
+        grep -q 'NVM_DIR/nvm.sh' "$rc" 2>/dev/null && continue
+        # shellcheck disable=SC2016
+        printf '\n%s\n%s\n%s\n%s\n' '# >>> macols: nvm >>>' 'export NVM_DIR="$HOME/.nvm"' \
+            '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' '# <<< macols: nvm <<<' >> "$rc"
+    done
+}
+
+# ensure_node_runtime — make Node NODE_VERSION+ the node on PATH before anything
+# runs `npm install -g`. An older node (apt, Homebrew) stays installed and is
+# shadowed by nvm's, which an earlier run's install is reused for.
+ensure_node_runtime() {
+    node_meets_min && return 0
+    local had_u=0 ok=0
+    [[ $- == *u* ]] && had_u=1
+    set +u
+    if _load_nvm && nvm use --silent "$NODE_VERSION" &> /dev/null && node_meets_min; then
+        ok=1
+    else
+        printf "${BLUE}Node %s found; installing Node %s with nvm...${NC}\n" \
+            "$(node --version 2>/dev/null || echo none)" "$NODE_VERSION"
+        _install_node_with_nvm && node_meets_min && ok=1
+    fi
+    [ "$had_u" = 1 ] && set -u
+    hash -r
+    [ "$ok" = 1 ] || { printf "${RED}Could not put Node %s on PATH (have %s).${NC}\n" "$NODE_VERSION" "$(node --version 2>/dev/null || echo none)"; return 1; }
+    printf "${GREEN}✓ node %s (%s)${NC}\n" "$(node --version)" "$(command -v node)"
+}
+
+# npm_global_install <npm args...> — `npm install -g`, into a prefix this user
+# can write. nvm, fnm, volta and Homebrew prefixes are the user's own; apt and
+# NodeSource node keep theirs in root-owned /usr/local, where npm fails with
+# EACCES, so there the packages go to ~/.local instead (bins in ~/.local/bin,
+# which persist_local_bin_path keeps on PATH). No sudo, and ~/.npmrc is left
+# alone (nvm refuses to run with a prefix set there).
+npm_global_install() {
+    local prefix dir
+    prefix="$(npm prefix -g 2>/dev/null)" || return 1
+    dir="$prefix/lib/node_modules"
+    [ -d "$dir" ] || dir="$prefix/lib"
+    [ -d "$dir" ] || dir="$prefix"
+    if [ -w "$dir" ]; then
+        npm install -g "$@"
+    else
+        mkdir -p "$HOME/.local/bin"
+        case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac
+        NPM_CONFIG_PREFIX="$HOME/.local" npm install -g "$@"
     fi
 }
 
@@ -106,9 +192,8 @@ install_openspec_schema() {
 
 # ensure_openspec — install the OpenSpec CLI (github.com/Fission-AI/openspec)
 # used for spec-driven development across every agent. Idempotent: returns
-# immediately when the CLI is on PATH. Global npm install (needs Node 20.19+;
-# require_node's floor is lower, so a very old Node may still fail — npm will
-# say so). Project setup stays manual/per-repo (`openspec init`) — the steering
+# immediately when the CLI is on PATH. Global npm install (needs Node 20.19+,
+# which ensure_node_runtime guarantees). Project setup stays manual/per-repo (`openspec init`) — the steering
 # teaches agents to use the workflow only where an openspec/ directory exists.
 ensure_openspec() {
     if command -v openspec &> /dev/null; then
@@ -117,7 +202,7 @@ ensure_openspec() {
     fi
     printf "${BLUE}Installing OpenSpec CLI (spec-driven development)...${NC}\n"
     command -v npm &> /dev/null || { printf "${RED}Need npm to install openspec. Install Node.js/npm, then re-run.${NC}\n"; return 1; }
-    npm install -g @fission-ai/openspec@latest || { printf "${RED}Could not install openspec via npm.${NC}\n"; return 1; }
+    npm_global_install @fission-ai/openspec@latest || { printf "${RED}Could not install openspec via npm.${NC}\n"; return 1; }
     if openspec --version &> /dev/null; then
         printf "${GREEN}✓ openspec installed: %s${NC}\n" "$(command -v openspec)"
     else
@@ -141,7 +226,7 @@ ensure_ast_grep() {
     fi
     printf "${BLUE}Installing ast-grep CLI (structural code search)...${NC}\n"
     command -v npm &> /dev/null || { printf "${RED}Need npm to install ast-grep. Install Node.js/npm, then re-run.${NC}\n"; return 1; }
-    npm install -g @ast-grep/cli@latest || { printf "${RED}Could not install ast-grep via npm.${NC}\n"; return 1; }
+    npm_global_install @ast-grep/cli@latest || { printf "${RED}Could not install ast-grep via npm.${NC}\n"; return 1; }
     if ast-grep --version &> /dev/null; then
         printf "${GREEN}✓ ast-grep installed: %s${NC}\n" "$(command -v ast-grep)"
     else
@@ -217,7 +302,7 @@ ensure_cli() {
             elif [ "$os" = "macos" ] && command -v brew &> /dev/null; then
                 brew install --cask codex
             elif command -v npm &> /dev/null; then
-                npm install -g @openai/codex
+                npm_global_install @openai/codex
             else
                 printf "${RED}Need the Codex standalone installer, Homebrew (macOS), or npm to install codex.${NC}\n"; return 1
             fi
@@ -228,7 +313,7 @@ ensure_cli() {
             if [ "$os" = "macos" ] && command -v brew &> /dev/null; then
                 brew install sst/tap/opencode
             elif command -v npm &> /dev/null; then
-                npm install -g opencode-ai
+                npm_global_install opencode-ai
             else
                 curl -fsSL https://opencode.ai/install | bash
             fi
@@ -242,7 +327,7 @@ ensure_cli() {
                 printf "${GREEN}✓ pi already installed: %s${NC}\n" "$(command -v pi)"
             else
                 printf "${BLUE}Installing the Pi coding agent (pi)...${NC}\n"
-                npm install -g @earendil-works/pi-coding-agent || { printf "${RED}Could not install pi via npm.${NC}\n"; return 1; }
+                npm_global_install @earendil-works/pi-coding-agent || { printf "${RED}Could not install pi via npm.${NC}\n"; return 1; }
             fi
             if command -v omp &> /dev/null && omp --version &> /dev/null; then
                 printf "${GREEN}✓ omp already installed: %s${NC}\n" "$(command -v omp)"
@@ -252,14 +337,14 @@ ensure_cli() {
                 # so make sure a current bun is on PATH first.
                 if ! command -v bun &> /dev/null; then
                     printf "${BLUE}Installing bun (omp runtime)...${NC}\n"
-                    npm install -g bun || { printf "${RED}Could not install bun (required by omp).${NC}\n"; return 1; }
+                    npm_global_install bun || { printf "${RED}Could not install bun (required by omp).${NC}\n"; return 1; }
                 fi
-                npm install -g --ignore-scripts @oh-my-pi/pi-coding-agent || { printf "${RED}Could not install omp via npm.${NC}\n"; return 1; }
+                npm_global_install --ignore-scripts @oh-my-pi/pi-coding-agent || { printf "${RED}Could not install omp via npm.${NC}\n"; return 1; }
                 if ! omp --version &> /dev/null; then
                     # An older pre-existing bun can be too old for omp's bundle —
                     # upgrade it and re-check before giving up.
                     printf "${YELLOW}omp failed to run; upgrading bun and retrying...${NC}\n"
-                    npm install -g bun || true
+                    npm_global_install bun || true
                     omp --version &> /dev/null || { printf "${RED}omp installed but does not run — check 'bun --version' (needs >= 1.3.14).${NC}\n"; return 1; }
                 fi
             fi
