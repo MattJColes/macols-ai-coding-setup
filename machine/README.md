@@ -76,7 +76,9 @@ To install the herdr/yazi workflow separately on either platform, run:
 ```
 
 The helper merges herdr keybindings into your existing config and adds the SSH
-auto-launch block once. It also installs herdr-browser and its prerequisites
+auto-launch block once. It installs the herdr plugins (project picker, diff
+and plan review, tab naming, browser) through `install_herdr_plugins.sh`, which
+you can also re-run on its own, plus herdr-browser's prerequisites
 (bun, Chrome/Chromium) and turns on `[experimental] kitty_graphics`, which
 herdr-browser needs to draw into a pane. See
 [GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md](GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md)
