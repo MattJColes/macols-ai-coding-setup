@@ -88,9 +88,14 @@ _install_node_with_nvm() {
 
 # ensure_node_runtime — make Node NODE_VERSION+ the node on PATH before anything
 # runs `npm install -g`. An older node (apt, Homebrew) stays installed and is
-# shadowed by nvm's, which an earlier run's install is reused for.
+# shadowed by nvm's, which an earlier run's install is reused for. The
+# ~/.local/bin links are re-pointed straight away: later steps put that dir
+# first on PATH, and links an older run left there would bring the old node back.
 ensure_node_runtime() {
-    node_meets_min && return 0
+    if node_meets_min; then
+        ensure_node_on_noninteractive_path > /dev/null
+        return 0
+    fi
     local had_u=0 ok=0
     [[ $- == *u* ]] && had_u=1
     set +u
@@ -104,6 +109,7 @@ ensure_node_runtime() {
     [ "$had_u" = 1 ] && set -u
     hash -r
     [ "$ok" = 1 ] || { printf "${RED}Could not put Node %s on PATH (have %s).${NC}\n" "$NODE_VERSION" "$(node --version 2>/dev/null || echo none)"; return 1; }
+    ensure_node_on_noninteractive_path > /dev/null
     printf "${GREEN}✓ node %s (%s)${NC}\n" "$(node --version)" "$(command -v node)"
 }
 

@@ -16,7 +16,10 @@ runs `npm install -g`. When the node on PATH is older than Node 24
 nvm first when missing, without sudo), make it nvm's default, and source nvm
 from the shell rcs under the `macols: nvm` marker the machine setup also
 writes, grep-guarded so neither duplicates it. An nvm Node 24 from an earlier
-run SHALL be reused without reinstalling. A failure SHALL be non-fatal.
+run SHALL be reused without reinstalling. On success it SHALL re-point the
+`~/.local/bin` node/npm/npx links at the active node at once, because later
+steps put that directory first on PATH and a link an earlier run left to the
+old node would otherwise bring it back. A failure SHALL be non-fatal.
 Every global npm install in `lib/` SHALL go through `npm_global_install`,
 which installs into npm's own global prefix when the user can write it and
 otherwise into `~/.local` (bins in `~/.local/bin`), so a root-owned prefix
@@ -34,6 +37,11 @@ write `~/.npmrc`.
 
 - **WHEN** an installer runs again in a fresh shell where the old system node is first on PATH
 - **THEN** `ensure_node_runtime` switches to nvm's Node 24 without downloading it again, and the rc block appears once
+
+#### Scenario: Links from an earlier run point at the old node
+
+- **WHEN** `~/.local/bin/node` and `npm` link to apt's Node 18 and `~/.local/bin` is first on PATH
+- **THEN** after `ensure_node_runtime`, those links point at Node 24, and npm keeps running on Node 24 after a later step prepends `~/.local/bin` again
 
 ### Requirement: Each tool's CLI installs through its native channel
 `ensure_cli <tool>` SHALL return immediately when the native CLI install is
