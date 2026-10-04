@@ -39,6 +39,10 @@ Options:
                   (remembered; or MACOLS_AWS_MCP=1). Off unless asked.
     --no-aws-mcp  Remove the AWS MCP servers and stop asking
 
+Registering MCP servers asks once for a YouTrack URL and permanent token
+(blank to skip, remembered); set YOUTRACK_URL and YOUTRACK_TOKEN to supply
+them non-interactively.
+
 Every other option is passed to each selected tool's installer, e.g.
 --no-cli, --skills-only, --mcps-only, --hooks-only, --project.
 

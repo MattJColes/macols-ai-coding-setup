@@ -38,7 +38,7 @@ Options:
     --skills-only       Install only Agent Skills (~/.zcode/skills)
     --commands-only     Install only slash commands (~/.zcode/commands/*.md)
     --instructions-only Install only the system AGENTS.md
-    --mcps-only         Install only MCP servers
+    --mcps-only         Install only MCP servers (asks for the YouTrack URL and token)
     --aws-mcp           Also register the AWS MCP servers (remembered; or MACOLS_AWS_MCP=1)
     --no-aws-mcp        Remove the AWS MCP servers and stop asking
     --hooks-only        Install only lifecycle hooks

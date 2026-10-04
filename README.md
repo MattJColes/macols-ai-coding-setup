@@ -43,7 +43,7 @@ and where each file lands.
 | `install.sh` | The only entry point | Adding a tool or a global option |
 | `config/personas/<name>/` | `SKILL.md` plus `references/` and `scripts/` for each persona | Adding or changing an agent or skill |
 | `config/steering/` | `base.md`, `response-format.md`, `ponytail.AGENTS.md`, `tools/<tool>.json` | Changing the system instructions every agent reads |
-| `config/mcp/` | `servers.json`, `brave.json`, `aws.json` | Adding, removing or bumping an MCP server |
+| `config/mcp/` | `servers.json`, `brave.json`, `aws.json`, `youtrack.json` | Adding, removing or bumping an MCP server |
 | `hooks/` | Post-code, post-task and pre-deploy hooks, `checks/` and `adapters/` | Changing what runs inside the agents |
 | `installers/` | One installer per tool | Changing how one tool is installed or wired |
 | `lib/` | `common.sh` loader plus `os.sh`, `personas.sh`, `steering.sh`, `mcp.sh`, `omp-models.sh`, `hooks.sh` | Changing rendering or install logic shared by every tool |

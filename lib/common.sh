@@ -8,7 +8,7 @@
 #   os.sh          OS detection, Homebrew/CLI bootstrap, prerequisite tools
 #   personas.sh    persona rendering (config/personas)
 #   steering.sh    steering assembly and the ponytail ruleset (config/steering)
-#   mcp.sh         MCP registration and the Brave/AWS opt-ins (config/mcp)
+#   mcp.sh         MCP registration and the Brave/AWS/YouTrack opt-ins (config/mcp)
 #   omp-models.sh  Oh My Pi / pi model and provider setup
 #   hooks.sh       hook wiring for every tool (hooks/)
 #   quality-tools.sh  per-language toolchains and linters the hooks call
@@ -52,6 +52,16 @@ BRAVE_KEY_FILE="$HOME/.config/macols/brave-api-key"
 # The answer is remembered in AWS_MCP_CHOICE_FILE ("on"/"off").
 AWS_MCP_CONFIG_FILE="$MCP_DIR/aws.json"
 AWS_MCP_CHOICE_FILE="$HOME/.config/macols/aws-mcp"
+# YouTrack MCP — a fourth, opt-in source registered for every tool once
+# ensure_youtrack_mcp has stored the site URL and a permanent token. The token
+# file is a header file for mcp-remote's --header-file ("Authorization: Bearer
+# <token>", mode 600), so no secret reaches a tool's config or argv.
+# YOUTRACK_CHOICE_FILE records "off" when the user skips the prompt.
+# Keep the URL and key paths in sync with config/mcp/youtrack.json.
+YOUTRACK_MCP_CONFIG_FILE="$MCP_DIR/youtrack.json"
+YOUTRACK_URL_FILE="$HOME/.config/macols/youtrack-url"
+YOUTRACK_KEY_FILE="$HOME/.config/macols/youtrack-api-key"
+YOUTRACK_CHOICE_FILE="$HOME/.config/macols/youtrack-mcp"
 
 # ── Pinned versions ──────────────────────────────────────────────────────────
 # Ponytail (https://github.com/DietrichGebert/ponytail) — installed for every

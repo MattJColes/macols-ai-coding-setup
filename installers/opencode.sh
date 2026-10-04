@@ -25,14 +25,15 @@ Usage: ./install.sh opencode [OPTIONS]
 
 Installs (and, unless told otherwise, the OpenCode CLI itself) agents, skills,
 the system AGENTS.md, MCP servers and the post-code plugin from config/ and hooks/.
-Registering MCP servers also asks for a Brave Search API key (blank to skip);
-set BRAVE_API_KEY in the environment to supply it non-interactively.
+Registering MCP servers also asks for a Brave Search API key and a YouTrack URL
+and permanent token (blank to skip); set BRAVE_API_KEY, YOUTRACK_URL and
+YOUTRACK_TOKEN in the environment to supply them non-interactively.
 
 Options:
     -h, --help        Show this help message
     --agents-only     Install only agents (and system AGENTS.md)
     --skills-only     Install only skills
-    --mcps-only       Install only MCP servers (asks for the Brave Search API key)
+    --mcps-only       Install only MCP servers (asks for the Brave key and YouTrack URL/token)
     --aws-mcp         Also register the AWS MCP servers (remembered; or MACOLS_AWS_MCP=1)
     --no-aws-mcp      Remove the AWS MCP servers and stop asking
     --hooks-only      Install only the post-code plugin

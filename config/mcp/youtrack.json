@@ -1,0 +1,16 @@
+{
+  "_comment": "YouTrack MCP - JetBrains' built-in remote server (YouTrack 2025.2+, https://www.jetbrains.com/help/youtrack/server/model-context-protocol-server.html), registered for every tool once ensure_youtrack_mcp has stored a URL and permanent token. mcp-remote bridges it to stdio so every tool gets the same entry and reads the Authorization header from the mode-600 file below, which keeps the token out of every tool's config and out of the process list. $YOUTRACK_URL is the stored site URL (YOUTRACK_URL_FILE); `marker` limits stale removal to entries that still read our key file. Keep both paths in sync with YOUTRACK_URL_FILE / YOUTRACK_KEY_FILE in lib/common.sh. Version pinned - bump it deliberately.",
+  "mcpServers": {
+    "youtrack": {
+      "marker": "$HOME/.config/macols/youtrack-api-key",
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote@0.14.3",
+        "$YOUTRACK_URL/mcp",
+        "--header-file",
+        "$HOME/.config/macols/youtrack-api-key"
+      ]
+    }
+  }
+}

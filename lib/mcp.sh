@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# lib/mcp.sh — MCP registration from config/mcp/*.json, plus the Brave and AWS opt-ins.
+# lib/mcp.sh — MCP registration from config/mcp/*.json, plus the Brave, AWS and
+# YouTrack opt-ins.
 #
 # Sourced by lib/common.sh, which sets the colours and repo layout variables
 # used here. Not meant to be executed directly.
@@ -94,46 +95,120 @@ aws_mcp_enabled() {
     [ -s "$AWS_MCP_CHOICE_FILE" ] && [ "$(tr -d '[:space:]' < "$AWS_MCP_CHOICE_FILE")" = on ]
 }
 
+# ── YouTrack MCP ─────────────────────────────────────────────────────────────
+
+# ensure_youtrack_mcp — make sure the YouTrack site URL and a permanent token
+# are on disk so the youtrack MCP (config/mcp/youtrack.json) can be registered
+# for every tool.
+#
+# Order: YOUTRACK_URL / YOUTRACK_TOKEN from the environment (either one
+# replaces the stored value), then the stored files, then a prompt when stdin
+# is a tty. A blank answer records "off" in $YOUTRACK_CHOICE_FILE so the other
+# installers and re-runs do not ask again; setting the env vars clears it.
+# Returns 0 when both files hold a value, 1 otherwise — callers treat 1 as
+# non-fatal and the writers leave youtrack out. The token is never echoed and
+# lands only in $YOUTRACK_KEY_FILE (mode 600), as the Authorization header
+# mcp-remote reads with --header-file.
+ensure_youtrack_mcp() {
+    local url="${YOUTRACK_URL:-}" token="${YOUTRACK_TOKEN:-}"
+    if [ -z "$url$token" ]; then
+        if [ -s "$YOUTRACK_URL_FILE" ] && [ -s "$YOUTRACK_KEY_FILE" ]; then
+            printf "${GREEN}✓ YouTrack MCP already configured (%s)${NC}\n" "$(cat "$YOUTRACK_URL_FILE")"
+            return 0
+        fi
+        [ -s "$YOUTRACK_CHOICE_FILE" ] && [ "$(tr -d '[:space:]' < "$YOUTRACK_CHOICE_FILE")" = off ] && return 1
+    fi
+    [ -n "$url" ] || [ ! -s "$YOUTRACK_URL_FILE" ] || url="$(cat "$YOUTRACK_URL_FILE")"
+    if { [ -z "$url" ] || { [ -z "$token" ] && [ ! -s "$YOUTRACK_KEY_FILE" ]; }; } && [ ! -t 0 ]; then
+        printf "${YELLOW}⚠ Non-interactive install — set YOUTRACK_URL and YOUTRACK_TOKEN to enable the YouTrack MCP${NC}\n"
+        return 1
+    fi
+
+    if [ -z "$url" ]; then
+        printf "${BLUE}YouTrack MCP — needs YouTrack 2025.2+ and a permanent token with the YouTrack scope${NC}\n"
+        printf "${BLUE}(Profile → Account Security → Tokens; see https://www.jetbrains.com/help/youtrack/server/model-context-protocol-server.html)${NC}\n"
+        read -rp "$(printf "${YELLOW}YouTrack URL, e.g. https://example.youtrack.cloud (blank to skip): ${NC}")" url
+    fi
+    # Trim whitespace, trailing slashes and a pasted /mcp suffix; default to https.
+    url="$(printf '%s' "$url" | tr -d '[:space:]')"
+    while :; do
+        case "$url" in */) url="${url%/}" ;; */mcp) url="${url%/mcp}" ;; *) break ;; esac
+    done
+    if [ -n "$url" ]; then
+        case "$url" in http://*|https://*) ;; *) url="https://$url" ;; esac
+    fi
+
+    if [ -n "$url" ] && [ -z "$token" ] && [ ! -s "$YOUTRACK_KEY_FILE" ]; then
+        read -rsp "$(printf "${YELLOW}YouTrack permanent token (blank to skip): ${NC}")" token
+        echo ""
+        [ -n "$token" ] || url=""
+    fi
+    if [ -z "$url" ]; then
+        mkdir -p "$(dirname "$YOUTRACK_CHOICE_FILE")"
+        printf 'off\n' > "$YOUTRACK_CHOICE_FILE"
+        printf "${YELLOW}⚠ YouTrack MCP skipped — YOUTRACK_URL=<url> YOUTRACK_TOKEN=<token> ./install.sh --mcps-only adds it later${NC}\n"
+        return 1
+    fi
+
+    mkdir -p "$(dirname "$YOUTRACK_URL_FILE")"
+    printf '%s\n' "$url" > "$YOUTRACK_URL_FILE"
+    if [ -n "$token" ]; then
+        # Accept a pasted "Bearer <token>" as well as the bare token.
+        token="$(printf '%s' "$token" | sed -E 's/^[[:space:]]*[Bb]earer[[:space:]]+//' | tr -d '[:space:]')"
+        (umask 077; printf 'Authorization: Bearer %s\n' "$token" > "$YOUTRACK_KEY_FILE")
+        chmod 600 "$YOUTRACK_KEY_FILE"
+    fi
+    rm -f "$YOUTRACK_CHOICE_FILE"
+    printf "${GREEN}✓ YouTrack MCP configured for %s (token in %s, mode 600)${NC}\n" "$url" "$YOUTRACK_KEY_FILE"
+}
+
 # ── MCP registration (sources: config/mcp/*.json) ──────────────────────
 
 # mcp_resolve <tool> — print the servers this repo wants registered for <tool>
 # as {"servers": {...}, "stale": {...}}, with $HOME expanded.
 #
 #   servers  the default list, plus the AWS servers when opted in, plus
+#            youtrack when a URL and token are stored, plus
 #            brave-search for opencode/pi when a Brave key is configured. A
 #            server whose `requires` binary is not on PATH (dart, gopls) is left
 #            out; the `requires` key itself is dropped.
 #   stale    names this repo owns that must not stay registered: servers left
 #            out above, and retired ones. The value is null (remove outright) or
 #            a package string the entry must still contain before it is removed,
-#            so a user's own server of the same name survives.
+#            so a user's own server of the same name survives. A source entry's
+#            `marker` key sets that string for it (youtrack: its key file).
 #
 # Every writer consumes this, so all five tools see the same list.
 mcp_resolve() {
     require_node || return 1
-    local tool="$1" brave=0 aws=0 brave_src=""
+    local tool="$1" brave=0 aws=0 brave_src="" yt=0 yt_url=""
     [ -f "$MCP_CONFIG_FILE" ] || { printf "${RED}MCP config not found: %s${NC}\n" "$MCP_CONFIG_FILE" >&2; return 1; }
     aws_mcp_enabled && aws=1
+    if [ -s "$YOUTRACK_URL_FILE" ] && [ -s "$YOUTRACK_KEY_FILE" ]; then
+        yt=1; yt_url="$(tr -d '[:space:]' < "$YOUTRACK_URL_FILE")"
+    fi
     case "$tool" in
         opencode|pi) brave_src="$BRAVE_MCP_CONFIG_FILE"; [ -s "$BRAVE_KEY_FILE" ] && brave=1 ;;
     esac
     SRC="$MCP_CONFIG_FILE" SRC_AWS="$AWS_MCP_CONFIG_FILE" AWS_ON="$aws" \
-    SRC_BRAVE="$brave_src" BRAVE_ON="$brave" HOME_DIR="$HOME" node -e '
+    SRC_BRAVE="$brave_src" BRAVE_ON="$brave" \
+    SRC_YT="$YOUTRACK_MCP_CONFIG_FILE" YT_ON="$yt" YT_URL="$yt_url" HOME_DIR="$HOME" node -e '
 const fs = require("fs"), path = require("path"), e = process.env;
 const read = (p) => (p && fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, "utf8")).mcpServers || {} : {});
 const onPath = (bin) => (e.PATH || "").split(path.delimiter).some((d) => {
     try { fs.accessSync(path.join(d, bin), fs.constants.X_OK); return true; } catch (err) { return false; }
 });
-const expand = (s) => String(s).split("$HOME").join(e.HOME_DIR);
+const expand = (s) => String(s).split("$HOME").join(e.HOME_DIR).split("$YOUTRACK_URL").join(e.YT_URL);
 const servers = {};
 // Retired servers: removed only while the entry still runs the package this repo installed.
 const stale = {
     filesystem: "@modelcontextprotocol/server-filesystem",
     puppeteer: "@modelcontextprotocol/server-puppeteer",
 };
-for (const [src, on] of [[e.SRC, true], [e.SRC_AWS, e.AWS_ON === "1"], [e.SRC_BRAVE, e.BRAVE_ON === "1"]]) {
+for (const [src, on] of [[e.SRC, true], [e.SRC_AWS, e.AWS_ON === "1"], [e.SRC_YT, e.YT_ON === "1"],
+                         [e.SRC_BRAVE, e.BRAVE_ON === "1"]]) {
     for (const [name, s] of Object.entries(read(src))) {
-        if (!on || (s.requires && !onPath(s.requires))) { stale[name] = null; continue; }
+        if (!on || (s.requires && !onPath(s.requires))) { stale[name] = s.marker ? expand(s.marker) : null; continue; }
         const entry = { command: expand(s.command), args: (s.args || []).map(expand) };
         if (s.env) entry.env = Object.fromEntries(Object.entries(s.env).map(([k, v]) => [k, expand(v)]));
         servers[name] = entry;
@@ -163,6 +238,7 @@ register_mcps_claude() {
     command -v claude &> /dev/null || { printf "${RED}claude CLI not found${NC}\n"; return 1; }
     ensure_mcp_prereqs || return 1
     ensure_aws_mcp_choice || true
+    ensure_youtrack_mcp || true
     local resolved name
     resolved="$(mcp_resolve claudecode)" || return 1
 
@@ -185,6 +261,7 @@ register_mcps_codex() {
     command -v codex &> /dev/null || { printf "${RED}codex CLI not found${NC}\n"; return 1; }
     ensure_mcp_prereqs || return 1
     ensure_aws_mcp_choice || true
+    ensure_youtrack_mcp || true
     local resolved name command_bin
     resolved="$(mcp_resolve codex)" || return 1
 
@@ -258,6 +335,7 @@ fs.writeFileSync(e.DEST, JSON.stringify(cfg, null, 2) + "\n");
 register_mcps_opencode() {
     printf "${BLUE}Writing MCP config into opencode.json...${NC}\n"
     ensure_aws_mcp_choice || true
+    ensure_youtrack_mcp || true
     local resolved dest="$HOME/.config/opencode/opencode.json"
     resolved="$(mcp_resolve opencode)" || return 1
     mcp_merge_json opencode "$dest" "$resolved" || return 1
@@ -274,6 +352,7 @@ register_mcps_opencode() {
 register_mcps_pi() {
     printf "${BLUE}Writing MCP config into %s...${NC}\n" "$(basename "$1")"
     ensure_aws_mcp_choice || true
+    ensure_youtrack_mcp || true
     local resolved
     resolved="$(mcp_resolve pi)" || return 1
     mcp_merge_json pi "$1" "$resolved" || return 1
@@ -286,6 +365,7 @@ register_mcps_pi() {
 register_mcps_zcode() {
     printf "${BLUE}Writing MCP config into ZCode config.json...${NC}\n"
     ensure_aws_mcp_choice || true
+    ensure_youtrack_mcp || true
     local resolved config_file="$HOME/.zcode/cli/config.json"
     resolved="$(mcp_resolve zcode)" || return 1
     mcp_merge_json zcode "$config_file" "$resolved" || return 1
