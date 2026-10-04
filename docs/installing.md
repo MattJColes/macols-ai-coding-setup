@@ -61,7 +61,9 @@ options go to each of them.
 `--no-cli` and `--no-pi` skip the binary install or upgrade. They don't remove
 anything. MCP registration still needs the tool's CLI on your `PATH`. Every
 installer, and `install.sh` itself, also takes `--aws-mcp` / `--no-aws-mcp` to
-opt in to or out of the AWS MCP servers (see [MCP servers](mcp.md)).
+opt in to or out of the AWS MCP servers. Registering MCP servers also asks
+once for a YouTrack URL and permanent token, blank to skip (see
+[MCP servers](mcp.md)).
 
 ## Project-Local Configuration
 

@@ -63,3 +63,10 @@ mcp-registration.merge:
     kind: function_definition
     has: { field: name, regex: '^mcp_merge_json$' }
   files: [lib/mcp.sh]
+
+mcp-registration.youtrack:
+  language: bash
+  rule:
+    kind: function_definition
+    has: { field: name, regex: '^ensure_youtrack_mcp$' }
+  files: [lib/mcp.sh]

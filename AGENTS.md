@@ -70,7 +70,13 @@ Edit the single source, never the rendered output:
   remove only stale servers this repo owns.
   `config/mcp/aws.json` (aws-mcp, aws-iac) is opt-in for every tool
   (`--aws-mcp` / `MACOLS_AWS_MCP=1`, remembered in `~/.config/macols/aws-mcp`).
-  `config/mcp/brave.json` is a third, opt-in source holding
+  `config/mcp/youtrack.json` (youtrack, via the `mcp-remote` stdio bridge) is
+  registered for every tool once `ensure_youtrack_mcp` has stored a URL and
+  permanent token (prompted, or `$YOUTRACK_URL` / `$YOUTRACK_TOKEN`; a skip is
+  remembered in `~/.config/macols/youtrack-mcp`). The token lives only in
+  `~/.config/macols/youtrack-api-key` (mode 600) as the header file mcp-remote
+  reads; the paths there and in `lib/common.sh` must stay in sync.
+  `config/mcp/brave.json` is a fourth, opt-in source holding
   `brave-search`; only `register_mcps_opencode` and `register_mcps_pi` merge it,
   and only when `~/.config/macols/brave-api-key` holds a key
   (`ensure_brave_api_key` prompts for it, honours `$BRAVE_API_KEY`, writes mode

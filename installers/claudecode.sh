@@ -29,7 +29,7 @@ Options:
     -h, --help        Show this help message
     --agents-only     Install only agents (and system CLAUDE.md)
     --skills-only     Install only skills
-    --mcps-only       Install only MCP servers
+    --mcps-only       Install only MCP servers (asks for the YouTrack URL and token)
     --aws-mcp         Also register the AWS MCP servers (remembered; or MACOLS_AWS_MCP=1)
     --no-aws-mcp      Remove the AWS MCP servers and stop asking
     --hooks-only      Install only hooks

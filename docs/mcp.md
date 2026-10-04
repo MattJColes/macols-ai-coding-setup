@@ -8,6 +8,7 @@ The server definitions live in `config/mcp/`:
 |---|---|---|
 | `servers.json` | playwright, context7, dart, gopls | every tool with MCP support |
 | `aws.json` | aws-mcp, aws-iac | every tool with MCP support, opt-in |
+| `youtrack.json` | youtrack | every tool with MCP support, once a URL and token are stored |
 | `brave.json` | brave-search | OpenCode and the Pi agents, only with an API key |
 
 The Claude Code, Codex, OpenCode, Pi (`pi` + `omp`) and ZCode installers
@@ -80,6 +81,37 @@ it. An unattended install with no answer leaves them off.
   documentation search and best-practice checks. Uses ambient AWS credentials.
 
 Run `aws configure` after opting in if you have no credentials yet.
+
+## YouTrack (Every Tool)
+
+`config/mcp/youtrack.json` registers JetBrains'
+[YouTrack MCP server](https://www.jetbrains.com/help/youtrack/server/model-context-protocol-server.html),
+which YouTrack 2025.2 and later serves at `<your site>/mcp`. It needs your
+site URL and a permanent token (Profile → Account Security → Tokens, with the
+YouTrack scope), so every installer asks for both the first time it registers
+MCP servers. A blank answer skips it and records `off` in
+`~/.config/macols/youtrack-mcp`, so the other installers and later re-runs do
+not ask again. To add it later, change it, or set it up unattended:
+
+```bash
+YOUTRACK_URL=https://example.youtrack.cloud YOUTRACK_TOKEN=<token> ./install.sh --mcps-only
+```
+
+Either variable on its own replaces just that value. The installer trims a
+trailing `/` or `/mcp` from the URL and accepts the token with or without a
+leading `Bearer`.
+
+Every tool gets the same stdio entry: the pinned
+[`mcp-remote`](https://www.npmjs.com/package/mcp-remote) bridge pointed at
+`<url>/mcp` with `--header-file ~/.config/macols/youtrack-api-key`. That file
+holds the `Authorization: Bearer <token>` header with mode 600, so the token
+never lands in a tool's config or in the process list. The URL lives in
+`~/.config/macols/youtrack-url`. Delete both files and re-run the installer to
+remove the server. A `youtrack` server of your own that does not read that key
+file is left alone.
+
+The key path in `config/mcp/youtrack.json` and `YOUTRACK_KEY_FILE` in
+`lib/common.sh` must stay in sync.
 
 ## Brave Search (OpenCode and the Pi Agents)
 

@@ -68,8 +68,9 @@ Usage: ./install.sh pi [OPTIONS]
 Installs (and, unless told otherwise, both agent binaries) Agent Skills, the
 system AGENTS.md, MCP servers (both agents), model providers for both agents, the
 pi-checks extension and each agent's packages from config/ and hooks/. Registering MCP
-servers also asks for a Brave Search API key (blank to skip); set
-BRAVE_API_KEY in the environment to supply it non-interactively.
+servers also asks for a Brave Search API key and a YouTrack URL and permanent
+token (blank to skip); set BRAVE_API_KEY, YOUTRACK_URL and YOUTRACK_TOKEN in
+the environment to supply them non-interactively.
 
 Model setup always registers vllm-lan at http://exodus:8000/v1 for both agents
 with ukisai/Swift-Qwen3.8-27B-NVFP4 (reasoning, 262144 context, zero cost).
@@ -92,7 +93,7 @@ Options:
     --context-only    Install only the system AGENTS.md (both agents)
     --hooks-only      Install only the pi-checks extension (both agents)
     --packages-only   Install only the agent packages
-    --mcps-only       Install only MCP servers (omp mcp.json + pi mcp-adapter.json; asks for the Brave Search API key)
+    --mcps-only       Install only MCP servers (omp mcp.json + pi mcp-adapter.json; asks for the Brave key and YouTrack URL/token)
     --aws-mcp         Also register the AWS MCP servers (remembered; or MACOLS_AWS_MCP=1)
     --no-aws-mcp      Remove the AWS MCP servers and stop asking
     --models-only     Register LAN models for both agents and reconfigure omp roles

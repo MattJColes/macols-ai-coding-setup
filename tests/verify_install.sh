@@ -43,6 +43,9 @@ has_ponytail_block() { grep -q 'ponytail:ruleset:start' "$1" 2>/dev/null; }
 # brave-search is registered for OpenCode/pi/omp only, and only when a key file
 # exists — so assert its presence or its absence, whichever the key implies.
 has_brave_key() { [ -s "$HOME/.config/macols/brave-api-key" ]; }
+# youtrack is registered for every tool once a URL and token are stored; the
+# token stays in the header file, so the entry must never carry it inline.
+has_youtrack() { [ -s "$HOME/.config/macols/youtrack-url" ] && [ -s "$HOME/.config/macols/youtrack-api-key" ]; }
 # The AWS servers are opt-in for every tool; mirrors aws_mcp_enabled in lib/common.sh.
 aws_on() {
     case "${MACOLS_AWS_MCP:-}" in
@@ -63,6 +66,13 @@ mcp_checks() {
         pass "$l has the aws-* MCPs (opted in)" "jq -e '$m | .\"aws-mcp\" and .\"aws-iac\"' '$f' >/dev/null 2>&1"
     else
         pass "$l omits the aws-* MCPs (not opted in)" "! jq -e '$m | (.\"aws-mcp\" // .\"aws-iac\")' '$f' >/dev/null 2>&1"
+    fi
+    if has_youtrack; then
+        pass "$l has youtrack MCP reading the header file, token not inlined" \
+            "jq -e '$m.youtrack | tostring | contains(\"--header-file\") and (contains(\"Bearer\") | not)' '$f' >/dev/null 2>&1"
+    else
+        pass "$l omits youtrack MCP without a URL and token" \
+            "! jq -e '$m.youtrack | tostring | contains(\"youtrack-api-key\")' '$f' >/dev/null 2>&1"
     fi
     if command -v gopls >/dev/null 2>&1; then
         pass "$l has gopls MCP (gopls on PATH)" "jq -e '$m.gopls' '$f' >/dev/null 2>&1"
