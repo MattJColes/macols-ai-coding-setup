@@ -115,8 +115,14 @@ fi
 # key is left alone: the user's value wins.
 herdr_toml_set() {
     local table="$1" key="$2" value="$3" why="$4" cfg="$HERDR_CONFIG_DIR/config.toml"
-    if grep -q "^[[:space:]]*${key}[[:space:]]*=" "$cfg"; then
-        echo "  $key already set."
+    # Scope the existing-key check to the table: a generic key such as `name`
+    # can legitimately appear in other tables.
+    if TABLE="[$table]" KEY="$key" awk '
+        /^\[/ { t = $0; sub(/[ \t]+$/, "", t); in_table = (t == ENVIRON["TABLE"]) }
+        in_table && $0 ~ "^[ \t]*" ENVIRON["KEY"] "[ \t]*=" { found = 1 }
+        END { exit !found }
+    ' "$cfg"; then
+        echo "  [$table] $key already set."
     elif grep -q "^\\[${table}\\][[:space:]]*\$" "$cfg"; then
         TABLE="[$table]" LINE="$key = $value" awk '
             { print }
@@ -138,6 +144,10 @@ herdr_toml_set experimental kitty_graphics true "required by herdr-browser"
 # herdr's new-tab name prompt counts as a hand rename, which opts every new tab
 # out of herdr-automatic-rename.
 herdr_toml_set ui prompt_new_tab_name false "lets herdr-automatic-rename name new tabs"
+# Default theme, matching omp's dark-gruvbox. auto_switch off stops a light/dark
+# OS change swapping it out.
+herdr_toml_set theme name '"gruvbox"' "default theme"
+herdr_toml_set theme auto_switch false "keeps the gruvbox theme"
 
 if ! grep -qF 'cloudmanic.herdr-plus.projects' "$HERDR_CONFIG_DIR/config.toml"; then
     cat >> "$HERDR_CONFIG_DIR/config.toml" << 'EOF'

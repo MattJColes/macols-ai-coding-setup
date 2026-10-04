@@ -83,6 +83,30 @@ fs.writeFileSync(file, YAML.stringify(doc, null, 2) + "\n");
     printf "${GREEN}  ✓ modelRoles.%s = %s${NC}\n" "$2" "$3"
 }
 
+# omp_default_theme <agent_dir> — default omp's dark theme to dark-gruvbox
+# (matching herdr's gruvbox). A theme the user already picked is left alone.
+omp_default_theme() {
+    require_bun || return 1
+    mkdir -p "$1"
+    OMP_DIR="$1" bun -e '
+import { YAML } from "bun";
+import * as fs from "node:fs";
+import * as path from "node:path";
+const dir = process.env.OMP_DIR;
+const file = fs.existsSync(path.join(dir, "config.yml")) || !fs.existsSync(path.join(dir, "config.yaml"))
+    ? path.join(dir, "config.yml")
+    : path.join(dir, "config.yaml");
+let doc = {};
+// Unlike the role writer, bail on a config we cannot parse: rewriting it from
+// {} would wipe the user settings it holds.
+if (fs.existsSync(file)) doc = YAML.parse(fs.readFileSync(file, "utf8")) || {};
+if (doc.theme?.dark) { console.log(`  omp theme.dark already set (${doc.theme.dark}).`); process.exit(0); }
+doc.theme = { ...(doc.theme ?? {}), dark: "dark-gruvbox" };
+fs.writeFileSync(file, YAML.stringify(doc, null, 2) + "\n");
+console.log("  omp theme.dark = dark-gruvbox");
+'
+}
+
 # omp_register_provider <agent_dir> — merge one provider into models.yml from
 # the OMP_PROVIDER_* environment. Fields:
 #   OMP_PROVIDER_NAME            provider id (required)

@@ -214,6 +214,9 @@ if [ "$DO_MODELS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     fi
     echo ""
 fi
+if [ "$SUBSET" = false ] && [ "$PROJECT_INSTALL" = false ]; then
+    omp_default_theme "$OMP_DIR" || printf "${YELLOW}⚠ omp theme default skipped/failed${NC}\n"
+fi
 if [ "$DO_HOOKS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     install_pi_extension "$PI_AGENT_DIR/extensions" pi
     install_pi_extension "$OMP_DIR/extensions" omp
