@@ -1,6 +1,6 @@
 ---
 name: anchors
-description: Work with ast-grep spec anchors — resolve anchors before a change, re-run them after, propose spec diffs, keep the rules healthy. Use in repos with specs/anchors/*.yml.
+description: Use in repos with specs/anchors/*.yml, before and after a change - resolves ast-grep spec anchors, re-runs them, proposes spec diffs and keeps the rules healthy.
 tier: standard
 allowed-tools:
   - Read

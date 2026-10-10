@@ -1,7 +1,7 @@
 ---
 name: explain
 tier: light
-description: Explains what a codebase, module or document is actually doing, in Matt Coles' plain-prose voice, kept simple. Use to build a mental model of an unfamiliar repo, understand how the pieces fit together, trace how data flows, review a document for flow, clarity and whether it builds a coherent mental model in the reader, or walk through a diff before reading it (changes grouped by intent, a Mermaid call-flow diagram, the three riskiest spots). Triggers on "explain this codebase", "walk me through this diff", "what did the agent just change", "summarise this PR before I read it", "how does this work", "build a mental model", "walk me through this", "what is this code doing", "review this doc for clarity", "does this document flow".
+description: Use to build a mental model of an unfamiliar repo, understand how the pieces fit together, trace how data flows, review a document for flow and clarity, or walk through a diff before reading it (changes grouped by intent, a Mermaid call-flow diagram, the three riskiest spots). Explains in Matt Coles' plain-prose voice, kept simple. Triggers on "explain this codebase", "walk me through this diff", "what did the agent just change", "summarise this PR before I read it", "how does this work", "build a mental model", "walk me through this", "what is this code doing", "review this doc for clarity", "does this document flow".
 allowed-tools:
   - Read
   - Write

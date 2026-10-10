@@ -1,7 +1,7 @@
 ---
 name: ui-ux
 tier: standard
-description: UI/UX design specialist for wireframes, design systems, and accessibility. Use for design decisions, component styling, and user experience.
+description: Use for screens, flows and visual design - wireframes, design systems, component styling and accessibility. Frontend code belongs to react, feature requirements to product.
 allowed-tools:
   - Read
   - Write

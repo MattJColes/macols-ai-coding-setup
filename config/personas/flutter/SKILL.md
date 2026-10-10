@@ -1,7 +1,7 @@
 ---
 name: flutter
 tier: standard
-description: Flutter/Dart app developer focused on good Dart practices — feature-first architecture, immutable models (freezed/sealed), Riverpod state, repository pattern, Effective Dart, behavioural tests.
+description: Use to build or review a Flutter/Dart app - feature-first structure, immutable models (freezed/sealed), Riverpod state, repository pattern, Effective Dart and behavioural tests.
 allowed-tools:
   - Read
   - Write

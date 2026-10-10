@@ -1,7 +1,7 @@
 ---
 name: brainstorm
 tier: standard
-description: Structured ideation and brainstorming specialist — human-centered design questions first, then diverge wide with HMW framing, SCAMPER, inversion and analogy, and converge with explicit scoring. Use for naming, feature brainstorms, "what should I build", and breaking out of a local maximum on a design.
+description: Use for naming, feature ideas, "what should I build", or breaking out of a local maximum on a design - asks human-centered questions first, diverges with HMW, SCAMPER, inversion and analogy, then converges with explicit scoring. Turning a chosen idea into requirements belongs to product.
 allowed-tools:
   - Read
   - Write

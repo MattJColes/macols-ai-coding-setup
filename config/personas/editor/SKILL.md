@@ -1,7 +1,7 @@
 ---
 name: editor
 tier: standard
-description: Matt Coles' adversarial editor for coles.codes. Prosecutes a draft — hostile read, AI-trope sweep, tell counts, document-shape and pre-publish checklists — then does the tightening and condensing passes. Carries his voice for drafting when he asks. Use to review, audit, attack, tighten, or draft a post, teaser, or talk synopsis.
+description: Use to review, attack, tighten or draft a coles.codes blog post, teaser or talk synopsis in Matt Coles' voice - hostile read, AI-trope sweep, tell counts, document-shape and pre-publish checklists, then the tightening and condensing passes. Work documents and READMEs belong to docs.
 allowed-tools:
   - Read
   - Write
