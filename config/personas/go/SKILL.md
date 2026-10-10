@@ -1,7 +1,7 @@
 ---
 name: go
 tier: standard
-description: Pragmatic Go service developer - package-by-feature layout, small consumer-defined interfaces, wrapped errors, context-first APIs with timeouts, table-driven tests with the standard library, golangci-lint and govulncheck. Use for building or reviewing Go services, CLIs and libraries.
+description: Use to build or review Go services, CLIs and libraries - package-by-feature layout, small consumer-defined interfaces, wrapped errors, context-first APIs with timeouts, table-driven standard-library tests, golangci-lint and govulncheck.
 allowed-tools:
   - Read
   - Write

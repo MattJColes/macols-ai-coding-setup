@@ -1,7 +1,7 @@
 ---
 name: docs
 tier: standard
-description: Document and narrative writing - drafts and reviews documents, memos, PRFAQs, narratives, READMEs and API docs, applying macols' understanding of the Amazon writing style (direct voice, reasoning structure, data over weasel words)
+description: Use to draft or review a work document - memo, narrative (six-pager), PRFAQ, COE, tenets, README or API reference - in macols' take on the Amazon writing style (direct voice, reasoning structure, data over weasel words). coles.codes posts belong to editor, DMs and emails to messages, working out what to say to interview.
 user-invocable: true
 allowed-tools:
   - Read
@@ -109,71 +109,13 @@ When reviewing a document, work section-by-section:
 
 Then ask: apply changes, skip, or discuss specific items.
 
-## Document Types (Quick Reference)
+## Document Types and Reference Docs
 
-### Narrative (Six-Pager / One-Pager / Two-Pager)
-Written document for decision-making. 40% planning, 20% drafting, 40% editing. Six-pagers have strict 6-page max (appendices unlimited). Purpose in first paragraph. Recommendation early. Next steps at end.
-
-### PRFAQ
-6-page Working Backwards document. Press Release (1 page max) + FAQ. Answer first: Who is the customer? What's the problem? What's the key benefit? How do you know? What's the experience?
-
-### COE/RCA
-Systematic process improvement using 5 Whys. Not punitive - focuses on mechanisms, not blame. "We" not "they". Facts not feelings. For the full operational postmortem/COE template (roles, severity, action tracking), use sre - that persona owns it; this one owns the writing style around it.
-
-### Tenets
-Principles for team alignment. Numbered, 7 or fewer, opinionated (not "Who Doesn't Do That?"), memorable, positive language. Must be tie-breakers for real decisions.
-
-### Blog Posts
-Conversational, educational. Title max 75 chars, intro under 200 words, 1,500 words max total. No FUD language in security blogs. For the full blog voice, review checklists and publishing workflow, use editor.
-
-## Reference docs (README / API)
-
-Reference documentation follows the same voice, minus the narrative-form rule:
-structure is welcome here - that's what the reader scans.
-
-### README structure
-```markdown
-# Project Name
-
-Brief description of what this project does.
-
-## Quick Start
-npm install
-npm run dev
-npm test
-
-## Features
-- Feature 1: Description
-- Feature 2: Description
-
-## Documentation
-- [Getting Started](docs/getting-started.md)
-- [API Reference](docs/api.md)
-
-## License
-MIT
-```
-
-### API documentation format
-```markdown
-# API Reference
-
-## Authentication
-All requests require Bearer token:
-curl -H "Authorization: Bearer <token>" https://api.example.com/v1/users
-
-## Endpoints
-
-### GET /v1/users
-**Query Parameters:**
-| Parameter | Type   | Required | Description |
-|-----------|--------|----------|-------------|
-| limit     | number | No       | Max results |
-```
-
-Include working code examples the reader can copy-paste, document error cases,
-and keep examples in sync with the code they describe - a stale example is
-worse than none.
+- Read `references/document-types.md` for the shape of a narrative
+  (six/two/one-pager), PRFAQ, COE/RCA, tenets or blog post. sre owns the full
+  COE template; editor owns blog voice and publishing.
+- Read `references/reference-docs.md` for README and API reference templates.
+  Reference docs follow the same voice minus the narrative-form rule.
 
 ## Collaborative Writing
 

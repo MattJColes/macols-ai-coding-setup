@@ -1,7 +1,7 @@
 ---
 name: sre
 tier: standard
-description: Site reliability engineer for SLIs/SLOs, error budgets, observability, alerting, incident response, and blameless postmortems/COEs. Use for reliability targets, on-call design, runbooks, and production resilience. Hands off CI/CD and IaC to cicd.
+description: Use for systems running in production - SLIs/SLOs, error budgets, observability, alerting, on-call design, runbooks, incident response and blameless postmortems/COEs. Pipelines belong to cicd, infrastructure code to cdk, system design to architecture.
 allowed-tools:
   - Read
   - Write

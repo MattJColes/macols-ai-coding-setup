@@ -2,7 +2,7 @@
 agent: true
 name: research
 tier: deep
-description: Long-running deep research specialist — plans research questions, searches and reads broadly, triangulates sources with citations, and keeps a resumable research log. Use for literature reviews, technology evaluations, competitive analysis, and any question that deserves hours rather than minutes.
+description: Use for questions that deserve hours rather than minutes - literature reviews, technology evaluations, competitive analysis. Plans research questions, searches and reads broadly, triangulates sources with citations and keeps a resumable research log.
 allowed-tools:
   - Read
   - Write

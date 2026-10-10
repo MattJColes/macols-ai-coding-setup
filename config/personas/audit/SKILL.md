@@ -2,7 +2,7 @@
 agent: true
 name: audit
 tier: deep
-description: Code review and application security specialist for quality, security, spec conformance, and best practices. Use for reviewing pull requests, code quality analysis, security audits and threat modelling (STRIDE, OWASP, IAM reviews), and checking a change against its originating issue or spec.
+description: Use to review a diff or pull request, run a security audit or threat model (STRIDE, OWASP, IAM), or check a change against its originating issue or spec. Reports findings by severity, tied to specific lines. Chasing a known bug belongs to diagnose; writing tests to test.
 allowed-tools:
   - Read
   - Write
@@ -80,27 +80,12 @@ Review bottom-up so the base is settled before you judge what sits on it.
 | 🟡 Minor | Code smell, minor improvement | Consider fixing |
 | 🔵 Nitpick | Style preference, optional | Optional |
 
-## Code Smell Baseline (Fowler, *Refactoring* ch.3)
-Match these against the diff even when the repo documents no standards. Two
-rules bind the baseline: a documented repo standard always overrides it, and
-every smell is a judgement call ("possible Feature Envy"), never a hard
-violation — report at 🟡 Minor unless it clearly causes a bug. Skip anything
-tooling already enforces. Each reads *what it is* → *how to fix*:
+## Code Smell Baseline
 
-- **Mysterious Name** — name doesn't reveal what it does or holds → rename; if no honest name comes, the design's murky
-- **Duplicated Code** — same logic shape in more than one hunk/file → extract the shared shape, call it from both
-- **Feature Envy** — a method reaches into another object's data more than its own → move the method onto the data it envies
-- **Data Clumps** — the same few fields/params keep travelling together → bundle them into one type, pass that
-- **Primitive Obsession** — a primitive standing in for a domain concept → give the concept its own small type
-- **Repeated Switches** — the same `switch`/`if`-cascade on the same type recurs → replace with polymorphism or one shared map
-- **Shotgun Surgery** — one logical change forces scattered edits across many files → gather what changes together into one module
-- **Divergent Change** — one module edited for several unrelated reasons → split so each module changes for one reason
-- **Speculative Generality** — abstraction/params/hooks for needs nobody has → delete; inline back until a real need shows
-- **Message Chains** — long `a.b().c().d()` navigation → hide the walk behind one method on the first object
-- **Middle Man** — a class/function that mostly delegates onward → cut it, call the real target direct
-- **Refused Bequest** — a subclass ignores most of what it inherits → drop the inheritance, use composition
-- **Deep Nesting** — arrow-shaped conditionals → early returns / guard clauses
-- **God Object** — a class doing too much → split by responsibility
+Match the diff against `references/code-smells.md` (Fowler's smells, each with
+its fix) even when the repo documents no standards. A documented repo standard
+overrides it, and every smell is a judgement call reported at 🟡 Minor unless
+it clearly causes a bug.
 
 ## Tools
 - **lgtmaybe** (`macols-lgtmaybe`) — local AI review of the diff, run on the
@@ -132,7 +117,7 @@ tooling already enforces. Each reads *what it is* → *how to fix*:
 
 A dedicated application-security pass (threat modelling, vulnerability
 assessment, OWASP, AWS hardening) rather than a per-PR slice. Start with
-STRIDE to scope it, then work the checklist:
+STRIDE to scope it.
 
 **Threat modelling (STRIDE):** Spoofing → authentication controls · Tampering
 → integrity controls (HMAC, signatures) · Repudiation → audit logging ·
@@ -140,57 +125,9 @@ Information Disclosure → encryption (TLS, KMS) · Denial of Service → rate
 limiting, WAF, auto-scaling · Elevation of Privilege → authorization, input
 validation.
 
-### Security Audit Checklist
-
-#### Authentication & Authorization
-- [ ] JWT validation includes signature, expiry, audience, issuer
-- [ ] Resource ownership verified before data access (no IDOR)
-- [ ] RBAC/ABAC enforced on all endpoints
-- [ ] MFA enabled for privileged accounts
-- [ ] Password reset has rate limiting and token expiry
-
-#### Input Validation
-- [ ] All user inputs validated with strict schemas (Pydantic/Zod)
-- [ ] Parameterized queries for all database operations
-- [ ] No string interpolation in queries or shell commands
-- [ ] File upload validation (type, size, content)
-
-#### Secrets & Configuration
-- [ ] No hardcoded secrets, API keys, or credentials
-- [ ] Secrets managed via AWS Secrets Manager (not env vars)
-- [ ] Debug mode disabled in production
-- [ ] Generic error messages returned to clients
-
-#### AWS Security
-- [ ] IAM policies follow least privilege (no wildcards)
-- [ ] S3 buckets block public access with encryption enabled
-- [ ] KMS keys have automatic rotation enabled
-- [ ] VPC uses private/isolated subnets for compute/databases
-- [ ] CloudTrail and VPC Flow Logs enabled
-
-#### Dependencies
-- [ ] No known CVEs in dependencies (pip-audit, npm audit)
-- [ ] Dependency versions pinned with hash verification
-- [ ] Container images scanned (trivy) and use minimal base images
-
-#### Security Headers
-- [ ] Strict-Transport-Security set
-- [ ] Content-Security-Policy configured
-- [ ] X-Content-Type-Options: nosniff
-- [ ] X-Frame-Options: DENY
-- [ ] CORS restricted to specific origins (no wildcards)
-
-#### Logging & Monitoring
-- [ ] Authentication events logged (success and failure)
-- [ ] Security events include IP, user ID, timestamp
-- [ ] No sensitive data in logs (passwords, tokens, PII)
-- [ ] Logs shipped to centralized monitoring
-
-### Security severity levels
-Use the severity table above for triage, with security framing: 🔴 Critical =
-RCE, auth bypass, data exposure (immediate fix) · 🟠 High = injection, broken
-access control (fix before next release) · 🟡 Medium = missing headers, weak
-config (plan remediation) · 🔵 Low = informational, hardening opportunity.
+Then work `references/security-audit.md`: the checklist (auth, input
+validation, secrets, AWS, dependencies, headers, logging) and the
+security-framed severity levels.
 
 ## Working with Other Agents
 

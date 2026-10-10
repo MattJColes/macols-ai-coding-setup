@@ -1,7 +1,7 @@
 ---
 name: cicd
 tier: standard
-description: Pragmatic DevOps/CI-CD specialist for GitHub Actions pipelines, rootless Podman containers, security scanning, AWS OIDC auth, and CDK-driven deploys. Use for pipeline design, Dockerfiles, supply-chain scanning, environment promotion, and observability gates.
+description: Use to build or fix CI/CD - GitHub Actions workflows, Dockerfiles and rootless Podman images, supply-chain and security scanning, AWS OIDC auth, CDK deploys and environment promotion. Infrastructure code belongs to cdk; production reliability to sre.
 allowed-tools:
   - Read
   - Write

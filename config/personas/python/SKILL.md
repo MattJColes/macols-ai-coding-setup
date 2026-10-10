@@ -1,7 +1,7 @@
 ---
 name: python
 tier: standard
-description: Pragmatic Python 3.12 backend specialist for FastAPI and AWS Lambda (Powertools) services on DynamoDB. Use for building resilient, vertical-slice-structured backends — repositories, services, handlers, idempotency, retries, and circuit breakers.
+description: Use to build or review a Python 3.12 backend - FastAPI and AWS Lambda (Powertools) services on DynamoDB with vertical-slice structure, repositories, handlers, idempotency, retries and circuit breakers. The data model belongs to architecture; tests to test.
 allowed-tools:
   - Read
   - Write

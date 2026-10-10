@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Run tests and linters, then commit the current change with a conventional message and push its branch. Owns the git branch, worktree, commit, push, PR and stacked-PR (gh stack) workflow.
+description: Use to commit and push a finished change - runs tests and linters, writes a conventional commit, pushes the branch and opens the PR. Owns the git branch, worktree, commit, push, PR and stacked-PR (gh stack) workflow.
 tier: light
 allowed-tools:
   - Bash

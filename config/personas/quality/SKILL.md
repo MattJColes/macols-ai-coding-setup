@@ -1,6 +1,6 @@
 ---
 name: quality
-description: Sets up deterministic quality gates in a project - complexity, function and file length, argument count, duplication (jscpd), layer rules (import-linter, dependency-cruiser, depguard) and strict type checks for Python, TypeScript, Dart/Flutter and Go - wired into the agent hooks and CI with fix-instruction failure messages. Use when adding or tightening lint limits, layer contracts, duplication checks or strict typing, or when asked to "add quality gates".
+description: Use when adding or tightening a project's quality gates, or when asked to "add quality gates" - complexity, function and file length, argument count, duplication (jscpd), layer rules (import-linter, dependency-cruiser, depguard) and strict types for Python, TypeScript, Dart/Flutter and Go, wired into the agent hooks and CI with fix-instruction failure messages.
 tier: standard
 allowed-tools:
   - Read
