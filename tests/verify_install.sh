@@ -60,8 +60,8 @@ aws_on() {
 # appear exactly when they should.
 mcp_checks() {
     local m="$1" f="$2" l="$3"
-    pass "$l has context7 + playwright MCPs" "jq -e '$m | .context7 and .playwright' '$f' >/dev/null 2>&1"
-    pass "$l has no retired filesystem/puppeteer MCP" "! jq -e '$m | (.filesystem // .puppeteer)' '$f' >/dev/null 2>&1"
+    pass "$l has playwright MCP" "jq -e '$m | .playwright' '$f' >/dev/null 2>&1"
+    pass "$l has no retired context7/filesystem/puppeteer MCP" "! jq -e '$m | (.context7 // .filesystem // .puppeteer)' '$f' >/dev/null 2>&1"
     if aws_on; then
         pass "$l has the aws-* MCPs (opted in)" "jq -e '$m | .\"aws-mcp\" and .\"aws-iac\"' '$f' >/dev/null 2>&1"
     else
@@ -164,7 +164,7 @@ verify_claudecode() {
     soft "openspec 'macols' schema installed user-level" "[ -f \"\${XDG_DATA_HOME:-\$HOME/.local/share}/openspec/schemas/macols/schema.yaml\" ]"
     soft "ast-grep CLI installed" "command -v ast-grep >/dev/null && ast-grep --version >/dev/null 2>&1"
     soft "yq CLI installed" "command -v yq >/dev/null 2>&1"
-    soft "claude mcp list shows context7" "command -v claude >/dev/null && claude mcp list 2>/dev/null | grep -q context7"
+    soft "claude mcp list shows playwright" "command -v claude >/dev/null && claude mcp list 2>/dev/null | grep -q playwright"
     quality_tool_checks
 }
 
@@ -190,7 +190,7 @@ verify_codex() {
         pass "hooks.json Stop runs post-task battery" "jq -e '.hooks.Stop[0].hooks[0].command | test(\"post_task\")' '$d/hooks.json' >/dev/null"
         pass "hooks.json hooks answer in Codex JSON (--format codex)" "jq -e '[.hooks[][].hooks[].command | test(\"--format codex\")] | all' '$d/hooks.json' >/dev/null"
     fi
-    soft "codex mcp list shows context7" "command -v codex >/dev/null && codex mcp list 2>/dev/null | grep -q context7"
+    soft "codex mcp list shows playwright" "command -v codex >/dev/null && codex mcp list 2>/dev/null | grep -q playwright"
     pass "no retired revdiff plugin enabled" "! grep -qs 'revdiff@revdiff' '$d/config.toml'"
     hunk_checks "$d/skills" "~/.codex"
     quality_tool_checks

@@ -5,10 +5,6 @@
       "command": "npx",
       "args": ["-y", "@playwright/mcp@0.0.82"]
     },
-    "context7": {
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp@4.1.1"]
-    },
     "dart": {
       "requires": "dart",
       "command": "dart",

@@ -3,7 +3,7 @@
 ## Purpose
 
 `config/mcp/servers.json` is the default source of MCP servers (playwright,
-context7, dart, gopls), with pinned package versions. A server with a
+dart, gopls), with pinned package versions. A server with a
 `requires` key (dart, gopls) is registered only when that binary is on PATH.
 
 Three opt-in sources sit beside it. `config/mcp/aws.json` holds

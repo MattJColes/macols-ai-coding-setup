@@ -204,6 +204,7 @@ const servers = {};
 const stale = {
     filesystem: "@modelcontextprotocol/server-filesystem",
     puppeteer: "@modelcontextprotocol/server-puppeteer",
+    context7: "@upstash/context7-mcp",
 };
 for (const [src, on] of [[e.SRC, true], [e.SRC_AWS, e.AWS_ON === "1"], [e.SRC_YT, e.YT_ON === "1"],
                          [e.SRC_BRAVE, e.BRAVE_ON === "1"]]) {
