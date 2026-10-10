@@ -8,7 +8,7 @@ the agents live under `hooks/` and are referenced in place. The five
 installers in `installers/` render `config/` into the formats used by Claude
 Code, Codex, OpenCode, the Pi agents (plain `pi` and Oh My Pi) and ZCode, and
 wire up `hooks/`. Shared installer functions live in `lib/`, one module per
-job (`os`, `personas`, `steering`, `mcp`, `omp-models`, `hooks`,
+job (`os`, `personas`, `steering`, `mcp`, `lgtmaybe`, `omp-models`, `hooks`,
 `quality-tools`, `plugins`) loaded by
 `lib/common.sh`. Long-form docs live in `docs/`.
 
@@ -60,7 +60,7 @@ Edit the single source, never the rendered output:
   Edit it once; changing it means regenerating the bundle. It governs chat
   replies only — never widen it to authored content, or it breaks the
   `editor`/`docs`/`messages` personas and the review checklists.
-- **MCP servers:** `config/mcp/servers.json` (playwright, context7, dart,
+- **MCP servers:** `config/mcp/servers.json` (playwright, dart,
   gopls; versions pinned; a `requires` key registers a server only when that
   binary is on PATH). Registered for Claude Code, Codex, OpenCode, Oh My Pi
   (written to `~/.omp/agent/mcp.json`), plain pi (written to

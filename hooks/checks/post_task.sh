@@ -16,6 +16,7 @@
 #   node_checks.sh       vitest/jest/npm test, eslint, tsc, dependency-cruiser
 #   lang_checks.sh       cdk synth, flutter test + dart analyze, go, shellcheck
 #   structure_checks.sh  jscpd duplication, file length, opt-in semgrep
+#   lgtmaybe_review.sh   AI review of the uncommitted diff (checkpoint only)
 #
 # Everything is scoped to the files this turn changed (via changed_code_files),
 # falling back to a full scan when git is unavailable. The battery is the local
@@ -35,6 +36,8 @@
 #   Structure     jscpd duplication touching changed files, import-linter and
 #                 dependency-cruiser layer contracts (only when the repo has a
 #                 config), a file-length limit (MACOLS_MAX_FILE_LINES)
+#   AI review     lgtmaybe over the uncommitted diff — checkpoint only
+#                 (hooks/checks/lgtmaybe_review.sh)
 #
 # Only findings are recorded as CRITICAL_ISSUES, each with a fix instruction.
 # WARNINGS hold notes (tool missing, nothing to test) for verbose runs.
@@ -42,7 +45,8 @@
 # Switches: MACOLS_PYTEST_SCOPE=changed|full|off, MACOLS_TESTMON=off,
 # MACOLS_DUPLICATION=off, MACOLS_SEMGREP=1 (opt back in to a local semgrep
 # scan), MACOLS_GO_RACE=1, MACOLS_GO_TEST_SCOPE=module|changed,
-# MACOLS_CHECK_LOG=off (see log_check_run in common.sh).
+# MACOLS_CHECK_LOG=off (see log_check_run in common.sh),
+# MACOLS_LGREVIEW=off (and its BLOCK/TIMEOUT knobs — lgtmaybe_review.sh).
 #
 # The independent checks run CONCURRENTLY: each runs in its own subshell and
 # writes its findings to per-job temp files (NUL-delimited, since findings
@@ -59,6 +63,8 @@ fi
 SHARED_DIR_SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=common.sh
 source "$SHARED_DIR_SELF/common.sh"
+# shellcheck source=lgtmaybe_review.sh
+source "$SHARED_DIR_SELF/lgtmaybe_review.sh"
 # The batteries themselves, one module per language family:
 # shellcheck source=python_checks.sh
 source "$SHARED_DIR_SELF/python_checks.sh"
@@ -206,6 +212,8 @@ run_post_task_checks() {
     fi
     [ "$has_go" = "true" ] && checks+=(run_go_checks)
     checks+=(run_shellcheck run_duplication_check run_file_length_check run_semgrep_scan)
+    # The AI review pass runs once, at the commit checkpoint — never per turn.
+    [ "${CHECKPOINT_MODE:-0}" = "1" ] && checks+=(run_lgtmaybe_review)
     if [ "${CHECKPOINT_MODE:-0}" = "1" ]; then
         checks+=(run_project_checkpoint)
     else

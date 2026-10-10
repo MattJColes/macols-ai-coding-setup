@@ -62,6 +62,12 @@ YOUTRACK_MCP_CONFIG_FILE="$MCP_DIR/youtrack.json"
 YOUTRACK_URL_FILE="$HOME/.config/macols/youtrack-url"
 YOUTRACK_KEY_FILE="$HOME/.config/macols/youtrack-api-key"
 YOUTRACK_CHOICE_FILE="$HOME/.config/macols/youtrack-mcp"
+# lgtmaybe — local AI code review on the Z.AI GLM coding plan. The key file
+# feeds bin/macols-lgtmaybe (the audit persona's first pass and the commit
+# checkpoint's lgtmaybe stage); ZAI_CHOICE_FILE records "off" when the user
+# skips the prompt. See lib/lgtmaybe.sh.
+ZAI_KEY_FILE="$HOME/.config/macols/zai-api-key"
+ZAI_CHOICE_FILE="$HOME/.config/macols/zai-review"
 
 # ── Pinned versions ──────────────────────────────────────────────────────────
 # Ponytail (https://github.com/DietrichGebert/ponytail) — installed for every
@@ -113,6 +119,8 @@ source "$LIB_DIR/personas.sh"
 source "$LIB_DIR/steering.sh"
 # shellcheck source=lib/mcp.sh
 source "$LIB_DIR/mcp.sh"
+# shellcheck source=lib/lgtmaybe.sh
+source "$LIB_DIR/lgtmaybe.sh"
 # shellcheck source=lib/omp-models.sh
 source "$LIB_DIR/omp-models.sh"
 # shellcheck source=lib/hooks.sh
