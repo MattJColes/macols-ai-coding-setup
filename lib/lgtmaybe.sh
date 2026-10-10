@@ -39,8 +39,7 @@ ensure_lgtmaybe() {
 
     if [ -n "$key" ]; then
         mkdir -p "$(dirname "$ZAI_KEY_FILE")"
-        umask 077
-        printf '%s' "$key" > "$ZAI_KEY_FILE"
+        (umask 077; printf '%s' "$key" > "$ZAI_KEY_FILE")
         [ -s "$ZAI_CHOICE_FILE" ] && rm -f "$ZAI_CHOICE_FILE"
         printf "${GREEN}✓ Z.AI API key stored in %s${NC}\n" "$ZAI_KEY_FILE"
     fi

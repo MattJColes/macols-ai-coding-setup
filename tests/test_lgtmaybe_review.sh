@@ -115,10 +115,14 @@ STUB_OUTPUT='not json at all' make_stub
 run_stage
 check "unparsable output warns without blocking" '[ ${#CRITICAL_ISSUES[@]} -eq 0 ] && [ ${#WARNINGS[@]} -eq 1 ]'
 
-# Timeout: warning, never a blocker.
-STUB_OUTPUT='[]' STUB_SLEEP=5 make_stub
-MACOLS_LGREVIEW_TIMEOUT=1 run_stage
-check "timed-out review warns without blocking" '[ ${#CRITICAL_ISSUES[@]} -eq 0 ] && [ ${#WARNINGS[@]} -eq 1 ] && [[ "${WARNINGS[0]:-}" == *"timed out"* ]]'
+# Timeout: warning, never a blocker. Needs timeout/gtimeout (coreutils on macOS).
+if [ -n "$TIMEOUT_CMD" ]; then
+    STUB_OUTPUT='[]' STUB_SLEEP=5 make_stub
+    MACOLS_LGREVIEW_TIMEOUT=1 run_stage
+    check "timed-out review warns without blocking" '[ ${#CRITICAL_ISSUES[@]} -eq 0 ] && [ ${#WARNINGS[@]} -eq 1 ] && [[ "${WARNINGS[0]:-}" == *"timed out"* ]]'
+else
+    printf '\033[1;33m  ⚠ timed-out review: skipped, no timeout/gtimeout (brew install coreutils)\033[0m\n'
+fi
 
 if [ "$FAILED" -eq 0 ]; then
     printf '\033[0;32mAll lgtmaybe checkpoint tests passed.\033[0m\n'
