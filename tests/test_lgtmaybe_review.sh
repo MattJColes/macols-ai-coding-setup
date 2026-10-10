@@ -130,6 +130,18 @@ TIMEOUT_CMD="" run_stage
 check "missing timeout warns without running review" '[ ${#CRITICAL_ISSUES[@]} -eq 0 ] && [[ "${WARNINGS[0]:-}" == *"timeout/gtimeout unavailable"* ]]'
 
 # Exercise the real entry point after a skip and after disabling review.
+# A machine with no Z.AI key keeps the deterministic checkpoint cache.
+new_repo "$FIXTURE/nokey"
+STUB_OUTPUT='not json' make_stub
+HOME="$FIXTURE/nokey-home" ZAI_API_KEY="" bash "$FIXTURE/tree/hooks/pre_commit_check.sh" 'git commit -m test' >/dev/null
+check "no Z.AI key caches the passing checkpoint" '[ -s .git/macols-last-checkpoint ]'
+
+# The reviewer counts as available: a key and an lgtmaybe CLI on PATH.
+mkdir -p "$FIXTURE/clibin"
+printf '#!/bin/bash\nexit 0\n' > "$FIXTURE/clibin/lgtmaybe"
+chmod +x "$FIXTURE/clibin/lgtmaybe"
+export PATH="$FIXTURE/clibin:$PATH" ZAI_API_KEY=dummy-key
+
 if [ -n "$TIMEOUT_CMD" ]; then
     new_repo "$FIXTURE/checkpoint"
     STUB_OUTPUT='not json' make_stub
