@@ -100,6 +100,13 @@ if [ "$RUN_MACHINE" = true ]; then
     echo ""
 fi
 
+# Tool-agnostic opt-in, so it happens once per install rather than once per
+# tool: the lgtmaybe CLI, the Z.AI GLM key and the ~/.local/bin symlink that
+# the audit persona and the commit checkpoint both drive through
+# bin/macols-lgtmaybe. Non-fatal: a skip just leaves the review stages off.
+ensure_lgtmaybe || true
+echo ""
+
 for tool in "${TOOLS[@]}"; do
     printf "${CYAN}=== Installing %s ===${NC}\n" "$tool"
     "$SCRIPT_DIR/installers/${tool}.sh" ${PASSTHROUGH[@]+"${PASSTHROUGH[@]}"}

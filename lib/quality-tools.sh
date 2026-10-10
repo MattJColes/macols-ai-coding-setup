@@ -43,10 +43,14 @@ _apt_install() {
     { sudo apt-get update -y || true; } && sudo apt-get install -y "$@"
 }
 
-# ensure_shell_tools — shellcheck (shell scripts) and jscpd (duplication,
-# every language).
+# ensure_shell_tools — shellcheck, a hard review timeout and jscpd (duplication).
 ensure_shell_tools() {
     local failed=0
+    if ! command -v gtimeout &> /dev/null && ! command -v timeout &> /dev/null; then
+        printf '%bInstalling coreutils (review timeout)...%b\n' "$BLUE" "$NC"
+        if command -v brew &> /dev/null; then brew install coreutils || failed=1
+        else _apt_install coreutils || failed=1; fi
+    fi
     if ! command -v shellcheck &> /dev/null; then
         printf "${BLUE}Installing shellcheck...${NC}\n"
         if command -v brew &> /dev/null; then brew install shellcheck || failed=1

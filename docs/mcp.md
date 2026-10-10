@@ -6,7 +6,7 @@ The server definitions live in `config/mcp/`:
 
 | File | Servers | Registered for |
 |---|---|---|
-| `servers.json` | playwright, context7, dart, gopls | every tool with MCP support |
+| `servers.json` | playwright, dart, gopls | every tool with MCP support |
 | `aws.json` | aws-mcp, aws-iac | every tool with MCP support, opt-in |
 | `youtrack.json` | youtrack | every tool with MCP support, once a URL and token are stored |
 | `brave.json` | brave-search | OpenCode and the Pi agents, only with an API key |
@@ -19,7 +19,7 @@ config lands.
 
 ## Default Servers
 
-`config/mcp/servers.json` holds playwright, context7, dart and gopls
+`config/mcp/servers.json` holds playwright, dart and gopls
 (`gopls mcp`).
 
 - Package versions are pinned (no `@latest`), so a server only changes when

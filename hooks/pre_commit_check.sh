@@ -37,7 +37,15 @@ code_changed || exit 0
 
 # Skip when the tree matches the last passing checkpoint.
 fp_file="$(git rev-parse --git-dir)/macols-last-checkpoint"
-fp=$(_check_fingerprint || true)
+# The AI review is not deterministic: cache a pass only when it cannot run
+# (opted out, no lgtmaybe CLI, or no Z.AI key), so machines without it keep
+# the cache and a reviewer that comes back reviews the unchanged tree.
+review_ready() {
+    [ "${MACOLS_LGREVIEW:-on}" != off ] && command -v lgtmaybe &>/dev/null &&
+        { [ -n "${ZAI_API_KEY:-}" ] || [ -s "${ZAI_KEY_FILE:-$HOME/.config/macols/zai-api-key}" ]; }
+}
+fp=""
+review_ready || fp=$(_check_fingerprint || true)
 [ -n "$fp" ] && [ -f "$fp_file" ] && [ "$(cat "$fp_file")" = "$fp" ] && exit 0
 
 CHECKPOINT_MODE=1 MACOLS_PYTEST_SCOPE=full

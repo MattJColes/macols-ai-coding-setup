@@ -103,6 +103,24 @@ tooling already enforces. Each reads *what it is* → *how to fix*:
 - **God Object** — a class doing too much → split by responsibility
 
 ## Tools
+- **lgtmaybe** (`macols-lgtmaybe`) — local AI review of the diff, run on the
+  Z.AI GLM coding plan (glm-5.3-flashx, high reasoning; `./install.sh` sets up
+  the key and CLI). Run it as the **first pass** on any code review, then do
+  your own checklist pass and reconcile:
+  - Branch PR: `macols-lgtmaybe --base origin/master`. Working tree /
+    uncommitted changes: `macols-lgtmaybe --uncommitted`. Add `--format json`
+    for structured findings (`path`, `line`, `severity` info→critical, `title`,
+    `body`, `confidence` 0–10) or `--format agent` when an agent will apply
+    the fixes.
+  - Its findings are hints, not verdicts: verify each one against the code and
+    drop what does not reproduce, then fold the survivors into the severity
+    table alongside your own findings (critical→🔴, high→🟠, medium→🟡,
+    low/info→🔵). Findings with `confidence` under 7 deserve extra suspicion.
+  - `--preset full` runs the deep per-lens audit — use it for the security
+    audit mode, not everyday review. The repo's `.lgtmaybe.yml` (exclude
+    paths, token budgets) applies automatically. The commit checkpoint runs
+    this review itself (blocking at high+), so a PR review adds the *not yet
+    committed* context, not a repeat pass.
 - **ast-grep** (`ast-grep`, alias `sg`) — structural (AST-based) code search. Use it instead of text
   grep when you need to find a *pattern* across the codebase (e.g. every bare
   `except:`, every `os.path.join`, every `any` over a DB query). It matches

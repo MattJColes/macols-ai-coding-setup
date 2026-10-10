@@ -1,0 +1,47 @@
+#!/bin/bash
+#
+# macols-lgtmaybe — local AI code review against the Z.AI GLM coding plan.
+#
+# A thin wrapper over `lgtmaybe review` that carries the credentials and the
+# reviewer configuration so callers (the audit persona, the commit checkpoint,
+# a human) never repeat them. Set up by ./install.sh (lib/lgtmaybe.sh), which
+# stores the API key in $ZAI_KEY_FILE (mode 600) and symlinks this script into
+# ~/.local/bin. The key is never echoed and never appears in argv.
+#
+# Environment:
+#   ZAI_API_KEY            wins over the stored key (e.g. a one-off rotation)
+#   ZAI_API_BASE           endpoint override; default is the coding-plan route
+#   MACOLS_REVIEW_MODEL    reviewer model  (default glm-5.3-flashx)
+#   MACOLS_REVIEW_EFFORT   reasoning level (default high)
+#
+# Everything else is passed through to `lgtmaybe review` (the subcommand is
+# implied): e.g. `macols-lgtmaybe --uncommitted --format json`.
+set -euo pipefail
+
+ZAI_KEY_FILE="${ZAI_KEY_FILE:-$HOME/.config/macols/zai-api-key}"
+
+if [ -z "${ZAI_API_KEY:-}" ]; then
+    if [ -s "$ZAI_KEY_FILE" ]; then
+        ZAI_API_KEY="$(cat "$ZAI_KEY_FILE")"
+    else
+        printf 'macols-lgtmaybe: no Z.AI API key. Run ./install.sh (answers the lgtmaybe\n' >&2
+        printf 'prompt), or export ZAI_API_KEY, or write the key to %s (mode 600).\n' "$ZAI_KEY_FILE" >&2
+        exit 1
+    fi
+fi
+export ZAI_API_KEY
+# lgtmaybe's native zai/ route targets the general endpoint; coding-plan keys
+# only answer on the coding route.
+export ZAI_API_BASE="${ZAI_API_BASE:-https://api.z.ai/api/coding/paas/v4}"
+
+command -v lgtmaybe >/dev/null 2>&1 || {
+    printf 'macols-lgtmaybe: the lgtmaybe CLI is not installed. Install it with:\n' >&2
+    printf '  brew install lgtmaybe\n' >&2
+    exit 127
+}
+
+exec lgtmaybe review \
+    --provider zai \
+    --model "${MACOLS_REVIEW_MODEL:-glm-5.3-flashx}" \
+    --reasoning-effort "${MACOLS_REVIEW_EFFORT:-high}" \
+    ${1+"$@"}

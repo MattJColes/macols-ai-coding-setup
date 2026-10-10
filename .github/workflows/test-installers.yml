@@ -117,6 +117,9 @@ jobs:
       - name: Hook loops self-test (check log, testmon, go scope, deploy diff)
         run: ./tests/test_hook_loops.sh
 
+      - name: Local review and key setup self-test (offline)
+        run: ./tests/test_lgtmaybe_review.sh
+
       - name: Deploy guard self-test (command word, not data)
         run: MACOLS_DEPLOY_DIFF=off ./tests/test_pre_deploy_check.sh
 
