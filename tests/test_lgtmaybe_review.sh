@@ -29,7 +29,8 @@ export MACOLS_TRUST_ALL=1 MACOLS_CHECK_LOG=off MACOLS_DUPLICATION=off
 # stage resolves ../bin/macols-lgtmaybe relative to its own file, so the stub
 # takes the place of the real wrapper.
 mkdir -p "$FIXTURE/tree/bin" "$FIXTURE/tree/hooks/checks"
-cp "$REPO"/hooks/checks/{common.sh,post_task.sh,lgtmaybe_review.sh,ensure_node.sh} "$FIXTURE/tree/hooks/checks/"
+cp "$REPO"/hooks/checks/*.sh "$FIXTURE/tree/hooks/checks/"
+cp "$REPO/hooks/pre_commit_check.sh" "$FIXTURE/tree/hooks/"
 cp "$REPO/bin/macols-lgtmaybe" "$FIXTURE/tree/bin/"
 
 # Canned reviewer body: emits $STUB_OUTPUT (default: one high and one medium
@@ -57,7 +58,7 @@ new_repo() {  # <dir> — a git repo with one committed file and one changed
 
 CHECKPOINT_MODE=1
 # shellcheck source=../hooks/checks/post_task.sh
-source "$FIXTURE/tree/hooks/checks/post_task.sh"
+source "$FIXTURE/tree/hooks/checks/post_task.sh" || exit 1
 setup_timeout_cmd
 
 run_stage() {  # sets CRITICAL_ISSUES / WARNINGS like the battery does
@@ -123,6 +124,73 @@ if [ -n "$TIMEOUT_CMD" ]; then
 else
     printf '\033[1;33m  ⚠ timed-out review: skipped, no timeout/gtimeout (brew install coreutils)\033[0m\n'
 fi
+
+# Missing timeout must never launch an unbounded reviewer.
+TIMEOUT_CMD="" run_stage
+check "missing timeout warns without running review" '[ ${#CRITICAL_ISSUES[@]} -eq 0 ] && [[ "${WARNINGS[0]:-}" == *"timeout/gtimeout unavailable"* ]]'
+
+# Exercise the real entry point after a skip and after disabling review.
+if [ -n "$TIMEOUT_CMD" ]; then
+    new_repo "$FIXTURE/checkpoint"
+    STUB_OUTPUT='not json' make_stub
+    out=$(bash "$FIXTURE/tree/hooks/pre_commit_check.sh" 'git commit -m test')
+    check "unavailable review remains non-blocking" '[ -z "$out" ]'
+    check "unavailable review is not cached" '[ ! -f .git/macols-last-checkpoint ]'
+    make_stub
+    out=$(bash "$FIXTURE/tree/hooks/pre_commit_check.sh" 'git commit -m test')
+    check "restored reviewer blocks unchanged tree" '[[ "$out" == *"a.py:3 [high] h"* ]]'
+    MACOLS_LGREVIEW=off bash "$FIXTURE/tree/hooks/pre_commit_check.sh" 'git commit -m test' >/dev/null
+    out=$(bash "$FIXTURE/tree/hooks/pre_commit_check.sh" 'git commit -m test')
+    check "reenabled reviewer ignores disabled-review cache" '[[ "$out" == *"a.py:3 [high] h"* ]]'
+fi
+
+echo "lgtmaybe installer"
+mkdir -p "$FIXTURE/installer"
+cat > "$FIXTURE/installer/check.sh" <<'INSTALLER'
+#!/bin/bash
+set -eu
+REPO_ROOT="$1"
+ZAI_KEY_FILE="$2/key"
+ZAI_CHOICE_FILE="$2/choice"
+INSTALL_ACTIONS="$2/actions"
+GREEN= BLUE= YELLOW= NC=
+unset ZAI_API_KEY
+source "$REPO_ROOT/lib/lgtmaybe.sh"
+lgtmaybe() { :; }
+mkdir() { [ "$*" = "-p $HOME/.local/bin" ] || command mkdir "$@"; }
+ln() { printf 'symlink\n' >> "$INSTALL_ACTIONS"; }
+case "$3" in
+    existing|rotation)
+        printf 'dummy-old-key' > "$ZAI_KEY_FILE"
+        chmod 644 "$ZAI_KEY_FILE"
+        if [ "$3" = rotation ]; then
+            ZAI_API_KEY=dummy-new-key
+            printf 'off' > "$ZAI_CHOICE_FILE"
+        fi
+        ensure_lgtmaybe >/dev/null || exit 1
+        [ "$(ls -l "$ZAI_KEY_FILE" | cut -c1-10)" = '-rw-------' ]
+        if [ "$3" = rotation ]; then
+            [ "$(cat "$ZAI_KEY_FILE")" = dummy-new-key ]
+            [ ! -e "$ZAI_CHOICE_FILE" ]
+        fi ;;
+    skip)
+        ensure_lgtmaybe >/dev/null || true
+        [ "$(cat "$ZAI_CHOICE_FILE")" = off ]
+        [ ! -e "$INSTALL_ACTIONS" ]
+        ensure_lgtmaybe >/dev/null || true
+        [ ! -e "$INSTALL_ACTIONS" ]
+        printf 'passed' > "$2/result" ;;
+esac
+INSTALLER
+mkdir -p "$FIXTURE/installer/existing" "$FIXTURE/installer/rotation" "$FIXTURE/installer/skip"
+check "existing stored key is restricted to mode 600" "bash '$FIXTURE/installer/check.sh' '$REPO' '$FIXTURE/installer/existing' existing"
+check "environment key rotates securely and clears remembered opt-out" "bash '$FIXTURE/installer/check.sh' '$REPO' '$FIXTURE/installer/rotation' rotation"
+if [ "$(uname -s)" = Darwin ]; then
+    printf '\n' | script -q /dev/null bash "$FIXTURE/installer/check.sh" "$REPO" "$FIXTURE/installer/skip" skip >/dev/null 2>&1
+else
+    printf '\n' | script -q -c "bash $(printf '%q ' "$FIXTURE/installer/check.sh" "$REPO" "$FIXTURE/installer/skip" skip)" /dev/null >/dev/null 2>&1
+fi
+check "blank interactive opt-out is remembered and stops installer actions" "[ -f '$FIXTURE/installer/skip/result' ]"
 
 if [ "$FAILED" -eq 0 ]; then
     printf '\033[0;32mAll lgtmaybe checkpoint tests passed.\033[0m\n'

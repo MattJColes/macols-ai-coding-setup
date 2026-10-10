@@ -84,13 +84,13 @@ mcp_checks() {
 # The shared response-format block lands in the steering doc exactly once...
 rf_once() { [ "$(grep -c '^## Response Format' "$1" 2>/dev/null)" = 1 ]; }
 # ...and in every rendered persona, which carries its own system prompt.
-# Upstream skills copied in beside the personas (hunk-review) are not ours
+# Upstream skills copied in beside the personas (hunk-review, .system) are not ours
 # to render, so they are left out of the count.
 # rf_every <dir> <find-name-pattern>
 rf_every() {
     local have total
-    have=$(grep -rl --exclude-dir=hunk-review '^## Response Format' "$1" 2>/dev/null | wc -l)
-    total=$(find "$1" -type f -name "$2" -not -path '*/hunk-review/*' 2>/dev/null | wc -l)
+    have=$(grep -rl --exclude-dir=hunk-review --exclude-dir=.system '^## Response Format' "$1" 2>/dev/null | wc -l)
+    total=$(find "$1" -type f -name "$2" -not -path '*/hunk-review/*' -not -path '*/.system/*' 2>/dev/null | wc -l)
     [ "$total" -gt 0 ] && [ "$have" -eq "$total" ]
 }
 

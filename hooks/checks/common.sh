@@ -33,6 +33,9 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     exit 1
 fi
 
+# Git reports physical paths on macOS; use the same paths for test selection.
+cd -P . || return 1
+
 # Ensure Node.js is in PATH (sources NVM/fnm if needed). Cheap no-op when node
 # is already resolvable, so safe to source from every hook.
 _CHECKS_COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -56,13 +59,18 @@ setup_timeout_cmd() {
 # Gate: has any code been changed in the working tree?
 #
 # Returns 0 (run the checks) when the git working tree contains added/modified/
-# untracked files with a code extension, OR when we can't tell (no git, not a
-# repo) — we never silently suppress checks. Returns 1 (skip) when the tree is
-# clean of code changes, e.g. a Q&A or docs-only turn. This keeps the full
+# untracked code, or a standalone project declares a root manifest. Unmarked
+# parent workspaces are skipped so recursive discovery cannot lint siblings.
+# Returns 1 for a clean tree, e.g. a Q&A or docs-only turn. This keeps the full
 # test/lint/typecheck battery from running on every turn that didn't touch code.
 code_changed() {
-    command -v git &> /dev/null || return 0
-    git rev-parse --is-inside-work-tree &> /dev/null || return 0
+    if ! command -v git &> /dev/null || ! git rev-parse --is-inside-work-tree &> /dev/null; then
+        local manifest
+        for manifest in pyproject.toml requirements.txt setup.py package.json cdk.json pubspec.yaml go.mod Cargo.toml .macols/checks.conf; do
+            [ -f "$manifest" ] && return 0
+        done
+        return 1
+    fi
 
     local changed
     changed=$(git status --porcelain 2>/dev/null | sed 's/^...//;s/.* -> //')

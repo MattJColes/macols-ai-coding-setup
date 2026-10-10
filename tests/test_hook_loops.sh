@@ -40,6 +40,24 @@ new_repo() {  # <dir>
     git config user.name "hook loops"
 }
 
+# Parent workspaces must not become projects just because a sibling is one.
+echo "project boundary"
+mkdir -p "$FIXTURE/workspace/sibling/tests"
+printf '[project]\nname = "sibling"\nversion = "0.1.0"\n' > "$FIXTURE/workspace/sibling/pyproject.toml"
+printf 'undefined_name\n' > "$FIXTURE/workspace/sibling/tests/test_sibling.py"
+printf '#!/bin/bash\nprintf "tests/test_sibling.py:1:1: F821 Undefined name\\n"\nexit 1\n' > "$FIXTURE/stubbin/ruff"
+printf '#!/bin/bash\nexit 0\n' > "$FIXTURE/stubbin/pyright"
+chmod +x "$FIXTURE/stubbin/ruff" "$FIXTURE/stubbin/pyright"
+out=$(cd "$FIXTURE/workspace" && bash "$REPO/hooks/post_task_hook.sh" --format codex </dev/null)
+check "parent workspace does not lint sibling projects" "[ -z \"\$out\" ]"
+rm "$FIXTURE/stubbin/ruff" "$FIXTURE/stubbin/pyright"
+printf '{"name":"standalone"}\n' > "$FIXTURE/workspace/package.json"
+check "standalone manifest remains eligible" "( cd '$FIXTURE/workspace' && source '$LIB' && code_changed )"
+rm "$FIXTURE/workspace/package.json"
+mkdir -p "$FIXTURE/workspace/.macols"
+printf 'IMMEDIATE="true"\n' > "$FIXTURE/workspace/.macols/checks.conf"
+check "standalone check configuration remains eligible" "( cd '$FIXTURE/workspace' && source '$LIB' && code_changed )"
+
 # ── Check log and macols-check-stats ─────────────────────────────────────────
 echo "check log"
 new_repo "$FIXTURE/log"

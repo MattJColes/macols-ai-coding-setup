@@ -19,6 +19,9 @@
 
 ensure_lgtmaybe() {
     local key="${ZAI_API_KEY:-}"
+    if [ -e "$ZAI_KEY_FILE" ]; then
+        chmod 600 "$ZAI_KEY_FILE" || return 1
+    fi
     if [ -z "$key" ]; then
         if [ -s "$ZAI_KEY_FILE" ]; then
             printf "${GREEN}✓ lgtmaybe already configured (%s)${NC}\n" "$ZAI_KEY_FILE"
@@ -29,6 +32,11 @@ ensure_lgtmaybe() {
             printf "${BLUE}  mint a key at https://z.ai/manage-apikey/apikey-list (coding plan)${NC}\n"
             read -rsp "$(printf "${YELLOW}Z.AI API key (blank to skip): ${NC}")" key
             echo ""
+            if [ -z "$key" ]; then
+                mkdir -p "$(dirname "$ZAI_CHOICE_FILE")" || return 1
+                printf 'off' > "$ZAI_CHOICE_FILE"
+                return 1
+            fi
         else
             printf "${YELLOW}⚠ Non-interactive install — set ZAI_API_KEY to enable lgtmaybe local review${NC}\n"
             return 1

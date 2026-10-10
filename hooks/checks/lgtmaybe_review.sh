@@ -26,13 +26,14 @@ run_lgtmaybe_review() {
     [ "${MACOLS_LGREVIEW:-on}" != "off" ] || return 0
     git rev-parse -q --verify HEAD >/dev/null 2>&1 || return 0
     git diff HEAD --quiet 2>/dev/null && return 0
+    [ -n "${TIMEOUT_CMD:-}" ] || { add_warning "lgtmaybe: timeout/gtimeout unavailable; install coreutils to enable bounded review"; return 0; }
 
     local wrapper
     wrapper="$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")/../bin/macols-lgtmaybe"
     [ -x "$wrapper" ] || { add_warning "lgtmaybe: bin/macols-lgtmaybe not found at $wrapper"; return 0; }
 
     local out ec=0
-    out=$(${TIMEOUT_CMD:+$TIMEOUT_CMD ${MACOLS_LGREVIEW_TIMEOUT:-600}} "$wrapper" --uncommitted --format json 2>/dev/null) || ec=$?
+    out=$("$TIMEOUT_CMD" "${MACOLS_LGREVIEW_TIMEOUT:-600}" "$wrapper" --uncommitted --format json 2>/dev/null) || ec=$?
     [ "$ec" -eq 124 ] && { add_warning "lgtmaybe: timed out after ${MACOLS_LGREVIEW_TIMEOUT:-600}s (MACOLS_LGREVIEW_TIMEOUT raises it)"; return 0; }
 
     local findings=""

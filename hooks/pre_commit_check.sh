@@ -37,7 +37,10 @@ code_changed || exit 0
 
 # Skip when the tree matches the last passing checkpoint.
 fp_file="$(git rev-parse --git-dir)/macols-last-checkpoint"
-fp=$(_check_fingerprint || true)
+# ponytail: only cache deterministic checkpoints; an enabled AI reviewer must
+# run again after a skip or a previous pass, without tracking provider state.
+fp=""
+[ "${MACOLS_LGREVIEW:-on}" = off ] && fp=$(_check_fingerprint || true)
 [ -n "$fp" ] && [ -f "$fp_file" ] && [ "$(cat "$fp_file")" = "$fp" ] && exit 0
 
 CHECKPOINT_MODE=1 MACOLS_PYTEST_SCOPE=full
