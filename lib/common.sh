@@ -71,10 +71,12 @@ ZAI_CHOICE_FILE="$HOME/.config/macols/zai-review"
 
 # ── Pinned versions ──────────────────────────────────────────────────────────
 # Ponytail (https://github.com/DietrichGebert/ponytail) — installed for every
-# agent via that agent's native mechanism (Claude Code plugin, omp package,
-# AGENTS.md ruleset block). The marker comments delimit the AGENTS.md block so
-# re-runs replace it instead of duplicating it.
+# agent via that agent's native mechanism (Claude Code and Codex plugins, the
+# OpenCode npm plugin, the pi/omp package; ZCode, and Codex/OpenCode when their
+# plugin is absent, get the AGENTS.md ruleset block). The marker comments
+# delimit the AGENTS.md block so re-runs replace it instead of duplicating it.
 PONYTAIL_REPO="DietrichGebert/ponytail"
+PONYTAIL_NPM="@dietrichgebert/ponytail"
 PONYTAIL_MARKER_START="<!-- ponytail:ruleset:start (managed by macols-configs — do not edit between markers) -->"
 PONYTAIL_MARKER_END="<!-- ponytail:ruleset:end -->"
 # hunk (https://hunk.dev) — terminal diff review the agents steer through its
