@@ -40,6 +40,16 @@ process.exit(new Function("doc", `return (${process.env.OMP_VERIFY_EXPR})`)(doc)
 ' 2>/dev/null
 }
 has_ponytail_block() { grep -q 'ponytail:ruleset:start' "$1" 2>/dev/null; }
+# Codex and OpenCode load ponytail as a plugin; mirrors ponytail_plugin_present
+# in lib/steering.sh.
+codex_ponytail_plugin() { grep -qsF 'plugins."ponytail@ponytail"' "$HOME/.codex/config.toml"; }
+opencode_ponytail_plugin() { grep -qsF '"@dietrichgebert/ponytail' "$HOME/.config/opencode/opencode.json"; }
+# ponytail_once <agents_md> <plugin check> — ponytail reaches the tool exactly
+# once: from its plugin with no AGENTS.md block, or (plugin absent) one block.
+ponytail_once() {
+    local n; n="$(grep -c 'ponytail:ruleset:start' "$1" 2>/dev/null)"
+    if "$2"; then [ "${n:-0}" = 0 ]; else [ "$n" = 1 ]; fi
+}
 # brave-search is registered for OpenCode/pi/omp only, and only when a key file
 # exists — so assert its presence or its absence, whichever the key implies.
 has_brave_key() { [ -s "$HOME/.config/macols/brave-api-key" ]; }
@@ -176,7 +186,8 @@ verify_codex() {
     pass "agents in ~/.codex/agents/*.toml"       "count_gt0 '$d/agents' '*.toml' 1"
     pass "agent toml has developer_instructions"  "grep -q 'developer_instructions' '$d/agents/audit.toml'"
     pass "~/.codex/AGENTS.md is System-Level Codex" "grep -q 'System-Level Codex' '$d/AGENTS.md'"
-    pass "~/.codex/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
+    soft "codex ponytail plugin installed" "codex_ponytail_plugin"
+    pass "ponytail loads once (Codex plugin, or one AGENTS.md block without it)" "ponytail_once '$d/AGENTS.md' codex_ponytail_plugin"
     pass "~/.codex/AGENTS.md has response format (once)" "rf_once '$d/AGENTS.md'"
     pass "every ~/.codex agent has response format"   "rf_every '$d/agents' '*.toml'"
     pass "every ~/.codex skill has response format"   "rf_every '$d/skills' 'SKILL.md'"
@@ -202,7 +213,8 @@ verify_opencode() {
     pass "agents in ~/.config/opencode/agents/*.md"       "count_gt0 '$d/agents' '*.md' 1"
     pass "skills in ~/.config/opencode/skills/*/SKILL.md" "count_gt0 '$d/skills' 'SKILL.md' 3"
     pass "~/.config/opencode/AGENTS.md is System-Level OpenCode" "grep -q 'System-Level OpenCode' '$d/AGENTS.md'"
-    pass "~/.config/opencode/AGENTS.md has ponytail ruleset (once)" "[ \"\$(grep -c 'ponytail:ruleset:start' '$d/AGENTS.md' 2>/dev/null)\" = 1 ]"
+    soft "opencode.json lists the ponytail plugin" "opencode_ponytail_plugin"
+    pass "ponytail loads once (OpenCode plugin, or one AGENTS.md block without it)" "ponytail_once '$d/AGENTS.md' opencode_ponytail_plugin"
     pass "~/.config/opencode/AGENTS.md has response format (once)" "rf_once '$d/AGENTS.md'"
     pass "every ~/.config/opencode agent has response format" "rf_every '$d/agents' '*.md'"
     pass "every ~/.config/opencode skill has response format" "rf_every '$d/skills' 'SKILL.md'"

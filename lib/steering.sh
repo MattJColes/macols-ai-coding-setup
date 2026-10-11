@@ -37,9 +37,11 @@ fs.writeFileSync(process.env.DEST, out);
 
 # ── Ponytail (github.com/DietrichGebert/ponytail) ────────────────────────────
 # Every agent gets ponytail exactly once, via its native mechanism: Claude Code
-# as a plugin, pi and omp as a package (see installers/pi.sh), and Codex,
-# OpenCode and ZCode as a marker-delimited ruleset block appended to AGENTS.md.
-# Project-mode AGENTS.md files keep the block, since other tools read them.
+# and Codex as a plugin, OpenCode as an npm plugin in opencode.json, pi and omp
+# as a package (see installers/pi.sh), and ZCode (which upstream no longer
+# supports) as a marker-delimited ruleset block appended to AGENTS.md. Codex
+# and OpenCode fall back to the block when their plugin is absent. Project-mode
+# AGENTS.md files keep the block, since other tools read them.
 
 # append_ponytail_ruleset <agents_md> — merge ponytail's AGENTS.md ruleset
 # (vendored from the upstream repo into config/steering/ponytail.AGENTS.md)
@@ -70,4 +72,58 @@ append_ponytail_ruleset() {
 # declaration when offline).
 install_claude_ponytail() {
     install_claude_plugin ponytail "$PONYTAIL_REPO" ponytail
+}
+
+# install_codex_ponytail — upstream's Codex plugin: lifecycle hooks that inject
+# the ruleset, plus the ponytail-* skills. Both commands are no-ops on a re-run.
+# Codex runs the hooks only once the user trusts them in /hooks.
+install_codex_ponytail() {
+    command -v codex &> /dev/null || export PATH="$HOME/.codex/packages/standalone/current:$PATH"
+    command -v codex &> /dev/null || { printf "${YELLOW}codex not found — skipping the ponytail plugin${NC}\n"; return 1; }
+    printf "${BLUE}Installing ponytail plugin (Codex)...${NC}\n"
+    { codex plugin marketplace add "$PONYTAIL_REPO" && codex plugin add ponytail@ponytail; } > /dev/null || return 1
+    printf "${GREEN}✓ ponytail@ponytail plugin installed${NC}\n"
+    printf "${YELLOW}  Trust its two hooks in Codex's /hooks so the ruleset loads every session.${NC}\n"
+}
+
+# install_opencode_ponytail — add upstream's npm plugin to the "plugin" array
+# of ~/.config/opencode/opencode.json (OpenCode 1 has no `plugin add`; it
+# installs listed packages on launch). Merged: other entries survive, and a
+# present entry (pinned or not) is left alone.
+install_opencode_ponytail() {
+    require_node || return 1
+    local dest="$HOME/.config/opencode/opencode.json"
+    mkdir -p "$(dirname "$dest")"
+    DEST="$dest" PKG="$PONYTAIL_NPM" node -e '
+const fs = require("fs"), e = process.env;
+const cfg = fs.existsSync(e.DEST) ? JSON.parse(fs.readFileSync(e.DEST, "utf8")) : {};
+const plugins = Array.isArray(cfg.plugin) ? cfg.plugin : [];
+const name = p => String(Array.isArray(p) ? p[0] : p);
+if (!plugins.some(p => name(p) === e.PKG || name(p).startsWith(e.PKG + "@"))) plugins.push(e.PKG);
+cfg.plugin = plugins;
+fs.writeFileSync(e.DEST, JSON.stringify(cfg, null, 2) + "\n");
+' || return 1
+    printf "${GREEN}✓ %s plugin listed in %s${NC}\n" "$PONYTAIL_NPM" "$dest"
+}
+
+# ponytail_plugin_present <codex|opencode> — true when that tool already loads
+# ponytail as a plugin, so its user-level AGENTS.md needs no ruleset block.
+ponytail_plugin_present() {
+    case "$1" in
+        codex)    grep -qsF 'plugins."ponytail@ponytail"' "$HOME/.codex/config.toml" ;;
+        opencode) grep -qsF "\"$PONYTAIL_NPM" "$HOME/.config/opencode/opencode.json" ;;
+        *) return 1 ;;
+    esac
+}
+
+# ponytail_ruleset_unless_plugin <codex|opencode> <agents_md> — the ruleset
+# block is the fallback for when the plugin is absent (CLI missing, offline,
+# --no-cli); with the plugin present the freshly assembled AGENTS.md stays
+# block-free, so the rules load once.
+ponytail_ruleset_unless_plugin() {
+    if ponytail_plugin_present "$1"; then
+        printf "${GREEN}✓ Ponytail comes from the %s plugin — no ruleset block in %s${NC}\n" "$1" "$2"
+    else
+        append_ponytail_ruleset "$2"
+    fi
 }

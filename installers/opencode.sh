@@ -51,7 +51,7 @@ install_agents() {
     printf "${BLUE}Installing agents to: %s${NC}\n" "$target"
     generate_personas opencode agent "$target" || return 1
     printf "${GREEN}✓ Installed %s agents${NC}\n" "$PERSONA_COUNT"
-    if [ "$target" = "$AGENTS_DIR" ]; then assemble_steering opencode "$AGENTS_MD"; append_ponytail_ruleset "$AGENTS_MD"; fi
+    if [ "$target" = "$AGENTS_DIR" ]; then assemble_steering opencode "$AGENTS_MD"; ponytail_ruleset_unless_plugin opencode "$AGENTS_MD"; fi
 }
 
 install_skills() {
@@ -96,6 +96,7 @@ if [ "$DO_CLI" = true ]; then
     ensure_node_on_noninteractive_path || printf "${YELLOW}⚠ node PATH linking skipped/failed${NC}\n"
     echo ""
 fi
+if [ "$PROJECT_INSTALL" = false ] && [ "$SUBSET" = false ]; then install_opencode_ponytail || printf "${YELLOW}⚠ ponytail plugin skipped/failed — using the AGENTS.md ruleset${NC}\n"; echo ""; fi
 if [ "$DO_AGENTS" = true ]; then
     if [ "$PROJECT_INSTALL" = true ]; then install_agents "./.opencode/agents"; else install_agents "$AGENTS_DIR"; fi; echo ""
 fi
@@ -118,7 +119,7 @@ if [ "$PROJECT_INSTALL" = false ] && [ "$SUBSET" = false ]; then remove_revdiff_
 
 done_banner
 echo "Next steps:"
-echo "  • Restart OpenCode to load agents, skills, MCPs and the plugin"
+echo "  • Restart OpenCode to load agents, skills, MCPs and the plugins (ponytail installs on first launch)"
 echo "  • Skills load on-demand via the skill tool; agents via the Task tool"
 echo "  • Run 'hunk diff' in a second terminal, then ask the agent to review it with the hunk-review skill"
 if [ "$DO_MCPS" = true ]; then

@@ -117,12 +117,24 @@ rules. Each tool loads it differently:
 - Claude Code: plugin, via `claude plugin marketplace add DietrichGebert/ponytail`
   and `claude plugin install ponytail@ponytail`. When offline it falls back to
   declaring both in `~/.claude/settings.json`, ready for the next launch.
+- Codex: plugin, via `codex plugin marketplace add DietrichGebert/ponytail`
+  and `codex plugin add ponytail@ponytail`. Its two lifecycle hooks inject the
+  ruleset, so trust them in Codex's `/hooks` alongside the macols hooks. The
+  review skills run as `$ponytail:ponytail-review`.
+- OpenCode: the `@dietrichgebert/ponytail` npm plugin, merged into the
+  `plugin` array of `~/.config/opencode/opencode.json`. OpenCode installs it
+  on the next launch and adds the `/ponytail*` commands.
 - Oh My Pi: package, via `omp install github:DietrichGebert/ponytail`.
 - Plain Pi: package, via `pi install git:github.com/DietrichGebert/ponytail`.
-- Codex, OpenCode, Pi and ZCode `AGENTS.md`: ponytail's AGENTS.md ruleset
-  (vendored at `config/steering/ponytail.AGENTS.md`) is appended inside
-  `<!-- ponytail:ruleset:start/end -->` marker comments. Re-runs replace the
-  block. Re-vendor the file to pick up upstream changes.
+- ZCode, and project-mode `AGENTS.md` files: ponytail's AGENTS.md ruleset
+  (vendored from v5.1.0 at `config/steering/ponytail.AGENTS.md`) is appended
+  inside `<!-- ponytail:ruleset:start/end -->` marker comments. Re-runs
+  replace the block. Upstream dropped ZCode support, so this copy is the only
+  way it gets the rules. Re-vendor the file to pick up upstream changes.
+
+Codex and OpenCode fall back to the AGENTS.md block when their plugin is
+missing (no `codex` on PATH, an offline install), so they still get the rules
+once. A later run that installs the plugin drops the block.
 
 There is deliberately no ponytail persona: each tool gets the rules once, from
 the upstream plugin/package or the appended ruleset. Claude Desktop is the

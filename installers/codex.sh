@@ -122,11 +122,12 @@ fi
 if [ "$DO_AGENTS" = true ]; then
     if [ "$PROJECT_INSTALL" = true ]; then install_agents "./.codex/agents"; else install_agents "$AGENTS_DIR"; fi; echo ""
 fi
+if [ "$PROJECT_INSTALL" = false ] && [ "$SUBSET" = false ]; then install_codex_ponytail || printf "${YELLOW}⚠ ponytail plugin install skipped/failed — using the AGENTS.md ruleset${NC}\n"; echo ""; fi
 if [ "$DO_INSTRUCTIONS" = true ]; then
     if [ "$PROJECT_INSTALL" = true ]; then
         assemble_steering codex "./AGENTS.md"; append_ponytail_ruleset "./AGENTS.md"
     else
-        assemble_steering codex "$AGENTS_FILE"; append_ponytail_ruleset "$AGENTS_FILE"
+        assemble_steering codex "$AGENTS_FILE"; ponytail_ruleset_unless_plugin codex "$AGENTS_FILE"
     fi; echo ""
 fi
 if [ "$DO_MCPS" = true ] && [ "$PROJECT_INSTALL" = false ]; then register_mcps_codex || printf "${YELLOW}⚠ MCP registration skipped/failed${NC}\n"; echo ""; fi
@@ -142,6 +143,7 @@ echo "  • Restart Codex to load the new configuration"
 echo "  • Skills load on demand — run /skills or mention one with \$<name>"
 echo "  • Agents live in ~/.codex/agents/*.toml — ask Codex to delegate to one by name"
 echo "  • Run 'codex mcp list' to inspect registered MCP servers"
+ponytail_plugin_present codex && echo "  • Open /hooks and trust the ponytail hooks; its review skills run as \$ponytail:ponytail-review"
 echo "  • Run 'hunk diff' in a second terminal, then ask the agent to review it with the hunk-review skill"
 [ "$DO_MCPS" = true ] && aws_mcp_enabled && echo "  • Configure AWS credentials (~/.aws/credentials) for the aws-* MCPs"
 echo ""
