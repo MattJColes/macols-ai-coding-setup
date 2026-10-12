@@ -6,5 +6,5 @@
 
 ## 2. Integration evidence
 
-- [ ] 2.1 Run E1–E3 and record results with the implementation SHA.
+- [x] 2.1 Run E1–E3 and record results with the implementation SHA.
 - [ ] 2.2 Raise the PR and verify hosted E4 and all checks/reviews before merge.
