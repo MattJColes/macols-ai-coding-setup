@@ -5,6 +5,8 @@
 # Sourced by lib/common.sh, which sets the colours and repo layout variables
 # used here. Not meant to be executed directly.
 # shellcheck disable=SC2034  # variables here are read by other modules/installers
+# Bun expands its own template literals; printf format variables are fixed colour codes.
+# shellcheck disable=SC2016,SC2059
 
 # ── Oh My Pi model + provider setup ──────────────────────────────────────────
 #
@@ -284,8 +286,8 @@ configure_pi_lan_models() {
 import { YAML, JSONC } from "bun";
 import * as fs from "node:fs";
 import * as path from "node:path";
-const oldId = "unsloth/Qwen3.8-27B-NVFP4";
-const id = "ukisai/Swift-Qwen3.8-27B-NVFP4";
+const oldIds = ["unsloth/Qwen3.8-27B-NVFP4", "ukisai/Swift-Qwen3.8-27B-NVFP4"];
+const id = "ukisai/Swift-1.5-Qwen3.8-27b-NVFP4";
 const yamlFile = (dir, stem) => {
     const yml = path.join(dir, stem + ".yml");
     const yaml = path.join(dir, stem + ".yaml");
@@ -316,7 +318,7 @@ for (const [dir, omp] of [[process.env.PI_MODELS_DIR, false], [process.env.OMP_M
         provider.apiKey = "unused";
         delete provider.auth;
     }
-    provider.models = [...(provider.models ?? []).filter(m => m.id !== oldId && m.id !== id), {
+    provider.models = [...(provider.models ?? []).filter(m => !oldIds.includes(m.id) && m.id !== id), {
         id, reasoning: true, input: ["text", "image"], contextWindow: 262144,
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }
     }];
@@ -329,9 +331,12 @@ for (const [dir, omp] of [[process.env.PI_MODELS_DIR, false], [process.env.OMP_M
             throw new Error(`Invalid modelRoles: ${settingsFile}`);
         }
         for (const [role, model] of Object.entries(settings.modelRoles ?? {})) {
-            if (model === `vllm-lan/${oldId}`) {
-                settings.modelRoles[role] = `vllm-lan/${id}`;
-                changed = true;
+            for (const oldId of oldIds) {
+                const selector = `vllm-lan/${oldId}`;
+                if (model === selector || (typeof model === "string" && model.startsWith(selector + ":"))) {
+                    settings.modelRoles[role] = `vllm-lan/${id}${model.slice(selector.length)}`;
+                    changed = true;
+                }
             }
         }
         settings.modelRoles = {
@@ -339,7 +344,7 @@ for (const [dir, omp] of [[process.env.PI_MODELS_DIR, false], [process.env.OMP_M
             default: `vllm-lan/${id}:medium`, vision: `vllm-lan/${id}:medium`, plan: `vllm-lan/${id}:xhigh`
         };
         changed = true;
-    } else if (settings.defaultProvider === "vllm-lan" && settings.defaultModel === oldId) {
+    } else if (settings.defaultProvider === "vllm-lan" && oldIds.includes(settings.defaultModel)) {
         settings.defaultModel = id;
         changed = true;
     }

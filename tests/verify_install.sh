@@ -12,6 +12,8 @@
 #
 # Tildes below appear inside human-readable check labels, not paths.
 # shellcheck disable=SC2088
+# Helpers are invoked through eval; Bun expands JavaScript template literals.
+# shellcheck disable=SC2329,SC2016
 set -uo pipefail
 
 TOOL="${1:-}"
@@ -292,7 +294,7 @@ verify_pi() {
                 model_file="$omp_d/models.yaml"
             fi
             pass "$model_file registers the Swift LAN model" \
-                "omp_yaml_has '$model_file' 'doc.providers?.[\"vllm-lan\"]?.models?.filter(m => m.id === \"ukisai/Swift-Qwen3.8-27B-NVFP4\").length === 1'"
+                "omp_yaml_has '$model_file' 'doc.providers?.[\"vllm-lan\"]?.models?.filter(m => m.id === \"ukisai/Swift-1.5-Qwen3.8-27b-NVFP4\").length === 1'"
         done
     fi
     if [ -f "$omp_d/models.yml" ] || [ -f "$omp_d/config.yml" ]; then
