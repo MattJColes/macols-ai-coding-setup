@@ -39,7 +39,7 @@ OMP_KNOWN_PROVIDERS="anthropic openai openai-codex zai google google-gemini-cli 
 # needs as its runtime (ensure_cli pi installs it), so this adds no dependency.
 require_bun() {
     if ! command -v bun &> /dev/null; then
-        printf "${RED}bun is required for omp model setup but was not found.${NC}\n"
+        printf '%b' "${RED}bun is required for omp model setup but was not found.${NC}\n"
         return 1
     fi
 }
@@ -88,6 +88,8 @@ fs.writeFileSync(file, YAML.stringify(doc, null, 2) + "\n");
 omp_default_theme() {
     require_bun || return 1
     mkdir -p "$1"
+    # JavaScript template literals are expanded by Bun.
+    # shellcheck disable=SC2016
     OMP_DIR="$1" bun -e '
 import { YAML } from "bun";
 import * as fs from "node:fs";
@@ -230,13 +232,13 @@ omp_configure_role() {
     printf "  1) A provider omp knows — %s\n" "$OMP_KNOWN_PROVIDERS"
     printf "  2) An OpenAI-compatible endpoint — vLLM, Ollama, LM Studio, LiteLLM, any gateway\n"
     printf "  3) Leave as-is (omp picks from its own priority list)\n"
-    read -rp "$(printf "${YELLOW}  Choice [3]: ${NC}")" choice || true
+    read -rp "$(printf '%b' "${YELLOW}  Choice [3]: ${NC}")" choice || true
 
     case "${choice:-3}" in
         1)
-            read -rp "$(printf "${YELLOW}  Provider id: ${NC}")" provider || true
+            read -rp "$(printf '%b' "${YELLOW}  Provider id: ${NC}")" provider || true
             [ -n "$provider" ] || { printf "${YELLOW}  ⚠ no provider given — %s left as-is${NC}\n" "$role"; return 0; }
-            read -rp "$(printf "${YELLOW}  Model id (e.g. claude-opus-4-5, gpt-5.5, glm-5.2): ${NC}")" model_id || true
+            read -rp "$(printf '%b' "${YELLOW}  Model id (e.g. claude-opus-4-5, gpt-5.5, glm-5.2): ${NC}")" model_id || true
             [ -n "$model_id" ] || { printf "${YELLOW}  ⚠ no model given — %s left as-is${NC}\n" "$role"; return 0; }
             ensure_omp_provider_key "$provider"
             if [ -n "$OMP_KEY_REF" ]; then
@@ -250,15 +252,15 @@ omp_configure_role() {
             fi
             ;;
         2)
-            read -rp "$(printf "${YELLOW}  Name for this provider (e.g. vllm-lan, ollama-local): ${NC}")" provider || true
+            read -rp "$(printf '%b' "${YELLOW}  Name for this provider (e.g. vllm-lan, ollama-local): ${NC}")" provider || true
             [ -n "$provider" ] || { printf "${YELLOW}  ⚠ no name given — %s left as-is${NC}\n" "$role"; return 0; }
-            read -rp "$(printf "${YELLOW}  Base URL (vLLM http://host:8000/v1, Ollama http://localhost:11434/v1, LM Studio http://localhost:1234/v1): ${NC}")" base_url || true
+            read -rp "$(printf '%b' "${YELLOW}  Base URL (vLLM http://host:8000/v1, Ollama http://localhost:11434/v1, LM Studio http://localhost:1234/v1): ${NC}")" base_url || true
             [ -n "$base_url" ] || { printf "${YELLOW}  ⚠ no base URL given — %s left as-is${NC}\n" "$role"; return 0; }
-            read -rp "$(printf "${YELLOW}  Wire protocol [openai-completions]: ${NC}")" api || true
-            read -rp "$(printf "${YELLOW}  Model id (as the endpoint reports it, e.g. unsloth/Qwen3.8-27B-NVFP4): ${NC}")" model_id || true
+            read -rp "$(printf '%b' "${YELLOW}  Wire protocol [openai-completions]: ${NC}")" api || true
+            read -rp "$(printf '%b' "${YELLOW}  Model id (as the endpoint reports it, e.g. unsloth/Qwen3.8-27B-NVFP4): ${NC}")" model_id || true
             [ -n "$model_id" ] || { printf "${YELLOW}  ⚠ no model given — %s left as-is${NC}\n" "$role"; return 0; }
-            read -rp "$(printf "${YELLOW}  Context window in tokens (blank to leave to omp): ${NC}")" ctx || true
-            read -rp "$(printf "${YELLOW}  Is it a reasoning model? [y/N]: ${NC}")" reasoning || true
+            read -rp "$(printf '%b' "${YELLOW}  Context window in tokens (blank to leave to omp): ${NC}")" ctx || true
+            read -rp "$(printf '%b' "${YELLOW}  Is it a reasoning model? [y/N]: ${NC}")" reasoning || true
             ensure_omp_provider_key "$provider"
             case "$reasoning" in [Yy]*) reasoning=true ;; *) reasoning=false ;; esac
             OMP_PROVIDER_NAME="$provider" OMP_PROVIDER_BASE_URL="$base_url" \
@@ -266,7 +268,7 @@ omp_configure_role() {
             OMP_PROVIDER_MODEL_ID="$model_id" OMP_PROVIDER_CONTEXT_WINDOW="$ctx" \
             OMP_PROVIDER_REASONING="$reasoning" OMP_PROVIDER_FREE="true" \
                 omp_register_provider "$dir" || return 1
-            printf "${YELLOW}  ⚠ cost recorded as 0 — edit models.yml if this endpoint bills you${NC}\n"
+            printf '%b' "${YELLOW}  ⚠ cost recorded as 0 — edit models.yml if this endpoint bills you${NC}\n"
             ;;
         *)
             printf "  left as-is\n"
@@ -280,12 +282,14 @@ omp_configure_role() {
 # configure_pi_lan_models <pi_dir> <omp_dir> — register the shared LAN model.
 configure_pi_lan_models() {
     require_bun || return 1
+    # JavaScript template literals are expanded by Bun.
+    # shellcheck disable=SC2016
     PI_MODELS_DIR="$1" OMP_MODELS_DIR="$2" bun -e '
 import { YAML, JSONC } from "bun";
 import * as fs from "node:fs";
 import * as path from "node:path";
-const oldId = "unsloth/Qwen3.8-27B-NVFP4";
-const id = "ukisai/Swift-Qwen3.8-27B-NVFP4";
+const oldIds = ["unsloth/Qwen3.8-27B-NVFP4", "ukisai/Swift-Qwen3.8-27B-NVFP4"];
+const id = "ukisai/Swift-1.5-Qwen3.8-27b-NVFP4";
 const yamlFile = (dir, stem) => {
     const yml = path.join(dir, stem + ".yml");
     const yaml = path.join(dir, stem + ".yaml");
@@ -316,7 +320,7 @@ for (const [dir, omp] of [[process.env.PI_MODELS_DIR, false], [process.env.OMP_M
         provider.apiKey = "unused";
         delete provider.auth;
     }
-    provider.models = [...(provider.models ?? []).filter(m => m.id !== oldId && m.id !== id), {
+    provider.models = [...(provider.models ?? []).filter(m => !oldIds.includes(m.id) && m.id !== id), {
         id, reasoning: true, input: ["text", "image"], contextWindow: 262144,
         cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }
     }];
@@ -329,8 +333,9 @@ for (const [dir, omp] of [[process.env.PI_MODELS_DIR, false], [process.env.OMP_M
             throw new Error(`Invalid modelRoles: ${settingsFile}`);
         }
         for (const [role, model] of Object.entries(settings.modelRoles ?? {})) {
-            if (model === `vllm-lan/${oldId}`) {
-                settings.modelRoles[role] = `vllm-lan/${id}`;
+            const oldId = oldIds.find(old => model === `vllm-lan/${old}` || model.startsWith(`vllm-lan/${old}:`));
+            if (oldId) {
+                settings.modelRoles[role] = `vllm-lan/${id}` + model.slice(`vllm-lan/${oldId}`.length);
                 changed = true;
             }
         }
@@ -339,7 +344,7 @@ for (const [dir, omp] of [[process.env.PI_MODELS_DIR, false], [process.env.OMP_M
             default: `vllm-lan/${id}:medium`, vision: `vllm-lan/${id}:medium`, plan: `vllm-lan/${id}:xhigh`
         };
         changed = true;
-    } else if (settings.defaultProvider === "vllm-lan" && settings.defaultModel === oldId) {
+    } else if (settings.defaultProvider === "vllm-lan" && oldIds.includes(settings.defaultModel)) {
         settings.defaultModel = id;
         changed = true;
     }
@@ -351,7 +356,7 @@ for (const [file, doc, omp] of writes) {
     fs.writeFileSync(file, (omp ? YAML.stringify(doc, null, 2) : JSON.stringify(doc, null, 2)) + "\n");
 }
 ' || return 1
-    printf "${GREEN}✓ Swift Qwen LAN model registered for pi and omp${NC}\n"
+    printf '%b' "${GREEN}✓ Swift Qwen LAN model registered for pi and omp${NC}\n"
 }
 
 # configure_omp_models <agent_dir> — set omp's default and planning models.
@@ -384,11 +389,11 @@ configure_omp_models() {
         return 0
     fi
     if [ ! -t 0 ]; then
-        printf "${YELLOW}⚠ Non-interactive install — set OMP_DEFAULT_MODEL / OMP_PLAN_MODEL (and OMP_MODELS_CONFIG for a custom endpoint) to configure omp models${NC}\n"
+        printf '%b' "${YELLOW}⚠ Non-interactive install — set OMP_DEFAULT_MODEL / OMP_PLAN_MODEL (and OMP_MODELS_CONFIG for a custom endpoint) to configure omp models${NC}\n"
         return 0
     fi
 
-    printf "${BLUE}Oh My Pi model setup — which model omp runs on, and which it plans with.${NC}\n"
+    printf '%b' "${BLUE}Oh My Pi model setup — which model omp runs on, and which it plans with.${NC}\n"
     printf "${BLUE}Both are stored in %s (providers) and %s (roles).${NC}\n" "$dir/models.yml" "$dir/config.yml"
     omp_configure_role "$dir" default "Default" || return 1
     omp_configure_role "$dir" plan "Planning" || return 1

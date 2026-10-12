@@ -16,7 +16,7 @@ into the agents' own user-owned files.
 
 Every model setup run registers a `vllm-lan` provider at
 `http://exodus:8000/v1` (OpenAI-compatible) for both agents, with the model
-`ukisai/Swift-Qwen3.8-27B-NVFP4` (reasoning, text and image input, 262144
+`ukisai/Swift-1.5-Qwen3.8-27b-NVFP4` (reasoning, text and image input, 262144
 context, zero cost). The endpoint needs no API key: omp gets `auth: none` and
 pi gets a placeholder key, because pi requires a non-empty one.
 
@@ -24,9 +24,9 @@ For omp it also sets the roles:
 
 ```yaml
 modelRoles:
-  default: vllm-lan/ukisai/Swift-Qwen3.8-27B-NVFP4:medium
-  vision: vllm-lan/ukisai/Swift-Qwen3.8-27B-NVFP4:medium
-  plan: vllm-lan/ukisai/Swift-Qwen3.8-27B-NVFP4:xhigh
+  default: vllm-lan/ukisai/Swift-1.5-Qwen3.8-27b-NVFP4:medium
+  vision: vllm-lan/ukisai/Swift-1.5-Qwen3.8-27b-NVFP4:medium
+  plan: vllm-lan/ukisai/Swift-1.5-Qwen3.8-27b-NVFP4:xhigh
 ```
 
 Existing selections of the old `unsloth/Qwen3.8-27B-NVFP4` model migrate to

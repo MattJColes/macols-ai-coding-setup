@@ -5,10 +5,13 @@ REPO_DIR="$(dirname "$SCRIPT_DIR")"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/pi-models.XXXXXX")"
 FIXTURE="$(cd "$FIXTURE" && pwd)"
 trap 'rm -rf "$FIXTURE"' EXIT
-TEST_HOME="$FIXTURE/user's home"
+for OLD_MODEL_ID in "unsloth/Qwen3.8-27B-NVFP4" "ukisai/Swift-Qwen3.8-27B-NVFP4"; do
+TEST_HOME="$FIXTURE/user's home/${OLD_MODEL_ID##*/}"
 mkdir -p "$TEST_HOME"
 
-TEST_HOME="$TEST_HOME" bun -e '
+# JavaScript template literals are expanded by Bun.
+# shellcheck disable=SC2016
+TEST_HOME="$TEST_HOME" OLD_MODEL_ID="$OLD_MODEL_ID" bun -e '
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { YAML } from "bun";
@@ -18,16 +21,16 @@ for (const agent of [".pi", ".omp"]) {
     mkdirSync(dir, { recursive: true });
     const doc = { providers: {
         other: { baseUrl: "http://other/v1" },
-        "vllm-lan": { apiKey: "!cat /missing-key", models: [{ id: "unsloth/Qwen3.8-27B-NVFP4" }, { id: "keep-me" }] }
+        "vllm-lan": { apiKey: "!cat /missing-key", models: [{ id: process.env.OLD_MODEL_ID }, { id: "keep-me" }] }
     }};
     writeFileSync(join(dir, agent === ".pi" ? "models.json" : "models.yaml"),
         agent === ".pi" ? JSON.stringify(doc) : YAML.stringify(doc));
 }
 writeFileSync(join(home, ".pi/agent/settings.json"), JSON.stringify({
-    defaultProvider: "vllm-lan", defaultModel: "unsloth/Qwen3.8-27B-NVFP4", theme: "keep"
+    defaultProvider: "vllm-lan", defaultModel: process.env.OLD_MODEL_ID, theme: "keep"
 }));
 writeFileSync(join(home, ".omp/agent/config.yaml"), YAML.stringify({
-    modelRoles: { default: "other/default", vision: "other/vision", plan: "other/model", slow: "other/slow" }, theme: "keep"
+    modelRoles: { default: "other/default", vision: "other/vision", plan: "other/model", slow: `vllm-lan/${process.env.OLD_MODEL_ID}:low`, fast: "other/fast" }, theme: "keep"
 }));
 '
 
@@ -37,16 +40,19 @@ run_models() {
         bash "$REPO_DIR/installers/pi.sh" --models-only </dev/null >"$FIXTURE/install.log" 2>&1
 }
 run_models
+rm -rf "$FIXTURE/once"
 cp -R "$TEST_HOME" "$FIXTURE/once"
 run_models
 diff -r "$FIXTURE/once" "$TEST_HOME"
 
+# JavaScript template literals are expanded by Bun.
+# shellcheck disable=SC2016
 TEST_HOME="$TEST_HOME" bun -e '
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { YAML } from "bun";
 const home = process.env.TEST_HOME;
-const id = "ukisai/Swift-Qwen3.8-27B-NVFP4";
+const id = "ukisai/Swift-1.5-Qwen3.8-27b-NVFP4";
 for (const file of [".pi/agent/models.json", ".omp/agent/models.yaml"]) {
     const doc = YAML.parse(readFileSync(`${home}/${file}`, "utf8"));
     const provider = doc.providers["vllm-lan"];
@@ -72,9 +78,12 @@ const omp = YAML.parse(readFileSync(`${home}/.omp/agent/config.yaml`, "utf8"));
 assert.equal(omp.modelRoles.default, `vllm-lan/${id}:medium`);
 assert.equal(omp.modelRoles.vision, `vllm-lan/${id}:medium`);
 assert.equal(omp.modelRoles.plan, `vllm-lan/${id}:xhigh`);
-assert.equal(omp.modelRoles.slow, "other/slow");
+assert.equal(omp.modelRoles.slow, `vllm-lan/${id}:low`);
+assert.equal(omp.modelRoles.fast, "other/fast");
 assert.equal(omp.theme, "keep");
 '
+
+done
 
 # Optional model setup fails visibly and leaves both agents untouched.
 printf '{bad json' > "$TEST_HOME/.pi/agent/models.json"
@@ -98,13 +107,15 @@ cp "$FIXTURE/once/.pi/agent/models.json" "$TEST_HOME/.omp/agent/models.json"
 run_models
 test -f "$TEST_HOME/.omp/agent/models.yml"
 grep -q 'keep-me' "$TEST_HOME/.omp/agent/models.yml"
+# JavaScript template literals are expanded by Bun.
+# shellcheck disable=SC2016
 TEST_HOME="$TEST_HOME" bun -e '
 import assert from "node:assert/strict";
 import { YAML } from "bun";
 const config = YAML.parse(await Bun.file(`${process.env.TEST_HOME}/.omp/agent/config.yml`).text());
-assert.equal(config.modelRoles.default, "vllm-lan/ukisai/Swift-Qwen3.8-27B-NVFP4:medium");
+assert.equal(config.modelRoles.default, "vllm-lan/ukisai/Swift-1.5-Qwen3.8-27b-NVFP4:medium");
 assert.equal(config.modelRoles.vision, config.modelRoles.default);
-assert.equal(config.modelRoles.plan, "vllm-lan/ukisai/Swift-Qwen3.8-27B-NVFP4:xhigh");
+assert.equal(config.modelRoles.plan, "vllm-lan/ukisai/Swift-1.5-Qwen3.8-27b-NVFP4:xhigh");
 '
 
 # Verify the component guards without touching the real home.

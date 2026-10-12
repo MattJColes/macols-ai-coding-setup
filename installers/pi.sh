@@ -73,7 +73,7 @@ token (blank to skip); set BRAVE_API_KEY, YOUTRACK_URL and YOUTRACK_TOKEN in
 the environment to supply them non-interactively.
 
 Model setup always registers vllm-lan at http://exodus:8000/v1 for both agents
-with ukisai/Swift-Qwen3.8-27B-NVFP4 (reasoning, 262144 context, zero cost).
+with ukisai/Swift-1.5-Qwen3.8-27b-NVFP4 (reasoning, 262144 context, zero cost).
 The LAN endpoint requires no API key.
 Existing selections of the old unsloth model migrate to Swift.
 Swift with medium reasoning is selected for omp's default and vision roles.
