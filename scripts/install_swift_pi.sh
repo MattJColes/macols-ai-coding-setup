@@ -23,5 +23,5 @@ configure_pi_lan_models "$HOME/.pi/agent" "${PI_CODING_AGENT_DIR:-$HOME/.omp/age
 
 printf '\nInstalled pi and omp with the keyless Swift Qwen provider.\n'
 printf 'The machine must be able to reach http://exodus:8000/v1.\n'
-printf 'Start either agent:\n  pi --provider vllm-lan --model ukisai/Swift-Qwen3.8-27B-NVFP4\n'
-printf '  omp --model vllm-lan/ukisai/Swift-Qwen3.8-27B-NVFP4\n'
+printf 'Start either agent:\n  pi --provider vllm-lan --model ukisai/Swift-1.5-Qwen3.8-27b-NVFP4\n'
+printf '  omp --model vllm-lan/ukisai/Swift-1.5-Qwen3.8-27b-NVFP4\n'

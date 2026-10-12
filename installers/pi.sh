@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Source dependencies are checked with -x in CI; printf formats use fixed colour codes.
+# shellcheck disable=SC1091,SC2059
 #
 # Self-contained installer for the Pi coding agents: the plain `pi` CLI
 # (@earendil-works/pi-coding-agent) and Oh My Pi `omp`
@@ -73,9 +75,9 @@ token (blank to skip); set BRAVE_API_KEY, YOUTRACK_URL and YOUTRACK_TOKEN in
 the environment to supply them non-interactively.
 
 Model setup always registers vllm-lan at http://exodus:8000/v1 for both agents
-with ukisai/Swift-Qwen3.8-27B-NVFP4 (reasoning, 262144 context, zero cost).
+with ukisai/Swift-1.5-Qwen3.8-27b-NVFP4 (reasoning, 262144 context, zero cost).
 The LAN endpoint requires no API key.
-Existing selections of the old unsloth model migrate to Swift.
+Existing selections of the old unsloth and Swift models migrate to Swift 1.5.
 Swift with medium reasoning is selected for omp's default and vision roles.
 The plan role uses Swift with xhigh reasoning.
 Explicit role answers or OMP_DEFAULT_MODEL / OMP_PLAN_MODEL can override these.
