@@ -66,7 +66,8 @@ CI job, so local and CI results agree.
 7. Put the project's own per-loop commands in `.macols/checks.conf` from
    `references/checks.conf`: `IMMEDIATE` (every turn, fast: schema validation),
    `CHECKPOINT` (before each commit: integration tests, an eval smoke set) and
-   `NIGHTLY` (the scheduled CI job: E2E, full evals). Keep each loop's budget:
+   `NIGHTLY` (the scheduled CI job: E2E, full evals). Set
+   `CHECKPOINT_TESTS=full` only when the full suite takes seconds. Keep each loop's budget:
    seconds, then a minute or two, then as long as it takes.
 8. Run every gate once over the whole repo and report the baseline.
 

@@ -25,14 +25,17 @@ Each check runs at the cheapest loop that still catches the problem:
 | Loop | What runs | When |
 |---|---|---|
 | Immediate | Per edit: format, lint and type check on the file. Per turn: related unit tests, types, layer rules, duplication, and the project's `IMMEDIATE` command | Every agent iteration |
-| Local checkpoint | The whole test suite of each affected package, the same lint/type/layer checks, and the project's `CHECKPOINT` command (integration tests, an eval smoke set) | When the agent runs `git commit`; a failure blocks the commit |
+| Local checkpoint | The tests the commit's changes reach (each affected package's whole suite with `CHECKPOINT_TESTS=full`), the same lint/type/layer checks, and the project's `CHECKPOINT` command (integration tests, an eval smoke set) | When the agent runs `git commit`; a failure blocks the commit |
 | PR | Full tests, semgrep, dependency audits, jscpd threshold (the `quality` skill's CI workflow) | Before human review |
 | Merge/nightly | The project's `NIGHTLY` command: E2E, broad model matrix, load tests, full eval suite | Scheduled CI job |
 | Production | Traces, user failures, latency and cost, sampled quality evals | Continuously; see the `sre` skill |
 
 Projects declare their own commands in `.macols/checks.conf` (template in
 `config/personas/quality/references/checks.conf`). The hooks read it as data and
-run the commands from the repo root in trusted projects only. The checkpoint
+run the commands from the repo root in trusted projects only. The
+checkpoint uses the turn-end test selection over the whole uncommitted change
+and leaves the full suite to CI; set `CHECKPOINT_TESTS=full` there to run each
+affected package's whole suite instead. The checkpoint
 skips when the tree matches the last passing checkpoint, when the command
 passes `--no-verify`, or with `MACOLS_CHECKPOINT=off`.
 
@@ -52,8 +55,8 @@ Every tool gets the findings in its own model-visible format
   (import-linter, dependency-cruiser) when the project configures them. Test
   selection: pytest-testmon when the project's venv has it (coverage-based),
   otherwise `test_<module>.py` by name; `vitest related` / `jest
-  --findRelatedTests` by import graph; `go test ./...` in each changed module,
-  where Go's test cache replays everything the change can't affect. When
+  --findRelatedTests` by import graph (any other `npm test` waits for the
+  checkpoint, since it may be E2E); `go test` on the changed packages. When
   something fails, the agent gets one more step with the findings and a fix
   instruction. It only re-runs when the tree changed since its last run, so it
   can't loop and Q&A turns stay fast (under a second on small projects).
@@ -189,7 +192,7 @@ workflow. Existing layer breaks are approved explicitly: a
 |---|---|
 | `MACOLS_PYTEST_SCOPE=changed\|full\|off` | Python test scope at turn end (default `changed`) |
 | `MACOLS_TESTMON=off` | Ignore pytest-testmon and select Python tests by name |
-| `MACOLS_GO_TEST_SCOPE=module\|changed` | Go tests at turn end: the whole changed module via the test cache (default) or only changed packages |
+| `MACOLS_GO_TEST_SCOPE=changed\|module` | Go tests at turn end: only changed packages (default) or the whole changed module via the test cache |
 | `MACOLS_DEPLOY_DIFF=off` | Don't run `cdk diff` before a deploy prompt |
 | `MACOLS_DEPLOY_DIFF_TIMEOUT` | Seconds the pre-deploy `cdk diff` may take (default 240) |
 | `MACOLS_CHECK_LOG=off` | Don't log check timings |

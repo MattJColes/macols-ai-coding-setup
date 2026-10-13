@@ -204,8 +204,10 @@ trust instruction.
 Every tool's PreToolUse(Bash) wiring SHALL pass the command to
 `hooks/pre_commit_check.sh`, which on `git commit` (not `--no-verify`, not
 `MACOLS_CHECKPOINT=off`, trusted projects only) runs the checkpoint battery:
-the whole test suite of each affected package, the lint/type/layer checks and
-the project's `CHECKPOINT` command from `.macols/checks.conf`. A failure SHALL
+the tests the uncommitted change reaches (each affected package's whole suite
+when `.macols/checks.conf` sets `CHECKPOINT_TESTS=full`), the
+lint/type/layer checks and the project's `CHECKPOINT` command from
+`.macols/checks.conf`. A failure SHALL
 deny the commit with the findings as the reason; a pass is remembered by tree
 fingerprint so an unchanged tree is not re-checked. The turn-end battery SHALL
 run the project's `IMMEDIATE` command.
@@ -215,3 +217,8 @@ run the project's `IMMEDIATE` command.
 
 - **WHEN** the agent runs `git commit` in a trusted repo whose tests fail
 - **THEN** the commit is denied and the failing tests are the reason the model reads
+
+#### Scenario: A commit runs only the tests it reaches
+
+- **WHEN** `.macols/checks.conf` does not set `CHECKPOINT_TESTS=full` and the agent runs `git commit`
+- **THEN** the checkpoint runs only the tests the uncommitted change reaches, not the whole suite

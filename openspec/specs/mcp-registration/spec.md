@@ -14,8 +14,10 @@ YouTrack URL and permanent token are stored.
 OpenCode and Pi-agent writers and only when a Brave Search API key is on disk.
 
 Every writer takes its list from `mcp_resolve`, so all five tools see the
-same servers, and each writer removes the stale entries this repo owns while
-leaving the user's own servers alone.
+same servers, and each writer removes the stale entries this repo owns. The
+JSON writers leave the user's own servers alone; the Claude Code and Codex CLI
+writers prune every user-scope server not in `config/mcp`, so those two lists
+match the installer exactly.
 
 ## Requirements
 
@@ -32,6 +34,11 @@ A source entry with a `marker` key SHALL be removed only while it still
 contains that string (`youtrack`: its key file), and the key SHALL NOT reach a
 tool's config.
 <!-- anchor: mcp-registration.resolve -->
+
+#### Scenario: An unowned server in Claude Code or Codex user scope
+
+- **WHEN** `~/.claude.json` `mcpServers` or `~/.codex/config.toml` `[mcp_servers.*]` holds a server not in `config/mcp`
+- **THEN** `register_mcps_claude` / `register_mcps_codex` removes it; plugin-bundled servers outside those files are untouched
 
 #### Scenario: gopls is not installed
 

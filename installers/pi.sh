@@ -123,8 +123,7 @@ install_packages() {
     if command -v pi &> /dev/null; then
         printf "${BLUE}Installing pi packages...${NC}\n"
         for pkg in $PI_PACKAGES; do
-            printf "${BLUE}  → pi install %s${NC}\n" "$pkg"
-            if pi install "$pkg"; then printf "${GREEN}  ✓ %s${NC}\n" "$pkg"; else printf "${YELLOW}  ⚠ Failed to install %s (continuing)${NC}\n" "$pkg"; fi
+            pi install "$pkg" > /dev/null || printf "${YELLOW}  ⚠ Failed to install %s (continuing)${NC}\n" "$pkg"
         done
     else
         printf "${YELLOW}⚠ pi not found — skipping pi packages (drop --no-pi)${NC}\n"
@@ -132,8 +131,7 @@ install_packages() {
     if command -v omp &> /dev/null; then
         printf "${BLUE}Installing omp packages...${NC}\n"
         for pkg in $OMP_PACKAGES; do
-            printf "${BLUE}  → omp install %s${NC}\n" "$pkg"
-            if omp install "$pkg"; then printf "${GREEN}  ✓ %s${NC}\n" "$pkg"; else printf "${YELLOW}  ⚠ Failed to install %s (continuing)${NC}\n" "$pkg"; fi
+            omp install "$pkg" > /dev/null || printf "${YELLOW}  ⚠ Failed to install %s (continuing)${NC}\n" "$pkg"
         done
     else
         printf "${YELLOW}⚠ omp not found — skipping omp packages (drop --no-pi)${NC}\n"

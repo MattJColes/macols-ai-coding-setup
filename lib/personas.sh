@@ -134,7 +134,6 @@ for (const name of fs.readdirSync(pdir).sort()) {
   const flatBody = () => own + "\n" + inlineBundled(srcDir) + "\n" + RESPONSE_FORMAT + "\n";
   const effort = effortOf(data, name);
   const pname = data.name || name;
-  let label = name;
 
   if (mode === "command") {
     // ZCode slash command (~/.zcode/commands/<name>.md): the filename is the
@@ -144,7 +143,6 @@ for (const name of fs.readdirSync(pdir).sort()) {
     fm += "argument-hint: \"[task or context]\"\n";
     fm += "---\n";
     fs.writeFileSync(path.join(tdir, name + ".md"), fm + flatBody());
-    console.log("  ✓ /" + name);
     count++;
   } else if (mode === "skill") {
     let fm = "---\n";
@@ -177,9 +175,7 @@ for (const name of fs.readdirSync(pdir).sort()) {
       if (tool === "claudecode" && effort) fm += "effort: " + effort + "\n";
       fm += "---\n";
       writeDir(tdir, name, fm + body, srcDir);
-      if (tool === "pi") label = "/skill:" + pname;
     }
-    console.log("  ✓ " + label);
     count++;
   } else if (mode === "agent") {
     if (data.agent !== true) continue;
@@ -215,7 +211,6 @@ for (const name of fs.readdirSync(pdir).sort()) {
       fm += "---\n";
       fs.writeFileSync(path.join(tdir, pname + ".md"), fm + flatBody());
     }
-    console.log("  ✓ " + pname);
     count++;
   }
 }
@@ -237,7 +232,7 @@ console.log("__COUNT__" + count);
 PERSONA_EOF
 
 # generate_personas <tool> <skill|command|agent> <target_dir>
-# Prints a per-item checklist; sets PERSONA_COUNT to the number generated.
+# Sets PERSONA_COUNT to the number generated.
 generate_personas() {
     require_node || return 1
     local out
