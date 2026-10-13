@@ -266,7 +266,8 @@ verify_pi() {
     pass "no retired revdiff package (omp)" "! grep -qs 'revdiff-pi' '$HOME/.omp/plugins/package.json'"
     soft "pi pi-yaml-hooks package installed" "grep -qs 'pi-yaml-hooks' '$HOME/.pi/agent/settings.json'"
     soft "omp pi-yaml-hooks package installed" "grep -qs 'pi-yaml-hooks' '$HOME/.omp/plugins/package.json'"
-    soft "pi pi-mcp-adapter package installed" "grep -qs 'pi-mcp-adapter' '$HOME/.pi/agent/settings.json'"
+    pass "no retired pi-mcp-adapter package" "! grep -qs 'pi-mcp-adapter' '$HOME/.pi/agent/settings.json'"
+    pass "pi built-in MCP not disabled" "! grep -qs -- '-builtin:mcp' '$HOME/.pi/agent/settings.json'"
     local p
     for p in pi-subagents ponytail pi-web-search pi-lens; do
         soft "pi $p package installed" "grep -qs '$p' '$HOME/.pi/agent/settings.json'"
@@ -275,7 +276,7 @@ verify_pi() {
     verify_pi_layout "$omp_d" "~/.omp/agent"
     if has_jq; then
         local f l
-        for f in "$omp_d/mcp.json" "$HOME/.pi/agent/mcp-adapter.json"; do
+        for f in "$omp_d/mcp.json" "$HOME/.pi/agent/mcp.json"; do
             l="$(basename "$(dirname "$(dirname "$f")")")/$(basename "$f")"
             mcp_checks '.mcpServers' "$f" "$l .mcpServers"
             if has_brave_key; then

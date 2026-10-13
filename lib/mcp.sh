@@ -321,7 +321,7 @@ const shapes = {
         map: (c) => { c["$schema"] = c["$schema"] || "https://opencode.ai/config.json"; return (c.mcp = c.mcp || {}); },
         entry: (s) => Object.assign({ type: "local", command: [s.command, ...s.args], enabled: true }, s.env ? { environment: s.env } : {}),
     },
-    // Pi agents (omp mcp.json, the pi-mcp-adapter mcp-adapter.json):
+    // Pi agents (omp and pi mcp.json):
     // {"mcpServers": {name: {command, args, env}}}, the Claude shape.
     pi: {
         map: (c) => (c.mcpServers = c.mcpServers || {}),
@@ -361,9 +361,8 @@ register_mcps_opencode() {
 # register_mcps_pi <config_json> — merge the servers into the "mcpServers" key
 # of a Pi-agent MCP file. Both agents use the Claude shape:
 #   ~/.omp/agent/mcp.json         Oh My Pi's native MCP config
-#   ~/.pi/agent/mcp-adapter.json  plain pi, read by the pi-mcp-adapter package
-#                                 (which never reads ~/.pi/agent/mcp.json)
-# Other keys in the file (disabledServers, the adapter's settings) are
+#   ~/.pi/agent/mcp.json          plain pi's built-in MCP
+# Other keys in the file (exposure, autoEnableCodemode, …) are
 # preserved. brave-search is included when a Brave API key is configured.
 register_mcps_pi() {
     printf "${BLUE}Writing MCP config into %s...${NC}\n" "$(basename "$1")"

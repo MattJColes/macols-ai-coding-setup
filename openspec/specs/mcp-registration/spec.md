@@ -117,15 +117,18 @@ ignored by OpenCode and SHALL NOT be used.
 - **WHEN** the key file is missing or empty
 - **THEN** `brave-search` is absent from the `mcp` key and the rest of the servers are registered as usual
 
-### Requirement: Pi-agent servers are merged into mcp.json and mcp-adapter.json
+### Requirement: Pi-agent servers are merged into each agent's mcp.json
 `register_mcps_pi <config_json>` SHALL merge the servers under the
 `mcpServers` key of the given file (Claude-style `command`/`args`/`env`),
 keeping other keys. `installers/pi.sh` SHALL call it for
 `~/.omp/agent/mcp.json` (omp reads MCP config natively from `mcp.json`, not
-from `config.yml`) and for `~/.pi/agent/mcp-adapter.json`, which plain `pi`
-reads through the `pi-mcp-adapter` package the installer adds. The adapter
-never reads `~/.pi/agent/mcp.json`, so that file SHALL NOT be the plain-pi
-target. Both files SHALL receive the same server list.
+from `config.yml`) and for `~/.pi/agent/mcp.json`, which plain `pi` reads
+through its built-in MCP. Both files SHALL receive the same server list. The
+installer SHALL NOT install `pi-mcp-adapter`; on an install that has it,
+`remove_pi_mcp_adapter` SHALL remove the package, drop `-builtin:mcp` from
+`~/.pi/agent/settings.json`, and move servers from
+`~/.pi/agent/mcp-adapter.json` that `mcp.json` lacks into `mcp.json` before
+deleting the old file.
 <!-- anchor: mcp-registration.pi -->
 
 #### Scenario: Existing mcp.json with disabled servers
@@ -133,10 +136,10 @@ target. Both files SHALL receive the same server list.
 - **WHEN** the file already contains other keys (e.g. `disabledServers`)
 - **THEN** those keys survive and only owned entries under `mcpServers` change
 
-#### Scenario: Existing adapter settings
+#### Scenario: Migrating from pi-mcp-adapter
 
-- **WHEN** `~/.pi/agent/mcp-adapter.json` already holds adapter `settings` and a server of the user's own
-- **THEN** both survive a re-run, and the owned servers match those in `~/.omp/agent/mcp.json`
+- **WHEN** pi has the `pi-mcp-adapter` package, `-builtin:mcp` in its settings and a server of the user's own in `mcp-adapter.json`
+- **THEN** after a re-run the package and `-builtin:mcp` are gone, the user's server is in `~/.pi/agent/mcp.json`, and the owned servers match those in `~/.omp/agent/mcp.json`
 
 ### Requirement: ZCode servers are merged into config.json under mcp.servers
 `register_mcps_zcode` SHALL merge the servers under the `mcp.servers` key of
