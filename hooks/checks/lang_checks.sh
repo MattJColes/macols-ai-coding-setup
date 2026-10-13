@@ -50,7 +50,7 @@ run_flutter_tests() {
                 [ -f "$cand" ] && targets+=("$cand") ;;
         esac
     done < <(changed_matching '*.dart')
-    [ "${CHECKPOINT_MODE:-0}" = "1" ] && targets=(test)
+    full_suite && targets=(test)
     if [ ${#targets[@]} -eq 0 ]; then
         add_warning "Flutter tests: no impacted tests for changed files"
         return 0
@@ -100,11 +100,10 @@ _changed_go_packages() {
 }
 
 # golangci-lint (the project's .golangci.yml: dupl, gocyclo, funlen, depguard…)
-# or go vet when it isn't installed, on the changed packages; then go test
-# over each changed module. Go's test cache replays packages whose code and
-# dependencies are unchanged, so ./... costs the changed packages plus their
-# dependents, which is exactly what can break. MACOLS_GO_TEST_SCOPE=changed
-# tests only the changed packages (for modules with uncacheable tests).
+# or go vet when it isn't installed, on the changed packages; then go test on
+# the changed packages (./... per module at the checkpoint).
+# MACOLS_GO_TEST_SCOPE=module widens turn-end tests to the whole module, which
+# also catches dependents (cheap when the test cache can replay them).
 run_go_checks() {
     command -v go &> /dev/null || { add_warning "go not installed - skipping Go checks"; return 0; }
     local pkgs
@@ -127,7 +126,7 @@ run_go_checks() {
         local -a race=()
         [ "${MACOLS_GO_RACE:-0}" = "1" ] && race=(-race)
         local -a test_targets=(./...)
-        [ "${MACOLS_GO_TEST_SCOPE:-module}" = "changed" ] && [ "${CHECKPOINT_MODE:-0}" != "1" ] && test_targets=("${dirs[@]}")
+        [ "${MACOLS_GO_TEST_SCOPE:-changed}" = "changed" ] && ! full_suite && test_targets=("${dirs[@]}")
         out=$(cd "$mod" && ${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME} go test ${race[@]+"${race[@]}"} "${test_targets[@]}" 2>&1) || ec=$?
         [ "$ec" -ne 0 ] && report_test_failure "go test ($label)" "$ec" "$out"
     done
@@ -143,6 +142,6 @@ run_shellcheck() {
     while IFS= read -r f; do [ -n "$f" ] && files+=("$f"); done < <(changed_matching '*.sh' '*.bash')
     [ ${#files[@]} -eq 0 ] && return 0
     local out ec=0
-    out=$(shellcheck -f gcc "${files[@]}" 2>&1) || ec=$?
+    out=$(shellcheck -S warning -f gcc "${files[@]}" 2>&1) || ec=$?
     report_check_result "shellcheck" "$ec" "$out" "^.+:[0-9]+:[0-9]+: " "issues"
 }

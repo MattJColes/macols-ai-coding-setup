@@ -145,7 +145,7 @@ run_eslint_check() {
 run_shellcheck() {
     command -v shellcheck &> /dev/null || return 0
     local out ec=0
-    out=$(shellcheck -f gcc "$FILE_PATH" 2>&1) || ec=$?
+    out=$(shellcheck -S warning -f gcc "$FILE_PATH" 2>&1) || ec=$?
     report_check_result "shellcheck" "$ec" "$out" "^.+:[0-9]+:[0-9]+: " "issues"
 }
 

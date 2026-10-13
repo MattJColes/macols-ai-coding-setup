@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# node_checks.sh — the JavaScript/TypeScript half: related tests (vitest/jest
-# or npm test), eslint, tsc --noEmit and dependency-cruiser layer contracts.
+# node_checks.sh — the JavaScript/TypeScript half: related tests (vitest/jest;
+# npm test at the checkpoint), eslint, tsc --noEmit and dependency-cruiser layer contracts.
 #
 # Sourced by post_task.sh AFTER common.sh and its helpers; _node_bin here also
 # serves run_duplication_check in structure_checks.sh. Not meant to be
@@ -24,7 +24,8 @@ _node_bin() {
 }
 
 # Tests related to the changed files: vitest related / jest --findRelatedTests
-# when the test script uses them, otherwise the project's `npm test`.
+# when the test script uses them; otherwise `npm test` runs only at the
+# checkpoint.
 run_node_tests() {
     [ -f package.json ] || return 0
     local script
@@ -39,14 +40,16 @@ run_node_tests() {
     [ ${#files[@]} -eq 0 ] && return 0
 
     local out ec=0 bin
-    if [ "${CHECKPOINT_MODE:-0}" = "1" ]; then
+    if full_suite; then
         out=$(${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME} npm test 2>&1) || ec=$?
     elif [[ "$script" == *vitest* ]] && bin=$(_node_bin vitest) && [ -n "$bin" ]; then
         out=$(${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME} "$bin" related --run --passWithNoTests "${files[@]}" 2>&1) || ec=$?
     elif [[ "$script" == *jest* ]] && bin=$(_node_bin jest) && [ -n "$bin" ]; then
         out=$(${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME} "$bin" --findRelatedTests "${files[@]}" --passWithNoTests 2>&1) || ec=$?
     else
-        out=$(${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME} npm test 2>&1) || ec=$?
+        # No per-file runner: the whole suite (possibly E2E) waits for the checkpoint.
+        add_warning "Node.js tests: no vitest/jest to scope by changed files - skipped; npm test runs in CI or with CHECKPOINT_TESTS=full"
+        return 0
     fi
     [ "$ec" -ne 0 ] && report_test_failure "Node.js tests" "$ec" "$out"
     return 0

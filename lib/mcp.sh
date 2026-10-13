@@ -231,6 +231,27 @@ mcp_remove_stale_cli() {
         fi
         "$cli" mcp remove "$name" > /dev/null 2>&1 && printf "  ${YELLOW}✓ removed stale %s${NC}\n" "$name"
     done < <(jq -r '.stale | to_entries[] | "\(.key)\t\(.value // "")"' <<< "$resolved")
+    mcp_prune_unowned_cli "$cli" "$resolved"
+}
+
+# mcp_user_servers <claude|codex> — names in the tool's user-scope MCP config.
+# Plugin-bundled servers live elsewhere and are not listed.
+mcp_user_servers() {
+    case "$1" in
+        claude) [ -f "$HOME/.claude.json" ] && jq -r '.mcpServers // {} | keys[]' "$HOME/.claude.json" ;;
+        codex)  [ -f "${CODEX_HOME:-$HOME/.codex}/config.toml" ] \
+                    && sed -nE 's/^\[mcp_servers\."?([^]."]+)"?\]$/\1/p' "${CODEX_HOME:-$HOME/.codex}/config.toml" ;;
+    esac
+}
+
+# mcp_prune_unowned_cli <claude|codex> <resolved_json> — unregister every
+# user-scope server not in config/mcp, so the tool's list matches the installer.
+mcp_prune_unowned_cli() {
+    local cli="$1" resolved="$2" name
+    for name in $(mcp_user_servers "$cli"); do
+        jq -e --arg n "$name" '.servers | has($n)' <<< "$resolved" > /dev/null && continue
+        "$cli" mcp remove "$name" > /dev/null 2>&1 && printf "  ${YELLOW}✓ removed %s (not in config/mcp)${NC}\n" "$name"
+    done
 }
 
 # register_mcps_claude — register every server at user scope via the claude CLI.
@@ -244,12 +265,9 @@ register_mcps_claude() {
     resolved="$(mcp_resolve claudecode)" || return 1
 
     for name in $(jq -r '.servers | keys[]' <<< "$resolved"); do
-        printf "${BLUE}→ %s${NC}\n" "$name"
         claude mcp remove "$name" >/dev/null 2>&1 || true
-        if claude mcp add-json -s user "$name" "$(jq -c --arg n "$name" '.servers[$n]' <<< "$resolved")" >/dev/null 2>&1; then
-            printf "  ${GREEN}✓ registered${NC}\n"
-        else
-            printf "  ${RED}✗ failed to register${NC}\n"
+        if ! claude mcp add-json -s user "$name" "$(jq -c --arg n "$name" '.servers[$n]' <<< "$resolved")" >/dev/null 2>&1; then
+            printf "${RED}✗ failed to register %s${NC}\n" "$name"
         fi
     done
     mcp_remove_stale_cli claude "$resolved"
@@ -267,17 +285,14 @@ register_mcps_codex() {
     resolved="$(mcp_resolve codex)" || return 1
 
     for name in $(jq -r '.servers | keys[]' <<< "$resolved"); do
-        printf "${BLUE}→ %s${NC}\n" "$name"
         local env_flags=() args=()
         while IFS= read -r kv; do [ -z "$kv" ] && continue; env_flags+=(--env "$kv"); done < <(jq -r --arg n "$name" \
             '.servers[$n].env // {} | to_entries[] | "\(.key)=\(.value)"' <<< "$resolved")
         command_bin=$(jq -r --arg n "$name" '.servers[$n].command' <<< "$resolved")
         while IFS= read -r a; do args+=("$a"); done < <(jq -r --arg n "$name" '.servers[$n].args[]' <<< "$resolved")
         codex mcp remove "$name" >/dev/null 2>&1 || true
-        if codex mcp add "$name" "${env_flags[@]+"${env_flags[@]}"}" -- "$command_bin" "${args[@]+"${args[@]}"}" >/dev/null 2>&1; then
-            printf "  ${GREEN}✓ registered${NC}\n"
-        else
-            printf "  ${RED}✗ failed to register${NC}\n"
+        if ! codex mcp add "$name" "${env_flags[@]+"${env_flags[@]}"}" -- "$command_bin" "${args[@]+"${args[@]}"}" >/dev/null 2>&1; then
+            printf "${RED}✗ failed to register %s${NC}\n" "$name"
         fi
     done
     mcp_remove_stale_cli codex "$resolved"

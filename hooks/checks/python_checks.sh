@@ -67,7 +67,7 @@ run_python_tests() {
         local pytest_cmd="${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME }$pytest_bin -q --tb=short"
         local testmon=false
         _pytest_has_testmon "$pytest_bin" && testmon=true
-        if [ "${CHECKPOINT_MODE:-0}" = "1" ]; then
+        if full_suite; then
             # Checkpoint: the whole suite of each project this change touches.
             if [ -n "$(changed_code_files)" ] && ! changed_code_files | grep -q "^$(pwd)/"; then
                 cd "$root_dir" || return
@@ -83,7 +83,7 @@ run_python_tests() {
             local targets
             targets=$(impacted_test_files "$(pwd)")
             if [ -z "$targets" ]; then
-                add_warning "Python tests ($label): no impacted tests found for changed files; full suite runs at the commit checkpoint"
+                add_warning "Python tests ($label): no impacted tests found for changed files; full suite runs in CI or with CHECKPOINT_TESTS=full"
                 cd "$root_dir" || return
                 continue
             fi
@@ -96,7 +96,7 @@ run_python_tests() {
         [ "$ec" -eq 5 ] && [ "$testmon" = true ] && ec=0
         if [ "$ec" -ne 0 ]; then
             report_test_failure "Python tests ($label)" "$ec" "$test_output"
-            [ "${CHECKPOINT_MODE:-0}" = "1" ] && [ "$testmon" = false ] \
+            full_suite && [ "$testmon" = false ] \
                 && _record_python_escapes "$label" "$test_output"
         fi
 

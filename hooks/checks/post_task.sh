@@ -44,7 +44,7 @@
 #
 # Switches: MACOLS_PYTEST_SCOPE=changed|full|off, MACOLS_TESTMON=off,
 # MACOLS_DUPLICATION=off, MACOLS_SEMGREP=1 (opt back in to a local semgrep
-# scan), MACOLS_GO_RACE=1, MACOLS_GO_TEST_SCOPE=module|changed,
+# scan), MACOLS_GO_RACE=1, MACOLS_GO_TEST_SCOPE=changed|module,
 # MACOLS_CHECK_LOG=off (see log_check_run in common.sh),
 # MACOLS_LGREVIEW=off (and its BLOCK/TIMEOUT knobs — lgtmaybe_review.sh).
 #
@@ -154,6 +154,13 @@ project_check_command() {
     line="${line#\"}"; line="${line%\"}"
     line="${line#\'}"; line="${line%\'}"
     printf '%s' "$line"
+}
+
+# True when the test checks should run whole suites: only at the checkpoint of
+# a project that sets CHECKPOINT_TESTS=full. By default the checkpoint runs the
+# tests the commit reaches and leaves the full suite to CI.
+full_suite() {
+    [ "${CHECKPOINT_MODE:-0}" = "1" ] && [ "$(project_check_command CHECKPOINT_TESTS)" = full ]
 }
 
 _run_project_check() {

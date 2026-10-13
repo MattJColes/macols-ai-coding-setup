@@ -67,7 +67,8 @@ Edit the single source, never the rendered output:
   `~/.pi/agent/mcp-adapter.json`, read by the pi-mcp-adapter package, which
   ignores `~/.pi/agent/mcp.json`) and ZCode (written to
   `~/.zcode/cli/config.json`), all through `mcp_resolve`; writers merge and
-  remove only stale servers this repo owns.
+  remove only stale servers this repo owns, except Claude Code and Codex,
+  whose user-scope lists are pruned to exactly `config/mcp`.
   `config/mcp/aws.json` (aws-mcp, aws-iac) is opt-in for every tool
   (`--aws-mcp` / `MACOLS_AWS_MCP=1`, remembered in `~/.config/macols/aws-mcp`).
   `config/mcp/youtrack.json` (youtrack, via the `mcp-remote` stdio bridge) is

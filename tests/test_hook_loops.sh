@@ -113,7 +113,11 @@ printf '#!/bin/sh\nexit 0\n' > .venv/bin/python && chmod +x .venv/bin/python
 check "testmon installed: --testmon, no file list" "grep -q -- '--testmon' '$ARGV' && ! grep -q 'test_alpha' '$ARGV'"
 : > "$ARGV"
 ( source "$LIB"; CHECKPOINT_MODE=1 run_python_tests )
-check "checkpoint with testmon: full run refreshes the map" "grep -q -- '--testmon-noselect' '$ARGV'"
+check "checkpoint default: testmon selection, not the full suite" "grep -q -- '--testmon' '$ARGV' && ! grep -q -- '--testmon-noselect' '$ARGV'"
+mkdir -p .macols && printf 'CHECKPOINT_TESTS=full\n' > .macols/checks.conf
+: > "$ARGV"
+( source "$LIB"; CHECKPOINT_MODE=1 run_python_tests )
+check "CHECKPOINT_TESTS=full with testmon: full run refreshes the map" "grep -q -- '--testmon-noselect' '$ARGV'"
 : > "$ARGV"
 ( source "$LIB"; MACOLS_TESTMON=off run_python_tests )
 check "MACOLS_TESTMON=off: name-based" "grep -q 'tests/test_alpha.py' '$ARGV' && ! grep -q testmon '$ARGV'"
@@ -142,11 +146,11 @@ sed 's/"\$\*"/"golangci-lint \$*"/' "$FIXTURE/stubbin/go" > "$FIXTURE/stubbin/go
 chmod +x "$FIXTURE/stubbin/go" "$FIXTURE/stubbin/golangci-lint"
 : > "$GOARGV"
 ( source "$LIB"; run_go_checks )
-check "turn end tests the whole module" "grep -qx 'test ./...' '$GOARGV'"
+check "turn end tests the changed package" "grep -qx 'test ./a' '$GOARGV'"
 check "lint stays on the changed package" "grep -qx 'golangci-lint run ./a' '$GOARGV'"
 : > "$GOARGV"
-( source "$LIB"; MACOLS_GO_TEST_SCOPE=changed run_go_checks )
-check "MACOLS_GO_TEST_SCOPE=changed tests the changed package" "grep -qx 'test ./a' '$GOARGV'"
+( source "$LIB"; MACOLS_GO_TEST_SCOPE=module run_go_checks )
+check "MACOLS_GO_TEST_SCOPE=module tests the whole module" "grep -qx 'test ./...' '$GOARGV'"
 # Edit time: go vet on the edited package, reported with its type errors
 # (which go vet prefixes with "vet: "), in trusted projects only.
 cat > "$FIXTURE/stubbin/go" <<'STUB'
