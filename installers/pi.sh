@@ -11,7 +11,7 @@
 # `omp` reads ~/.omp/agent — so every shared resource is provisioned twice:
 # Agent Skills, the system AGENTS.md and the pi-checks extension land in both
 # agent dirs. MCP servers go to ~/.omp/agent/mcp.json (omp's native MCP) and
-# ~/.pi/agent/mcp-adapter.json (plain pi, through the pi-mcp-adapter package).
+# ~/.pi/agent/mcp.json (plain pi, built-in MCP).
 # Packages are installed per agent through each binary's own installer.
 #
 set -euo pipefail
@@ -49,18 +49,18 @@ OMP_DIR="${PI_CODING_AGENT_DIR:-$HOME/.omp/agent}"
 #     user's own rules. Our hooks stay in pi-checks: pi-yaml-hooks cannot hand
 #     post-edit or turn-end output to the model, and omp caps its synchronous
 #     hooks at 20s, which would let the commit checkpoint fail open.
-#   • pi-mcp-adapter (pi only) — MCP for plain pi through one `mcp` proxy tool;
-#     omp has native MCP
+#   • pi-mcp-adapter is retired: pi >= 1.0 has built-in MCP that reads
+#     ~/.pi/agent/mcp.json (remove_pi_mcp_adapter migrates old installs)
 #   • pi-web-search (pi only) — provider-native web_search (Gemini, xAI,
 #     OpenAI, Anthropic, OpenCode). It uses the current model, so on a local
 #     model (the vllm-lan default) it errors unless ~/.pi/agent/web-search.json
-#     names a supported one; brave-search via pi-mcp-adapter still works there.
+#     names a supported one; the brave-search MCP still works there.
 #     omp has native web search.
 #   • pi-lens (pi only) — LSP diagnostics, linters and a read-before-edit
 #     guard on every write/edit. It overlaps with pi-checks' post-edit check
 #     (both report ruff/tsc/eslint findings) and auto-installs its own tools
 #     without pi-checks' trusted-project gate.
-PI_PACKAGES="npm:pi-subagents git:github.com/$PONYTAIL_REPO npm:pi-yaml-hooks npm:pi-mcp-adapter npm:pi-web-search npm:pi-lens"
+PI_PACKAGES="npm:pi-subagents git:github.com/$PONYTAIL_REPO npm:pi-yaml-hooks npm:pi-web-search npm:pi-lens"
 OMP_PACKAGES="github:$PONYTAIL_REPO pi-yaml-hooks"
 
 usage() {
@@ -95,7 +95,7 @@ Options:
     --context-only    Install only the system AGENTS.md (both agents)
     --hooks-only      Install only the pi-checks extension (both agents)
     --packages-only   Install only the agent packages
-    --mcps-only       Install only MCP servers (omp mcp.json + pi mcp-adapter.json; asks for the Brave key and YouTrack URL/token)
+    --mcps-only       Install only MCP servers (omp + pi mcp.json; asks for the Brave key and YouTrack URL/token)
     --aws-mcp         Also register the AWS MCP servers (remembered; or MACOLS_AWS_MCP=1)
     --no-aws-mcp      Remove the AWS MCP servers and stop asking
     --models-only     Register LAN models for both agents and reconfigure omp roles
@@ -117,9 +117,32 @@ install_skills() {
     printf "${GREEN}✓ Installed %s skills${NC}\n" "$PERSONA_COUNT"
 }
 
+# remove_pi_mcp_adapter — retire pi-mcp-adapter for pi's built-in MCP: remove
+# the package, re-enable builtin:mcp (the adapter disabled it), and carry any
+# servers of the user's own from mcp-adapter.json into mcp.json.
+remove_pi_mcp_adapter() {
+    local settings="$PI_AGENT_DIR/settings.json" adapter="$PI_AGENT_DIR/mcp-adapter.json"
+    if command -v pi &> /dev/null && grep -qs 'pi-mcp-adapter' "$settings"; then
+        pi remove npm:pi-mcp-adapter > /dev/null 2>&1 && printf "${GREEN}✓ pi-mcp-adapter removed (pi has built-in MCP)${NC}\n"
+    fi
+    command -v jq &> /dev/null || { printf "${YELLOW}⚠ jq missing — pi built-in MCP migration skipped${NC}\n"; return 0; }
+    if grep -qs -- '-builtin:mcp' "$settings"; then
+        jq '.extensions -= ["-builtin:mcp"] | if .extensions == [] then del(.extensions) else . end' "$settings" > "$settings.tmp" \
+            && mv "$settings.tmp" "$settings"
+    fi
+    if [ -f "$adapter" ]; then
+        local dest="$PI_AGENT_DIR/mcp.json"
+        [ -f "$dest" ] || printf '{}\n' > "$dest"
+        jq -s '.[0] * {mcpServers: ((.[1].mcpServers // {}) + (.[0].mcpServers // {}))}' "$dest" "$adapter" > "$dest.tmp" \
+            && mv "$dest.tmp" "$dest" && rm -f "$adapter"
+    fi
+    return 0
+}
+
 install_packages() {
     local pkg
     remove_revdiff_pi   # replaced by hunk and its hunk-review skill
+    remove_pi_mcp_adapter
     if command -v pi &> /dev/null; then
         printf "${BLUE}Installing pi packages...${NC}\n"
         for pkg in $PI_PACKAGES; do
@@ -201,11 +224,10 @@ if [ "$DO_CONTEXT" = true ]; then
     fi; echo ""
 fi
 if [ "$DO_MCPS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
-    # omp reads mcp.json natively; plain pi reads mcp-adapter.json through the
-    # pi-mcp-adapter package (it never reads ~/.pi/agent/mcp.json).
+    # Both agents read mcp.json natively.
     ensure_brave_api_key || printf "${YELLOW}⚠ Brave Search not configured — brave-search MCP left out${NC}\n"
     register_mcps_pi "$OMP_DIR/mcp.json" || printf "${YELLOW}⚠ omp MCP registration skipped/failed${NC}\n"
-    register_mcps_pi "$PI_AGENT_DIR/mcp-adapter.json" || printf "${YELLOW}⚠ pi MCP registration skipped/failed${NC}\n"; echo ""
+    register_mcps_pi "$PI_AGENT_DIR/mcp.json" || printf "${YELLOW}⚠ pi MCP registration skipped/failed${NC}\n"; echo ""
 fi
 if [ "$DO_MODELS" = true ] && [ "$PROJECT_INSTALL" = false ]; then
     if configure_pi_lan_models "$PI_AGENT_DIR" "$OMP_DIR"; then
@@ -231,8 +253,8 @@ echo "  • Skills are available as /skill:<name> (e.g. /skill:python)"
 echo "  • Run 'hunk diff' in a second terminal, then ask either agent to review it with /skill:hunk-review"
 echo "  • The pi-checks extension runs tests/lint/security advisories after edits and turns,"
 echo "    and a cdk deploy/destroy confirmation guard"
-echo "  • MCP servers are configured in $OMP_DIR/mcp.json (omp) and $PI_AGENT_DIR/mcp-adapter.json"
-echo "    (pi, via pi-mcp-adapter's mcp proxy tool)$(aws_mcp_enabled && echo '; aws-* MCPs need ~/.aws/credentials')"
+echo "  • MCP servers are configured in $OMP_DIR/mcp.json (omp) and $PI_AGENT_DIR/mcp.json"
+echo "    (pi, built-in MCP)$(aws_mcp_enabled && echo '; aws-* MCPs need ~/.aws/credentials')"
 echo "  • pi-yaml-hooks reads your own hooks from ~/.pi/agent/hook/hooks.yaml and ~/.omp/agent/hook/hooks.yaml"
 echo "    (/hooks-status inside either agent); the macols checks stay in pi-checks"
 echo "  • omp providers live in $OMP_DIR/models.yml and model roles in $OMP_DIR/config.yml"

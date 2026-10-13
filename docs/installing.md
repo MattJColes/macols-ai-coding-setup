@@ -101,7 +101,7 @@ You can combine `--project` with component selection, such as
 | Claude Code | agents `~/.claude/agents/`, skills `~/.claude/skills/` | `~/.claude/CLAUDE.md` | `claude mcp add-json` into `~/.claude.json` | `~/.claude/settings.json` |
 | Codex | skills `~/.codex/skills/`, agents `~/.codex/agents/*.toml` | `~/.codex/AGENTS.md` | `codex mcp add` into `~/.codex/config.toml` | `~/.codex/hooks.json` |
 | OpenCode | agents `~/.config/opencode/agents/`, skills `.../skills/` | `~/.config/opencode/AGENTS.md` | `mcp` key in `~/.config/opencode/opencode.json` | plugin in `.../plugins/` |
-| Pi (`pi` + `omp`) | Agent Skills in `~/.pi/agent/skills/` and `~/.omp/agent/skills/` (`/skill:<name>`) | both `.../agent/AGENTS.md` | `mcpServers` key in `~/.omp/agent/mcp.json` (omp) and `~/.pi/agent/mcp-adapter.json` (pi, via pi-mcp-adapter) | `pi-checks` extension in both agent dirs, plus pi-yaml-hooks for your own YAML hooks |
+| Pi (`pi` + `omp`) | Agent Skills in `~/.pi/agent/skills/` and `~/.omp/agent/skills/` (`/skill:<name>`) | both `.../agent/AGENTS.md` | `mcpServers` key in `~/.omp/agent/mcp.json` (omp) and `~/.pi/agent/mcp.json` (pi, built-in MCP) | `pi-checks` extension in both agent dirs, plus pi-yaml-hooks for your own YAML hooks |
 | ZCode | skills `~/.zcode/skills/`, commands `~/.zcode/commands/` | `~/.zcode/AGENTS.md` | `mcp.servers` in `~/.zcode/cli/config.json` | `hooks.events` in `~/.zcode/cli/config.json` |
 
 The two Pi agents share no config directories: plain `pi` reads `~/.pi/agent`
@@ -115,7 +115,6 @@ Each agent also gets its packages. Both get ponytail and
 capabilities omp ships natively:
 
 - pi-subagents, which the steering delegates parallel and chained work to
-- [pi-mcp-adapter](mcp.md#plain-pi-pi-mcp-adapter), for the MCP servers
 - pi-web-search, a `web_search` tool that uses the current model's own search
   (Gemini, xAI, OpenAI, Anthropic, OpenCode). On a local model such as the
   vllm-lan default it errors unless `~/.pi/agent/web-search.json` names a
@@ -207,7 +206,7 @@ aws configure                                   # AWS credentials (only with --a
 podman machine init && podman machine start     # containers (macOS)
 claude --version && codex --version             # sanity check
 pi --version && omp --version                   # pi agents
-pi list                                         # pi packages, incl. pi-yaml-hooks + pi-mcp-adapter
+pi list                                         # pi packages, incl. pi-yaml-hooks
 ls -d /Applications/ZCode.app                   # ZCode (desktop app)
 openspec --version                              # spec-driven dev CLI (auto-installed)
 openspec init                                   # opt a project into OpenSpec (per repo)
@@ -225,7 +224,7 @@ claude mcp list                                 # Claude
 codex mcp list                                  # Codex
 jq .mcp ~/.config/opencode/opencode.json        # OpenCode (mcp key, not mcp.json)
 jq .mcpServers ~/.omp/agent/mcp.json            # Oh My Pi
-jq .mcpServers ~/.pi/agent/mcp-adapter.json     # plain pi (pi-mcp-adapter)
+pi mcp list                                     # plain pi (built-in MCP)
 
 # PATH not updated
 source ~/.zshrc   # or ~/.bashrc

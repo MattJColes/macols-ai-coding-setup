@@ -64,8 +64,7 @@ Edit the single source, never the rendered output:
   gopls; versions pinned; a `requires` key registers a server only when that
   binary is on PATH). Registered for Claude Code, Codex, OpenCode, Oh My Pi
   (written to `~/.omp/agent/mcp.json`), plain pi (written to
-  `~/.pi/agent/mcp-adapter.json`, read by the pi-mcp-adapter package, which
-  ignores `~/.pi/agent/mcp.json`) and ZCode (written to
+  `~/.pi/agent/mcp.json`, read by pi's built-in MCP) and ZCode (written to
   `~/.zcode/cli/config.json`), all through `mcp_resolve`; writers merge and
   remove only stale servers this repo owns, except Claude Code and Codex,
   whose user-scope lists are pruned to exactly `config/mcp`.
