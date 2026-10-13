@@ -244,7 +244,7 @@ generate_personas() {
     # PERSONA_COUNT is read by the installers that source this file.
     # shellcheck disable=SC2034
     PERSONA_COUNT=$(printf "%s" "$out" | sed -n 's/^__COUNT__//p')
-    printf "%s\n" "$out" | grep -v '^__COUNT__'
+    printf "%s\n" "$out" | grep -v '^__COUNT__' || true
 }
 
 # list_personas <claudecode|codex|opencode|pi|zcode>
