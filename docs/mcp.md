@@ -28,7 +28,7 @@ config lands.
   binary is on `PATH`. Re-run the installer after installing Dart or Go tools
   to pick them up.
 - Re-runs merge rather than overwrite: your own servers in `opencode.json`,
-  `mcp.json`, `mcp-adapter.json` or ZCode's `config.json` survive, and only
+  `mcp.json` or ZCode's `config.json` survive, and only
   servers this repo owns are updated or removed.
 - filesystem and puppeteer were retired. A re-run removes them when the entry
   still runs the `@modelcontextprotocol/server-*` package this repo installed,
@@ -40,20 +40,18 @@ To register only MCP servers for a tool:
 ./install.sh claudecode --mcps-only --no-cli
 ```
 
-## Plain pi (pi-mcp-adapter)
+## Plain pi (built-in MCP)
 
-Plain `pi` has no MCP support of its own. The Pi installer adds the
-[pi-mcp-adapter](https://github.com/nicobailon/pi-mcp-adapter) package and
-writes the same servers omp gets into `~/.pi/agent/mcp-adapter.json`. The
-adapter never reads `~/.pi/agent/mcp.json`, so the file name matters.
+pi 1.0 and later read `~/.pi/agent/mcp.json` natively, and the Pi installer
+writes the same servers omp gets there. Tools default to `codemode` exposure:
+the agent finds them with `searchTools()` in a `codemode` script (or
+`tool_search`) and calls `mcp__<server>__<tool>`. `/mcp` inside pi and
+`pi mcp list` show their status.
 
-The adapter exposes one `mcp` proxy tool instead of every server's tools:
-the agent searches (`mcp({ search: "screenshot" })`) and then calls
-(`mcp({ tool: "...", args: {...} })`). Servers start lazily on first use.
-`/mcp-adapter` inside pi shows their status. The adapter's own keys in
-that file (such as `settings`) survive re-runs.
-
-omp needs nothing similar: it reads `~/.omp/agent/mcp.json` natively.
+The installer used to add the pi-mcp-adapter package instead. On re-run it
+removes the package, re-enables `builtin:mcp` (the adapter disabled it), moves
+any servers of your own from `~/.pi/agent/mcp-adapter.json` into `mcp.json`
+and deletes the old file. omp reads `~/.omp/agent/mcp.json` natively.
 
 ## AWS (Opt-In, Every Tool)
 
@@ -118,8 +116,8 @@ The key path in `config/mcp/youtrack.json` and `YOUTRACK_KEY_FILE` in
 Web search is a separate, opt-in server in `config/mcp/brave.json`:
 brave-search (the official
 [`@brave/brave-search-mcp-server`](https://github.com/brave/brave-search-mcp-server),
-needs Node 22+). Only the OpenCode and Pi installers register it (for omp and,
-through pi-mcp-adapter, plain `pi`). Claude Code, Codex and ZCode keep the
+needs Node 22+). Only the OpenCode and Pi installers register it (for omp and
+plain `pi`). Claude Code, Codex and ZCode keep the
 default list alone.
 
 The OpenCode and Pi installers ask for a Brave API key
@@ -134,7 +132,7 @@ BRAVE_API_KEY=<key> ./install.sh pi --mcps-only
 
 The key is written to `~/.config/macols/brave-api-key` with mode 600 and the
 config only references it through `BRAVE_API_KEY_FILE`. No secret is written
-into `opencode.json`, `mcp.json` or `mcp-adapter.json`. Delete that file and re-run the installer
+into `opencode.json` or `mcp.json`. Delete that file and re-run the installer
 to remove the server again.
 
 The key path in `config/mcp/brave.json` and `BRAVE_KEY_FILE` in
