@@ -78,31 +78,23 @@ All Herdr commands start with the prefix key `Ctrl+b`.
 
 | Action | Keys |
 |--------|------|
-| herdr-plus project picker | `Ctrl+b` then `p` |
-| Toggle reviewr (diff review) | `Ctrl+b` then `d`, or `Cmd+r` on macOS |
-| Review plans and docs in this folder | `Ctrl+b` then `Ctrl+p` |
-| Review the agent's recent replies | `Ctrl+b` then `Ctrl+l` |
-| Review the agent's newest reply | `Ctrl+b` then `Ctrl+o` |
-| Hand a tab's name back to automatic naming | `Ctrl+b` then `a` |
-| Browser in a right split | `Ctrl+b` then `Shift+b` |
-| Browser overlay | `Ctrl+b` then `Shift+o` |
+| Toggle the herdr-sidebar explorer | `Ctrl+b` then `f` |
+| Quick-open a file in herdr-sidebar | `Ctrl+b` then `Ctrl+p` |
+| Restart herdr-auto-title | `Ctrl+b` then `Ctrl+r` |
 
-The browser keys are `Shift`-ed because plain `Ctrl+b` then `b` is herdr's own
-sidebar toggle.
+herdr-sidebar's own README binds the explorer to `Ctrl+b` then `b`, but that is
+herdr's built-in sidebar toggle, so the setup uses `f` (files) instead. Inside
+the sidebar, `1` / `2` / `3` switch between Explorer, Search and Source
+Control, `s` opens its settings and `b` hides it.
 
 Over `herdr --remote`, the client uses your local keybindings and never sends
-plugin bindings, so these keys do nothing there. The same actions are shell
-aliases that work in any herdr pane: `rv` (reviewr), `rplan` (review docs),
-`rlast` (recent replies) and `rnew` (newest reply). In a review pane, `S` sends
-your comments to the agent and `q` closes.
+plugin bindings, so these keys do nothing there. Run
+`herdr plugin action invoke herdr-sidebar.open-sidebar` in any pane instead.
 
-Tabs name themselves after the running program or the agent session
-(herdr-automatic-rename); the setup turns off herdr's new-tab name prompt so
-that works for new tabs.
-
-The herdr-plus **worktree layout** (`repo = "*"`) applies to every repo: each
-new worktree opens with Claude Code (`--dangerously-skip-permissions`) on the
-left and Yazi split right, automatically.
+Tabs and panes name themselves after the work in them: directory, branch, or
+what the agent is doing (herdr-auto-title). Rename one by hand and it stops
+touching it; clear the name to hand it back. The setup turns off herdr's
+new-tab name prompt, which would otherwise count as a hand rename.
 
 ### Help
 
@@ -127,9 +119,6 @@ Set up a three-pane layout for active development:
 2. In the first pane, launch Claude in its own git worktree (see section 5)
 3. Split vertical: `Ctrl+b` then `v`
 4. In the second pane, launch Yazi: `yazi`
-
-With the herdr-plus worktree layout installed, `Ctrl+b` then `Shift+g` gives
-you this layout automatically in a fresh worktree.
 
 ---
 
@@ -188,14 +177,11 @@ When you press `Enter` on a file, Yazi opens it in `$EDITOR` (nvim). After editi
 
 Each agent works in its own git worktree -- a separate directory checked out on
 its own branch -- so several agents can run in parallel without colliding in
-one checkout. Three ways to get one:
+one checkout. Two ways to get one:
 
 1. **Herdr built-in**: `Ctrl+b` then `Shift+g` creates a new worktree for the
-   current repo. With the herdr-plus worktree layout installed, the new tab
-   opens with Claude Code on the left and Yazi split right, automatically.
-2. **herdr-plus project picker**: `Ctrl+b` then `p` opens the project layouts
-   (the default "Dev (Claude + Yazi)" layout launches the same split).
-3. **Manually**:
+   current repo.
+2. **Manually**:
 
 ```bash
 git worktree add ../myrepo-feat-x -b feat/x
@@ -226,63 +212,7 @@ things went wrong.
 
 ---
 
-## 6. Browser Panes (herdr-browser)
-
-`herdr-browser` renders a real Chromium view inside a herdr pane, so you can
-watch a dev server or an agent's browser automation without leaving the
-terminal. The setup script installs the plugin, `bun`, Chrome/Chromium, and the
-`[experimental] kitty_graphics = true` flag herdr needs to draw into a pane.
-
-It only works in a terminal with Kitty graphics support: Ghostty, kitty or
-WezTerm. It does not work over plain SSH into a non-graphics terminal, and
-per-frame bandwidth makes remote use impractical.
-
-### Opening a browser
-
-| Action | Keys |
-|--------|------|
-| Browser in a right split | `Ctrl+b` then `Shift+b` |
-| Browser overlay | `Ctrl+b` then `Shift+o` |
-
-Or open one at a specific URL:
-
-```bash
-herdr plugin pane open --plugin official.browser --entrypoint browser \
-  --placement split --direction right \
-  --env HERDR_BROWSER_INITIAL_URL=http://127.0.0.1:3000 --focus
-```
-
-`Ctrl`-click any `localhost`, `127.0.0.1` or `[::1]` URL printed in a terminal
-pane to open it in a browser pane.
-
-### Letting an agent drive it
-
-The plugin ships a CLI (no global binary). Find the checkout, then attach a CDP
-client:
-
-```bash
-herdr plugin list --plugin official.browser --json   # read result.plugins[0].plugin_root
-bun run "<plugin_root>/src/cli.ts" views
-bun run "<plugin_root>/src/cli.ts" connect --view <view_id>
-```
-
-`connect` returns a loopback CDP endpoint. Point Playwright at it with
-`chromium.connectOverCDP(<cdp_http_url>)`, Playwright MCP with
-`--cdp-endpoint=<cdp_http_url>`, or Browser Use with `BU_CDP_URL`. The pane
-stays interactive while a client is attached, so you can take over mid-run.
-Keep the endpoint local — it grants full control of that browser view.
-
-### Tuning
-
-Config lives in `browser.json` under `herdr plugin config-dir official.browser`.
-If a browser pane costs more CPU than you want, drop `captureScale` to `0.75`.
-If Chromium is installed somewhere the plugin cannot find, export
-`HERDR_BROWSER_CHROME=/path/to/chrome` in the environment that starts the herdr
-server and restart herdr.
-
----
-
-## 7. Neovim (LazyVim) Quick Reference
+## 6. Neovim (LazyVim) Quick Reference
 
 When you open a file from Yazi, it launches in Neovim with LazyVim.
 
@@ -325,14 +255,14 @@ The which-key popup is your best friend -- press `Space` and pause for 300ms to 
 
 ---
 
-## 8. Putting It All Together
+## 7. Putting It All Together
 
 ```bash
 # Start your workspace
 herdr --session dev
 
 # Pane 1: Claude doing work in its own git worktree
-# (or just Ctrl+b, Shift+g — the herdr-plus layout opens Claude + Yazi for you)
+# (or Ctrl+b, Shift+g for herdr's built-in worktree)
 git worktree add ../myrepo-the-task -b feat/the-task
 cd ../myrepo-the-task
 claude

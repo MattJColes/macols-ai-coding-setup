@@ -16,8 +16,7 @@ git worktree add ../repo-task -b feat/task
 git log --oneline --graph --all     # see every worktree's branch together
 ```
 
-In herdr, `Ctrl+b` `Shift+g` creates a worktree, and the wildcard layout opens
-Claude Code beside yazi (see the
+In herdr, `Ctrl+b` `Shift+g` creates a worktree (see the
 [herdr and yazi guide](../machine/GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md)).
 
 For a chain of related changes the `ship` skill reaches for GitHub's stacked

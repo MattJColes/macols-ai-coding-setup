@@ -33,7 +33,7 @@ install_gh_stack
 install_lazyvim
 setup_prompt
 
-# herdr + its plugins and layouts, yazi config, tmux and the herdr SSH
+# herdr + its plugins, yazi config, tmux and the herdr SSH
 # auto-launch hook (the same script Ubuntu runs).
 bash "$SCRIPT_DIR/install_brew_herdr_yazi_lazygit_nvim.sh"
 

@@ -173,13 +173,13 @@ itself is left alone (`brew uninstall revdiff` if you no longer want it).
 ```
 
 [machine/README.md](../machine/README.md) lists everything the setup installs.
-The Ubuntu script includes herdr and its project/review/browser plugins. On
+The Ubuntu script includes herdr and its auto-title and sidebar plugins. On
 macOS, install those separately with
 `machine/install_brew_herdr_yazi_lazygit_nvim.sh`.
 
-The herdr setup maps `prefix+p` to the project picker, `cmd+r` to reviewr, and
-`prefix+shift+b` / `prefix+shift+o` to a herdr-browser split / overlay. New
-worktrees open Claude Code beside yazi. The
+The herdr setup maps `prefix+f` to the herdr-sidebar explorer and
+`prefix+ctrl+p` to its quick-open, and herdr-auto-title names tabs after the
+work in them. The
 [herdr and yazi guide](../machine/GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md)
 covers the workflow.
 
