@@ -37,7 +37,7 @@ fi
 
 echo ""
 echo "=============================="
-echo " [2/6] herdr plugins + layouts"
+echo " [2/6] herdr plugins"
 echo "=============================="
 
 bash "$SCRIPT_DIR/install_herdr_plugins.sh"

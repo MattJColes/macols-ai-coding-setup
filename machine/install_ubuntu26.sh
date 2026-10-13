@@ -127,7 +127,7 @@ for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do
     set_rc_block "$rc" colorterm 'export COLORTERM=truecolor'
 done
 
-# herdr + its plugins and layouts, yazi config, tmux and the herdr SSH
+# herdr + its plugins, yazi config, tmux and the herdr SSH
 # auto-launch hook.
 bash "$SCRIPT_DIR/install_brew_herdr_yazi_lazygit_nvim.sh"
 

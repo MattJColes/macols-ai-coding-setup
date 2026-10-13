@@ -56,7 +56,7 @@ Both platform installers provide:
 - zsh with Oh My Zsh and the starship prompt (in zsh and bash); an earlier
   Powerlevel10k setup is removed from `~/.zshrc`
 - The repository's LazyVim config (`Lazyvim/`) when you have no Neovim config
-- herdr, its plugins and layouts, and the yazi config
+- herdr, its plugins, and the yazi config
 - Claude Code, Codex, OpenCode, both Pi agents (plain `pi` and Oh My Pi) and
   ZCode's configuration (the ZCode app itself is a separate desktop install),
   including this repository's generated personas, instructions, MCP
@@ -76,13 +76,15 @@ To install the herdr/yazi workflow separately on either platform, run:
 ```
 
 The helper merges herdr keybindings into your existing config and adds the SSH
-auto-launch block once. It installs the herdr plugins (project picker, diff
-and plan review, tab naming, browser) through `install_herdr_plugins.sh`, which
-you can also re-run on its own, plus herdr-browser's prerequisites
-(bun, Chrome/Chromium) and turns on `[experimental] kitty_graphics`, which
-herdr-browser needs to draw into a pane. See
+auto-launch block once. It installs the herdr plugins (herdr-auto-title for
+tab and pane names, herdr-sidebar for a file explorer and source control pane)
+through `install_herdr_plugins.sh`, which you can also re-run on its own. On a
+machine set up by an earlier version it also uninstalls the old plugins
+(herdr-plus, herdr-reviewr, herdr-browser, herdr-automatic-rename,
+herdr-annotate) and removes the keybindings, layouts and shell blocks it added
+for them. See
 [GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md](GETTING_STARTED_HERDR_YAZI_WITH_CLAUDE.md)
-for the project picker, review mode, browser panes and worktree layout.
+for the keybindings and the worktree workflow.
 
 ## Other optional scripts
 
@@ -138,7 +140,7 @@ The installers write to these user locations:
 ```text
 ~/.zshrc and ~/.bashrc          shell setup
 ~/.config/nvim/                Neovim/LazyVim
-~/.config/herdr/               herdr configuration and layouts
+~/.config/herdr/               herdr configuration
 ~/.aws/                        AWS CLI configuration
 ~/.claude/                     Claude Code
 ~/.codex/                      Codex

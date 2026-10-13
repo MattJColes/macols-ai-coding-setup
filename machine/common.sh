@@ -54,6 +54,21 @@ set_rc_block() {
     fi
 }
 
+# remove_rc_block <file> <name> — drop a block set_rc_block wrote, plus the
+# blank line it was appended after. Returns 1 when there was no block.
+remove_rc_block() {
+    local file="$1" name="$2"
+    local start="# >>> macols: $name >>>" end="# <<< macols: $name <<<"
+    [ -f "$file" ] && grep -qxF "$start" "$file" || return 1
+    START="$start" END="$end" awk '
+        $0 == ENVIRON["START"] { if (blanks) blanks--; skip = 1; next }
+        skip { if ($0 == ENVIRON["END"]) skip = 0; next }
+        $0 == "" { blanks++; next }
+        { for (; blanks; blanks--) print ""; print }
+        END { for (; blanks; blanks--) print "" }' "$file" > "$file.macols.tmp"
+    mv "$file.macols.tmp" "$file"
+}
+
 # The rc files this user's shells read: zsh and bash on both platforms.
 shell_rcs() { printf '%s\n' "$HOME/.zshrc" "$HOME/.bashrc"; }
 
