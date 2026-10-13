@@ -365,8 +365,18 @@ ensure_cli() {
             # ~/.pi/agent) and Oh My Pi `omp` (reads ~/.omp/agent). They share
             # no config directories, so installers/pi.sh provisions both layouts.
             command -v npm &> /dev/null || { printf "${RED}Need npm to install the pi agents. Install Node.js/npm, then re-run.${NC}\n"; return 1; }
+            local pi_have pi_latest
             if command -v pi &> /dev/null; then
-                printf "${GREEN}✓ pi already installed: %s${NC}\n" "$(command -v pi)"
+                # The pi packages track pi's latest API, so an old pi fails to load them.
+                pi_have=$(pi --version 2>&1 | tail -1)
+                pi_latest=$(npm view @earendil-works/pi-coding-agent version 2>/dev/null)
+                if [ -n "$pi_latest" ] && [ "$pi_have" != "$pi_latest" ]; then
+                    printf "${BLUE}Upgrading pi %s → %s...${NC}\n" "$pi_have" "$pi_latest"
+                    npm_global_install "@earendil-works/pi-coding-agent@$pi_latest" \
+                        || printf "${YELLOW}⚠ pi upgrade failed — packages may not load${NC}\n"
+                else
+                    printf "${GREEN}✓ pi already installed: %s${NC}\n" "$(command -v pi)"
+                fi
             else
                 printf "${BLUE}Installing the Pi coding agent (pi)...${NC}\n"
                 npm_global_install @earendil-works/pi-coding-agent || { printf "${RED}Could not install pi via npm.${NC}\n"; return 1; }
