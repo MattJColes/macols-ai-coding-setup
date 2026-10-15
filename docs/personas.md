@@ -43,7 +43,11 @@ earlier install rendered.
 - Quality: audit (code review + security audit), diagnose, test, quality
   (sets up lint, type, duplication and layer gates)
 - Delivery: product
-- Research: research, brainstorm
+- Research: research, brainstorm, grill-me (stress-tests a plan or design in
+  rounds), grill-with-docs (grill-me for a code change, also writing
+  `GLOSSARY.md` and decision records: the OpenSpec change's `design.md` where
+  the repo uses OpenSpec, otherwise an ADR). Both are adapted from
+  mattpocock/skills (MIT) and share `_shared/grilling.md`.
 - Writing (skills only): interview, editor, docs, messages
 - Workflow (skills only): ship, explain, anchors
 
