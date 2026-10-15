@@ -43,7 +43,8 @@ earlier install rendered.
 - Quality: audit (code review + security audit), diagnose, test, quality
   (sets up lint, type, duplication and layer gates)
 - Delivery: product
-- Research: research, brainstorm
+- Research: research, brainstorm, grill-me (stress-tests a plan or design in
+  rounds; adapted from mattpocock/skills, MIT)
 - Writing (skills only): interview, editor, docs, messages
 - Workflow (skills only): ship, explain, anchors
 
