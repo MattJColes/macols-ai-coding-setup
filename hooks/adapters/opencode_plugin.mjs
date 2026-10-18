@@ -2,20 +2,23 @@
  * OpenCode Plugin: quality and safety hooks
  *
  * Wires the shared check scripts into OpenCode's plugin API
- * (opencode.ai/docs/plugins):
- *   tool.execute.before -> pre_deploy_check.sh  (cdk deploy/destroy guard)
- *                          pre_commit_check.sh  (checkpoint before git commit)
- *   tool.execute.after  -> post_code_hook.sh    (fast file-scoped checks; the
- *                          findings are appended to the tool output, which is
- *                          what the model reads next)
- *   event session.idle  -> post_task_hook.sh    (turn-end battery; findings are
- *                          sent back into the session as a prompt so the
- *                          agent fixes them)
+ * (opencode.ai/v2/docs/build/plugins):
+ *   ctx.tool.hook("execute.before") -> pre_deploy_check.sh  (cdk deploy/destroy guard)
+ *                                       pre_commit_check.sh  (checkpoint before git commit)
+ *   ctx.tool.hook("execute.after")  -> post_code_hook.sh    (fast file-scoped checks; the
+ *                                       findings are appended to the tool result content,
+ *                                       which is what the model reads next)
+ *   ctx.event.subscribe()           -> session.idle          (turn-end battery via
+ *                                       post_task_hook.sh; findings are sent back into the
+ *                                       session as a prompt so the agent fixes them)
  *
- * session.idle is a bus event, not a hook key, so it is handled in `event`.
- * The turn-end hook only re-runs when the working tree changed since its last
- * run, so an agent that was sent findings and changed nothing goes idle
- * normally instead of looping.
+ * V2 plugins must default-export { id, setup } — a V1 named-export function
+ * is rejected by the loader ("must export a default definition with an id
+ * and an effect or setup function"), so this file is the V2 shape only.
+ *
+ * The session.idle subscription only re-runs the turn-end hook when the
+ * working tree changed since its last run, so an agent that was sent findings
+ * and changed nothing goes idle normally instead of looping.
  *
  * OpenCode has no "ask" permission verb for plugins, so the pre-deploy guard
  * approximates it: the FIRST attempt of a matching command throws with the
@@ -25,6 +28,8 @@
  * Installed to ~/.config/opencode/plugins/ by installers/opencode.sh, which
  * substitutes the path placeholders with the repo's hooks/ paths.
  */
+
+import { spawn } from "node:child_process";
 
 // Hook script paths (replaced by installers/opencode.sh via sed)
 const HOOK_SCRIPT = "__HOOK_SCRIPT_PATH__";
@@ -59,6 +64,21 @@ function editedPaths(args = {}) {
   return [...new Set(paths)];
 }
 
+// Run one shared hook script and return its trimmed stdout. A script that
+// fails to launch yields nothing, so a broken check can never block work.
+function runHook(script, args, cwd) {
+  return new Promise((resolve) => {
+    let out = "";
+    const child = spawn("bash", [script, ...args], {
+      cwd,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    child.stdout.on("data", (d) => (out += d));
+    child.on("error", () => resolve(""));
+    child.on("close", () => resolve(out.trim()));
+  });
+}
+
 // Commands already blocked once by the pre-deploy guard; a retry of the
 // exact same command is treated as user-confirmed and allowed through.
 const preDeployConfirmed = new Set();
@@ -66,24 +86,19 @@ const preDeployConfirmed = new Set();
 // Sessions with a turn-end check in flight (session.idle can fire repeatedly).
 const taskRunning = new Set();
 
-export const PostCodeHookPlugin = async ({ $, client, directory, worktree }) => {
-  const cwd = worktree || directory;
+export default {
+  id: "macols-post-code-hooks",
+  async setup(ctx) {
+    const cwd = ctx.location.directory;
 
-  return {
-    "tool.execute.before": async (input, output) => {
-      if ((input.tool || "").toLowerCase() !== "bash") return;
-      const command = output?.args?.command;
+    await ctx.tool.hook("execute.before", async (event) => {
+      if ((event.tool || "").toLowerCase() !== "bash") return;
+      const command = event.input?.command;
       if (!command) return;
 
       // Local checkpoint: a failing `git commit` checkpoint blocks the call
       // with the findings, which the model reads as the tool error.
-      let checkpoint = "";
-      try {
-        const res = await $`bash ${PRE_COMMIT_CHECK_SCRIPT} ${command}`.quiet().nothrow().cwd(cwd);
-        checkpoint = res.stdout.toString().trim();
-      } catch {
-        checkpoint = "";
-      }
+      const checkpoint = await runHook(PRE_COMMIT_CHECK_SCRIPT, [command], cwd);
       if (checkpoint) throw new Error(checkpoint);
 
       // Second attempt of a command the guard blocked: the user confirmed,
@@ -93,56 +108,54 @@ export const PostCodeHookPlugin = async ({ $, client, directory, worktree }) => 
         return;
       }
 
-      let reason = "";
-      try {
-        const res = await $`bash ${PRE_DEPLOY_CHECK_SCRIPT} ${command}`.quiet().nothrow().cwd(cwd);
-        reason = res.stdout.toString().trim();
-      } catch {
-        return; // the guard itself failing must never block normal commands
-      }
-      if (!reason) return;
+      const reason = await runHook(PRE_DEPLOY_CHECK_SCRIPT, [command], cwd);
+      if (!reason) return; // the guard itself failing must never block normal commands
 
       preDeployConfirmed.add(command);
       throw new Error(
         `${reason} Ask the user to confirm, then re-run the exact same command to proceed.`
       );
-    },
+    });
 
-    "tool.execute.after": async (input, output) => {
-      if (!WRITE_TOOLS.has((input.tool || "").toLowerCase())) return;
-      const files = editedPaths(input.args || output?.metadata?.args);
+    await ctx.tool.hook("execute.after", async (event) => {
+      if (event.status !== "completed") return;
+      if (!WRITE_TOOLS.has((event.tool || "").toLowerCase())) return;
+      const files = editedPaths(event.input || {});
       if (files.length === 0) return;
 
-      try {
-        const res = await $`bash ${HOOK_SCRIPT} --format text ${files}`.quiet().nothrow().cwd(cwd);
-        const findings = res.stdout.toString().trim();
-        if (findings && output) {
-          output.output = `${output.output ?? ""}\n\n${findings}`;
-        }
-      } catch {
-        // Advisory — a failing check script must never break the edit.
-      }
-    },
+      // Advisory — a failing check script must never break the edit.
+      const findings = await runHook(HOOK_SCRIPT, ["--format", "text", ...files], cwd);
+      if (!findings || !event.result) return;
 
-    event: async ({ event }) => {
-      if (event?.type !== "session.idle") return;
-      const sessionID = event.properties?.sessionID;
-      if (!sessionID || taskRunning.has(sessionID)) return;
-      taskRunning.add(sessionID);
-      try {
-        const res = await $`bash ${TASK_HOOK_SCRIPT} --format text < /dev/null`.quiet().nothrow().cwd(cwd);
-        const findings = res.stdout.toString().trim();
-        if (findings) {
-          await client.session.prompt({
-            path: { id: sessionID },
-            body: { parts: [{ type: "text", text: findings }] },
-          });
-        }
-      } catch {
-        // Advisory — never let the turn-end battery wedge the session.
-      } finally {
-        taskRunning.delete(sessionID);
+      const result = event.result;
+      if (typeof result.content === "string") {
+        result.content = `${result.content}\n\n${findings}`;
+      } else if (Array.isArray(result.content)) {
+        result.content = [...result.content, { type: "text", text: findings }];
+      } else {
+        event.result = { ...result, content: findings };
       }
-    },
-  };
+    });
+
+    const controller = new AbortController();
+    void (async () => {
+      for await (const event of ctx.event.subscribe({ signal: controller.signal })) {
+        if (event.type !== "session.idle") continue;
+        const sessionID = event.data?.sessionID;
+        if (!sessionID || taskRunning.has(sessionID)) continue;
+        taskRunning.add(sessionID);
+        try {
+          const findings = await runHook(TASK_HOOK_SCRIPT, ["--format", "text"], cwd);
+          if (findings) {
+            await ctx.session.prompt({ sessionID, text: findings });
+          }
+        } catch {
+          // Advisory — never let the turn-end battery wedge the session.
+        } finally {
+          taskRunning.delete(sessionID);
+        }
+      }
+    })();
+    return () => controller.abort();
+  },
 };

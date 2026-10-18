@@ -76,13 +76,16 @@ Existing keys elsewhere in the config (mcp, plugins, …) SHALL survive.
 file (OpenCode's plugin loader scans only `*.ts`/`*.js`) with the
 `__HOOK_SCRIPT_PATH__`/`__TASK_HOOK_SCRIPT_PATH__`/
 `__PRE_DEPLOY_CHECK_PATH__` placeholders replaced by the absolute shared-hook
-paths, removing any previously installed copy first. The plugin runs the
+paths, removing any previously installed copy first. The rendered plugin
+SHALL be an OpenCode V2 definition: a default export with a stable `id` and
+a `setup(ctx)` function (a V1 named-export function is rejected by the V2
+loader with "must export a default definition"). The plugin runs the
 post-code check on write tools (including `apply_patch`, passing the edited
-paths) and appends findings to the tool output; handles the `session.idle`
-bus event in its `event` handler, sending post-task findings back with
-`client.session.prompt`; and gates cdk deploy/destroy commands via
-`tool.execute.before` (first attempt blocks with the confirmation reason; an
-identical retry — the user having confirmed — passes).
+paths) and appends findings to the tool result content; subscribes to the
+`session.idle` event via `ctx.event.subscribe()`, sending post-task findings
+back with `ctx.session.prompt`; and gates cdk deploy/destroy commands via
+`ctx.tool.hook("execute.before")` (first attempt blocks with the confirmation
+reason; an identical retry — the user having confirmed — passes).
 <!-- anchor: hook-wiring.opencode-plugin -->
 
 #### Scenario: Plugin references shared hooks in place

@@ -225,7 +225,8 @@ verify_opencode() {
     pass "no stale .mjs plugin remains" "[ ! -f '$d/plugins/post_code_hook_plugin.mjs' ]"
     pass "plugin placeholders substituted" "! grep -q '__.*_PATH__' '$d/plugins/post_code_hook_plugin.js'"
     pass "plugin wires pre-deploy check" "grep -q 'pre_deploy_check.sh' '$d/plugins/post_code_hook_plugin.js'"
-    pass "plugin handles session.idle as a bus event" "grep -q 'event?.type !== \"session.idle\"' '$d/plugins/post_code_hook_plugin.js'"
+    pass "plugin default-exports a V2 definition (id + setup)" "grep -q 'export default' '$d/plugins/post_code_hook_plugin.js' && grep -q 'async setup(' '$d/plugins/post_code_hook_plugin.js'"
+    pass "plugin subscribes to session.idle events" "grep -q 'event.type !== \"session.idle\"' '$d/plugins/post_code_hook_plugin.js'"
     pass "no retired revdiff plan-review plugin" "[ ! -e '$d/plugins/revdiff-plan-review.ts' ] && ! grep -qs 'revdiff-plan-review' '$d/opencode.json'"
     hunk_checks "$d/skills" "~/.config/opencode"
     if has_jq; then
