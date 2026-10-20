@@ -17,14 +17,12 @@
 #   changed nothing is allowed to stop, so the hook cannot loop.
 # - Never when the tool says this stop is already a hook-driven continuation
 #   (stop_hook_active) — one nudge per turn, then the user decides.
-# - pytest/jest/vitest/go test are scoped to what the changed files reach
-#   (pytest-testmon or file names for Python, the test cache for Go). The full
-#   suite is the commit checkpoint's and CI's job.
-#   MACOLS_PYTEST_SCOPE=full|changed|off overrides the Python scope.
+# - Built-in tests never run. Repos own test execution through explicit
+#   project commands or their own pre-commit/CI workflow.
 # - Every run appends per-check timings to .git/macols-checks.jsonl
 #   (bin/macols-check-stats summarises them).
 #
-# Only critical findings (failing tests, lint/type/gate errors) are sent to the
+# Only critical findings (failing project commands, lint/type/gate errors) are sent to the
 # model; notes such as "pytest not installed" print only with
 # MACOLS_CHECKS_VERBOSE=1.
 #
@@ -78,7 +76,7 @@ fi
 
 TRUST_NOTE=""
 if [ "${UNTRUSTED_SKIPPED:-0}" = "1" ]; then
-    TRUST_NOTE="Tests, eslint, tsc, mypy, cdk synth, go and layer checks were skipped: $(project_root) is not a trusted project, and those run code the repo controls. To enable them, run $(dirname "$SHARED_HOOKS_ROOT")/bin/macols-trust in the repo, or add its path to $MACOLS_TRUST_FILE."
+    TRUST_NOTE="Project commands, eslint, tsc, mypy, cdk synth, go and layer checks were skipped: $(project_root) is not a trusted project, and those run code the repo controls. To enable them, run $(dirname "$SHARED_HOOKS_ROOT")/bin/macols-trust in the repo, or add its path to $MACOLS_TRUST_FILE."
 fi
 
 if [ ${#CRITICAL_ISSUES[@]} -eq 0 ]; then

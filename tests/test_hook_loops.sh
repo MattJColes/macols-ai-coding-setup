@@ -7,7 +7,7 @@
 #     --testmon-noselect at the checkpoint)
 #   - a checkpoint failure the name-based selection would have missed is
 #     recorded as an escape
-#   - go test covers the whole changed module at turn end, and an edit gets
+#   - batteries skip automatic tests; Go lint remains and an edit gets
 #     go vet on its package
 #   - the pre-deploy guard summarises `cdk diff` for a deploy, and says why
 #     when it doesn't run it
@@ -29,7 +29,7 @@ check() { if eval "$2"; then green "$1"; else red "$1"; fi; }
 
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/hook_loops.XXXXXX")" || exit 1
 trap 'rm -rf "$FIXTURE"' EXIT
-export MACOLS_TRUST_ALL=1 MACOLS_TRUST_FILE="$FIXTURE/trusted" MACOLS_DUPLICATION=off
+export MACOLS_TRUST_ALL=1 MACOLS_TRUST_FILE="$FIXTURE/trusted" MACOLS_DUPLICATION=off MACOLS_LGREVIEW=off
 mkdir -p "$FIXTURE/stubbin"
 export PATH="$FIXTURE/stubbin:$PATH"
 
@@ -127,6 +127,33 @@ esc=$(source "$LIB"; CHECKPOINT_MODE=1 PYTEST_FAIL=1 run_python_tests; printf '%
 check "checkpoint failure outside the selection is an escape" "printf '%s' \"\$esc\" | grep -qx 'root: tests/test_beta.py::test_beta'"
 check "checkpoint failure inside the selection is not" "! printf '%s' \"\$esc\" | grep -q test_alpha"
 
+# Public hook entry points must not dispatch even installed test runners.
+echo "batteries without automatic tests"
+printf '{"scripts":{"test":"vitest"}}\n' > package.json
+printf 'name: fixture\n' > pubspec.yaml
+printf 'export const changed = 1;\n' > changed.ts
+printf 'void main() {}\n' > changed.dart
+mkdir -p node_modules/.bin test
+TESTARGV="$FIXTURE/test-runners.argv"
+for runner in vitest jest flutter; do
+    cat > "$FIXTURE/stubbin/$runner" <<STUB
+#!/usr/bin/env bash
+printf '%s %s\n' '$runner' "\$*" >> '$TESTARGV'
+exit 0
+STUB
+    chmod +x "$FIXTURE/stubbin/$runner"
+done
+ln -s "$FIXTURE/stubbin/vitest" node_modules/.bin/vitest
+: > "$ARGV"
+: > "$TESTARGV"
+MACOLS_PYTEST_SCOPE=full bash "$REPO/hooks/post_task_hook.sh" --format text </dev/null >/dev/null
+mkdir -p .macols
+printf 'CHECKPOINT_TESTS=full\n' > .macols/checks.conf
+MACOLS_LGREVIEW=off bash "$REPO/hooks/pre_commit_check.sh" 'git commit -am fixture' >/dev/null
+check "turn and commit hooks never run pytest" "[ ! -s '$ARGV' ]"
+check "turn and commit hooks never run Node or Flutter tests" "[ ! -s '$TESTARGV' ]"
+rm "$FIXTURE/stubbin/vitest" "$FIXTURE/stubbin/jest" "$FIXTURE/stubbin/flutter"
+
 # ── Go test scope ────────────────────────────────────────────────────────────
 echo "go scope"
 new_repo "$FIXTURE/go"
@@ -146,11 +173,11 @@ sed 's/"\$\*"/"golangci-lint \$*"/' "$FIXTURE/stubbin/go" > "$FIXTURE/stubbin/go
 chmod +x "$FIXTURE/stubbin/go" "$FIXTURE/stubbin/golangci-lint"
 : > "$GOARGV"
 ( source "$LIB"; run_go_checks )
-check "turn end tests the changed package" "grep -qx 'test ./a' '$GOARGV'"
+check "turn end does not run Go tests" "! grep -q '^test ' '$GOARGV'"
 check "lint stays on the changed package" "grep -qx 'golangci-lint run ./a' '$GOARGV'"
 : > "$GOARGV"
 ( source "$LIB"; MACOLS_GO_TEST_SCOPE=module run_go_checks )
-check "MACOLS_GO_TEST_SCOPE=module tests the whole module" "grep -qx 'test ./...' '$GOARGV'"
+check "legacy Go scope does not enable tests" "! grep -q '^test ' '$GOARGV'"
 # Edit time: go vet on the edited package, reported with its type errors
 # (which go vet prefixes with "vet: "), in trusted projects only.
 cat > "$FIXTURE/stubbin/go" <<'STUB'
