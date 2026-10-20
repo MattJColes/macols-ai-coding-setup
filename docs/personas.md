@@ -48,6 +48,9 @@ earlier install rendered.
   `GLOSSARY.md` and decision records: the OpenSpec change's `design.md` where
   the repo uses OpenSpec, otherwise an ADR). Both are adapted from
   mattpocock/skills (MIT) and share `_shared/grilling.md`.
+- Learning (skills only): teach (runs a multi-session course in the current
+  directory: `MISSION.md`, `RESOURCES.md`, learning records, a glossary and
+  short HTML lessons), adapted from mattpocock/skills (MIT).
 - Writing (skills only): interview, editor, docs, messages
 - Workflow (skills only): ship, explain, anchors
 
