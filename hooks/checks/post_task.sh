@@ -25,10 +25,7 @@
 # per-turn loop (semgrep, pip-audit/npm audit/govulncheck — see the `quality`
 # skill's CI template).
 #
-#   Tests         pytest (scoped, or pytest-testmon when installed),
-#                 jest/vitest related tests, flutter test (scoped), go test
-#                 over changed modules (the test cache skips the rest),
-#                 cdk synth
+#   Synthesis     cdk synth
 #   Lint          ruff, eslint, dart analyze, golangci-lint (or go vet),
 #                 and shellcheck, each with the project's own limits
 #   Types         pyright or mypy (whichever the project configures),
@@ -42,9 +39,8 @@
 # Only findings are recorded as CRITICAL_ISSUES, each with a fix instruction.
 # WARNINGS hold notes (tool missing, nothing to test) for verbose runs.
 #
-# Switches: MACOLS_PYTEST_SCOPE=changed|full|off, MACOLS_TESTMON=off,
-# MACOLS_DUPLICATION=off, MACOLS_SEMGREP=1 (opt back in to a local semgrep
-# scan), MACOLS_GO_RACE=1, MACOLS_GO_TEST_SCOPE=changed|module,
+# Tests run only through explicit project commands, never automatically.
+# Switches: MACOLS_DUPLICATION=off, MACOLS_SEMGREP=1,
 # MACOLS_CHECK_LOG=off (see log_check_run in common.sh),
 # MACOLS_LGREVIEW=off (and its BLOCK/TIMEOUT knobs — lgtmaybe_review.sh).
 #
@@ -208,14 +204,14 @@ run_post_task_checks() {
 
     local -a checks=()
     if [ "$has_python" = "true" ]; then
-        checks+=(run_python_tests run_ruff_check run_python_typecheck run_import_linter)
+        checks+=(run_ruff_check run_python_typecheck run_import_linter)
     fi
     if [ "$has_node" = "true" ]; then
-        checks+=(run_node_tests run_eslint_check run_tsc_check run_dependency_cruiser)
+        checks+=(run_eslint_check run_tsc_check run_dependency_cruiser)
     fi
     [ "$has_cdk" = "true" ] && checks+=(run_cdk_tests)
     if [ "$has_flutter" = "true" ]; then
-        checks+=(run_flutter_tests run_dart_analyze)
+        checks+=(run_dart_analyze)
     fi
     [ "$has_go" = "true" ] && checks+=(run_go_checks)
     checks+=(run_shellcheck run_duplication_check run_file_length_check run_semgrep_scan)

@@ -2,8 +2,7 @@
 #
 # pre_commit_check.sh <command-string> — protocol-neutral core of the local
 # checkpoint loop: when the agent runs `git commit`, run the checkpoint
-# battery (the tests the change reaches, or whole suites with
-# CHECKPOINT_TESTS=full; lint, types, layer rules, and the project's
+# battery (lint, types, layer rules, and the project's explicit
 # CHECKPOINT command) before the commit lands.
 #
 # Prints the findings when the checkpoint fails and nothing otherwise, and
@@ -49,9 +48,7 @@ fp=""
 review_ready || fp=$(_check_fingerprint || true)
 [ -n "$fp" ] && [ -f "$fp_file" ] && [ "$(cat "$fp_file")" = "$fp" ] && exit 0
 
-CHECKPOINT_MODE=1 MACOLS_PYTEST_SCOPE=full
-full_suite || MACOLS_PYTEST_SCOPE=changed
-export CHECKPOINT_MODE MACOLS_PYTEST_SCOPE
+export CHECKPOINT_MODE=1
 # shellcheck disable=SC2034  # read by the sourced post_task.sh checks
 MAX_TEST_TIME="${MACOLS_CHECKPOINT_TIMEOUT:-900}"
 run_post_task_checks || exit 0

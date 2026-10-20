@@ -24,8 +24,8 @@ Each check runs at the cheapest loop that still catches the problem:
 
 | Loop | What runs | When |
 |---|---|---|
-| Immediate | Per edit: format, lint and type check on the file. Per turn: related unit tests, types, layer rules, duplication, and the project's `IMMEDIATE` command | Every agent iteration |
-| Local checkpoint | The tests the commit's changes reach (each affected package's whole suite with `CHECKPOINT_TESTS=full`), the same lint/type/layer checks, and the project's `CHECKPOINT` command (integration tests, an eval smoke set) | When the agent runs `git commit`; a failure blocks the commit |
+| Immediate | Per edit: format, lint and type check on the file. Per turn: types, layer rules, duplication, and the project's `IMMEDIATE` command | Every agent iteration |
+| Local checkpoint | Lint/type/layer checks, synthesis, review, and the project's explicit `CHECKPOINT` command | When the agent runs `git commit`; a failure blocks the commit |
 | PR | Full tests, semgrep, dependency audits, jscpd threshold (the `quality` skill's CI workflow) | Before human review |
 | Merge/nightly | The project's `NIGHTLY` command: E2E, broad model matrix, load tests, full eval suite | Scheduled CI job |
 | Production | Traces, user failures, latency and cost, sampled quality evals | Continuously; see the `sre` skill |
@@ -33,10 +33,11 @@ Each check runs at the cheapest loop that still catches the problem:
 Projects declare their own commands in `.macols/checks.conf` (template in
 `config/personas/quality/references/checks.conf`). The hooks read it as data and
 run the commands from the repo root in trusted projects only. The
-checkpoint uses the turn-end test selection over the whole uncommitted change
-and leaves the full suite to CI; set `CHECKPOINT_TESTS=full` there to run each
-affected package's whole suite instead. The checkpoint
-skips when the tree matches the last passing checkpoint, when the command
+hooks never automatically run tests. Repos own test execution through their
+own pre-commit/CI workflow or an explicit `CHECKPOINT` command. Legacy
+`CHECKPOINT_TESTS` and test-scope environment settings do not enable automatic
+tests. Existing `IMMEDIATE` or `CHECKPOINT` commands still run as configured.
+The checkpoint skips when the tree matches the last passing checkpoint, when the command
 passes `--no-verify`, or with `MACOLS_CHECKPOINT=off`.
 
 ## What Runs
@@ -50,13 +51,10 @@ Every tool gets the findings in its own model-visible format
   For Go that means a compile or type error in the edited package shows up
   with the edit, not at turn end; go vet builds the package, so it runs in
   trusted projects only.
-- post-task: at the end of a turn, tests related to the changed files, lint
-  and strict types, golangci-lint, jscpd duplication, and layer rules
-  (import-linter, dependency-cruiser) when the project configures them. Test
-  selection: pytest-testmon when the project's venv has it (coverage-based),
-  otherwise `test_<module>.py` by name; `vitest related` / `jest
-  --findRelatedTests` by import graph (any other `npm test` waits for the
-  checkpoint, since it may be E2E); `go test` on the changed packages. When
+- post-task: at the end of a turn, lint and strict types, golangci-lint,
+  jscpd duplication, CDK synthesis, and layer rules (import-linter,
+  dependency-cruiser) when the project configures them. Built-in Python,
+  Node, Flutter and Go tests do not run. When
   something fails, the agent gets one more step with the findings and a fix
   instruction. It only re-runs when the tree changed since its last run, so it
   can't loop and Q&A turns stay fast (under a second on small projects).
@@ -142,9 +140,7 @@ first run). Pass `--no-cli` to skip the whole step.
 
 Every turn-end and checkpoint run appends one JSON line per check to
 `.git/macols-checks.jsonl` (shared by worktrees, capped at 10k lines):
-duration, pass or fail, and which loop ran it. At the checkpoint, failing
-Python tests that the name-based turn-end selection wouldn't have run are
-recorded as escapes.
+duration, pass or fail, and which loop ran it. Historical test escapes remain readable in older logs.
 
 ```bash
 macols-check-stats             # per loop and check: runs, total/p95 time, fail %, fail streak, escapes
@@ -152,10 +148,8 @@ macols-check-stats --days 7
 macols-check-stats --escapes   # which tests escaped the fast path
 ```
 
-Read it as: a slow check that never fails belongs in CI, a long fail streak
-means the agent is going round in circles, and escapes mean the fast path
-needs pytest-testmon or better-named tests. `MACOLS_CHECK_LOG=off` stops the
-logging.
+A slow check that never fails is a candidate for CI. A long fail streak
+means the agent is going round in circles. `MACOLS_CHECK_LOG=off` stops logging.
 
 ## Trusted Projects
 
@@ -190,16 +184,12 @@ workflow. Existing layer breaks are approved explicitly: a
 
 | Variable | Effect |
 |---|---|
-| `MACOLS_PYTEST_SCOPE=changed\|full\|off` | Python test scope at turn end (default `changed`) |
-| `MACOLS_TESTMON=off` | Ignore pytest-testmon and select Python tests by name |
-| `MACOLS_GO_TEST_SCOPE=changed\|module` | Go tests at turn end: only changed packages (default) or the whole changed module via the test cache |
 | `MACOLS_DEPLOY_DIFF=off` | Don't run `cdk diff` before a deploy prompt |
 | `MACOLS_DEPLOY_DIFF_TIMEOUT` | Seconds the pre-deploy `cdk diff` may take (default 240) |
 | `MACOLS_CHECK_LOG=off` | Don't log check timings |
 | `MACOLS_DUPLICATION=off` | Skip the jscpd duplication check |
 | `MACOLS_DUP_MIN_LINES` | Minimum clone size jscpd reports (default 10) |
 | `MACOLS_MAX_FILE_LINES` | File-length limit (default 500, `0` to turn off) |
-| `MACOLS_GO_RACE=1` | Run Go tests with the race detector |
 | `MACOLS_SEMGREP=1` | Run semgrep locally |
 | `MACOLS_CHECKS_VERBOSE=1` | Also print notes such as "pytest not installed" |
 | `MACOLS_HOOKS_DIR` | Where the hook scripts live |

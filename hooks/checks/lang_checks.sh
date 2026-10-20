@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # lang_checks.sh — the remaining per-language batteries: cdk synth, Flutter
-# (scoped flutter test + dart analyze), Go (golangci-lint/go vet + go test),
+# (dart analyze), Go (golangci-lint/go vet),
 # and shellcheck for scripts.
 #
 # Sourced by post_task.sh AFTER common.sh and its helpers (add_critical_issue,
@@ -100,10 +100,7 @@ _changed_go_packages() {
 }
 
 # golangci-lint (the project's .golangci.yml: dupl, gocyclo, funlen, depguard…)
-# or go vet when it isn't installed, on the changed packages; then go test on
-# the changed packages (./... per module at the checkpoint).
-# MACOLS_GO_TEST_SCOPE=module widens turn-end tests to the whole module, which
-# also catches dependents (cheap when the test cache can replay them).
+# or go vet when it isn't installed, on the changed packages.
 run_go_checks() {
     command -v go &> /dev/null || { add_warning "go not installed - skipping Go checks"; return 0; }
     local pkgs
@@ -122,13 +119,6 @@ run_go_checks() {
             out=$(cd "$mod" && go vet "${dirs[@]}" 2>&1) || ec=$?
             report_check_result "go vet ($label)" "$ec" "$out" "^.+\.go:[0-9]+(:[0-9]+)?: |^vet: " "issues"
         fi
-        ec=0
-        local -a race=()
-        [ "${MACOLS_GO_RACE:-0}" = "1" ] && race=(-race)
-        local -a test_targets=(./...)
-        [ "${MACOLS_GO_TEST_SCOPE:-changed}" = "changed" ] && ! full_suite && test_targets=("${dirs[@]}")
-        out=$(cd "$mod" && ${TIMEOUT_CMD:+$TIMEOUT_CMD $MAX_TEST_TIME} go test ${race[@]+"${race[@]}"} "${test_targets[@]}" 2>&1) || ec=$?
-        [ "$ec" -ne 0 ] && report_test_failure "go test ($label)" "$ec" "$out"
     done
     return 0
 }
