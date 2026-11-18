@@ -54,7 +54,10 @@ ensure_lgtmaybe() {
 
     # The CLI itself: Homebrew carries the formula; a machine setup that has
     # not run yet leaves it missing, which every consumer treats as a skip.
-    if ! command -v lgtmaybe &>/dev/null; then
+    if ! command -v lgtmaybe &>/dev/null && [ "$(detect_os)" = windows ]; then
+        winget_install MattJColes.lgtmaybe lgtmaybe \
+            || printf "${YELLOW}⚠ lgtmaybe install failed — the review stages skip until it is on PATH${NC}\n"
+    elif ! command -v lgtmaybe &>/dev/null; then
         local brew
         for brew in /opt/homebrew/bin/brew /usr/local/bin/brew /home/linuxbrew/.linuxbrew/bin/brew "$HOME/.linuxbrew/bin/brew"; do
             [ -x "$brew" ] && break
