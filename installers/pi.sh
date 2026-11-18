@@ -140,12 +140,24 @@ remove_pi_mcp_adapter() {
 }
 
 install_packages() {
-    local pkg
+    local pkg pi_pkgs="$PI_PACKAGES" omp_pkgs="$OMP_PACKAGES"
     remove_revdiff_pi   # replaced by hunk and its hunk-review skill
     remove_pi_mcp_adapter
+    if [ "$(detect_os)" = windows ]; then
+        # pi-yaml-hooks registers as a no-op on win32 and warns on every launch.
+        pi_pkgs="${pi_pkgs/ npm:pi-yaml-hooks/}" omp_pkgs="${omp_pkgs/ pi-yaml-hooks/}"
+        command -v pi &> /dev/null && grep -qs 'pi-yaml-hooks' "$HOME/.pi/agent/settings.json" \
+            && pi remove npm:pi-yaml-hooks > /dev/null 2>&1
+        command -v omp &> /dev/null && grep -qs 'pi-yaml-hooks' "$HOME/.omp/plugins/package.json" \
+            && omp plugin uninstall pi-yaml-hooks > /dev/null 2>&1
+    fi
+    # Older installs pinned ponytail by https URL; bun then reads the github:
+    # spec as a second ref of the same package and fails with DependencyLoop.
+    command -v omp &> /dev/null && grep -qs '"@dietrichgebert/ponytail": "https://' "$HOME/.omp/plugins/package.json" \
+        && omp plugin uninstall @dietrichgebert/ponytail > /dev/null 2>&1
     if command -v pi &> /dev/null; then
         printf "${BLUE}Installing pi packages...${NC}\n"
-        for pkg in $PI_PACKAGES; do
+        for pkg in $pi_pkgs; do
             pi install "$pkg" > /dev/null || printf "${YELLOW}  ⚠ Failed to install %s (continuing)${NC}\n" "$pkg"
         done
     else
@@ -153,7 +165,7 @@ install_packages() {
     fi
     if command -v omp &> /dev/null; then
         printf "${BLUE}Installing omp packages...${NC}\n"
-        for pkg in $OMP_PACKAGES; do
+        for pkg in $omp_pkgs; do
             omp install "$pkg" > /dev/null || printf "${YELLOW}  ⚠ Failed to install %s (continuing)${NC}\n" "$pkg"
         done
     else
@@ -255,8 +267,8 @@ echo "  • The pi-checks extension runs tests/lint/security advisories after ed
 echo "    and a cdk deploy/destroy confirmation guard"
 echo "  • MCP servers are configured in $OMP_DIR/mcp.json (omp) and $PI_AGENT_DIR/mcp.json"
 echo "    (pi, built-in MCP)$(aws_mcp_enabled && echo '; aws-* MCPs need ~/.aws/credentials')"
-echo "  • pi-yaml-hooks reads your own hooks from ~/.pi/agent/hook/hooks.yaml and ~/.omp/agent/hook/hooks.yaml"
-echo "    (/hooks-status inside either agent); the macols checks stay in pi-checks"
+[ "$(detect_os)" = windows ] || echo "  • pi-yaml-hooks reads your own hooks from ~/.pi/agent/hook/hooks.yaml and ~/.omp/agent/hook/hooks.yaml"
+[ "$(detect_os)" = windows ] || echo "    (/hooks-status inside either agent); the macols checks stay in pi-checks"
 echo "  • omp providers live in $OMP_DIR/models.yml and model roles in $OMP_DIR/config.yml"
 echo "  • pi providers live in $PI_AGENT_DIR/models.json; both agents receive the Swift Qwen LAN model"
 echo "      change them with './install.sh pi --models-only', or from inside omp with /model"
