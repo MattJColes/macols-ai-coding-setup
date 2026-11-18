@@ -12,8 +12,28 @@ detect_os() {
     case "$OSTYPE" in
         darwin*) echo "macos" ;;
         linux*)  echo "linux" ;;
+        msys*|cygwin*) echo "windows" ;;
         *)       echo "unknown" ;;
     esac
+}
+
+# winget_install <package-id> <binary> — Windows (Git Bash) only: install a
+# package with winget, then put the dirs winget installs into on PATH for the
+# rest of the run (winget writes the registry PATH, which Git Bash only reads
+# at startup). Succeeds when <binary> is then on PATH, so winget's non-zero
+# "already installed" exit does not count as a failure.
+winget_install() {
+    [ "$(detect_os)" = windows ] && command -v winget.exe &> /dev/null || return 1
+    printf "${BLUE}Installing %s (winget)...${NC}\n" "$1"
+    winget.exe install -e --id "$1" --silent --disable-interactivity \
+        --accept-source-agreements --accept-package-agreements || true
+    local dir
+    for dir in "$(cygpath -u "$LOCALAPPDATA")/Microsoft/WinGet/Links" \
+               "$(cygpath -u "$PROGRAMFILES")/nodejs" "$(cygpath -u "$PROGRAMFILES")/Go/bin"; do
+        case ":$PATH:" in *":$dir:"*) ;; *) [ -d "$dir" ] && export PATH="$dir:$PATH" ;; esac
+    done
+    hash -r
+    command -v "$2" &> /dev/null
 }
 
 # Install Homebrew on macOS if missing. On Linux brew is non-standard, so we
@@ -100,7 +120,10 @@ ensure_node_runtime() {
     local had_u=0 ok=0
     [[ $- == *u* ]] && had_u=1
     set +u
-    if _load_nvm && nvm use --silent "$NODE_VERSION" &> /dev/null && node_meets_min; then
+    if [ "$(detect_os)" = windows ]; then
+        # nvm-sh does not run under Git Bash; winget's Node lands in Program Files.
+        winget_install OpenJS.NodeJS.LTS node && node_meets_min && ok=1
+    elif _load_nvm && nvm use --silent "$NODE_VERSION" &> /dev/null && node_meets_min; then
         ok=1
     else
         printf "${BLUE}Node %s found; installing Node %s with nvm...${NC}\n" \
@@ -179,6 +202,8 @@ ensure_mcp_prereqs() {
             brew install jq
         elif [ "$(detect_os)" = "linux" ]; then
             { sudo apt-get update -y || true; } && sudo apt-get install -y jq
+        elif [ "$(detect_os)" = "windows" ]; then
+            winget_install jqlang.jq jq || return 1
         else
             printf "${RED}Please install jq manually: https://jqlang.github.io/jq/${NC}\n"
             return 1
@@ -293,6 +318,8 @@ ensure_yq() {
         brew install yq
     elif [ "$(detect_os)" = "linux" ]; then
         { sudo apt-get update -y || true; } && sudo apt-get install -y yq
+    elif [ "$(detect_os)" = "windows" ]; then
+        winget_install MikeFarah.yq yq || return 1
     else
         printf "${RED}Please install yq manually: https://github.com/mikefarah/yq${NC}\n"
         return 1

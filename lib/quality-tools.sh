@@ -54,6 +54,7 @@ ensure_shell_tools() {
     if ! command -v shellcheck &> /dev/null; then
         printf "${BLUE}Installing shellcheck...${NC}\n"
         if command -v brew &> /dev/null; then brew install shellcheck || failed=1
+        elif [ "$(detect_os)" = windows ]; then winget_install koalaman.shellcheck shellcheck || failed=1
         else _apt_install shellcheck || failed=1; fi
     fi
     if ! command -v jscpd &> /dev/null; then
@@ -71,7 +72,8 @@ ensure_python_tools() {
     local failed=0 pkg bin spec
     if ! command -v uv &> /dev/null; then
         printf "${BLUE}Installing uv (Python tool installer)...${NC}\n"
-        curl -LsSf https://astral.sh/uv/install.sh | sh || return 1
+        if [ "$(detect_os)" = windows ]; then winget_install astral-sh.uv uv || return 1
+        else curl -LsSf https://astral.sh/uv/install.sh | sh || return 1; fi
         export PATH="$LOCAL_BIN:$HOME/.cargo/bin:$PATH"
         command -v uv &> /dev/null || return 1
     fi
@@ -124,6 +126,8 @@ ensure_go_tools() {
         printf "${BLUE}Installing Go...${NC}\n"
         if command -v brew &> /dev/null; then
             brew install go || return 1
+        elif [ "$(detect_os)" = windows ]; then
+            winget_install GoLang.Go go || return 1
         else
             local version arch os tmp
             os="$(detect_os)"; [ "$os" = macos ] && os=darwin
