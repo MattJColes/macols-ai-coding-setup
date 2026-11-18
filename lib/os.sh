@@ -144,10 +144,20 @@ ensure_node_runtime() {
 # PATH: the `command -v` guards would then reinstall them on every run, and
 # the checks straight after an install (omp --version) would miss them.
 _npm_bin_on_path() {
-    local prefix="${1:-}"
-    [ -n "$prefix" ] || prefix="$(npm prefix -g 2>/dev/null)" || return 0
-    case ":$PATH:" in *":$prefix/bin:"*) ;; *) export PATH="$prefix/bin:$PATH" ;; esac
+    local dir
+    dir="$(npm_bin_dir "${1:-}")" || return 0
+    case ":$PATH:" in *":$dir:"*) ;; *) export PATH="$dir:$PATH" ;; esac
     hash -r
+}
+
+# npm_bin_dir [prefix] — the dir npm puts global CLIs in (default prefix:
+# npm's global one), as a POSIX path. <prefix>/bin, except on Windows, where
+# npm writes the shims into the prefix itself and reports it as C:\...
+npm_bin_dir() {
+    local prefix="${1:-}"
+    [ -n "$prefix" ] || prefix="$(npm prefix -g 2>/dev/null)" || return 1
+    if [ "$(detect_os)" = windows ]; then cygpath -u "$prefix"
+    else printf '%s\n' "$prefix/bin"; fi
 }
 
 # reload_shell_if_needed — the installers run as child processes, so the PATH
@@ -158,10 +168,10 @@ _npm_bin_on_path() {
 # `source ~/.zshrc` would. Only in an interactive terminal; CI and other
 # non-interactive callers, or MACOLS_NO_RELOAD=1, get the command to run instead.
 reload_shell_if_needed() {
-    local prefix rc
+    local dir rc
     command -v npm &> /dev/null || return 0
-    prefix="$(npm prefix -g 2>/dev/null)" || return 0
-    case ":$PATH:" in *":$prefix/bin:"*) return 0 ;; esac
+    dir="$(npm_bin_dir)" || return 0
+    case ":$PATH:" in *":$dir:"*) return 0 ;; esac
     case "${SHELL:-}" in */zsh) rc=".zshrc" ;; *) rc=".bashrc" ;; esac
     if [ -t 0 ] && [ -t 1 ] && [ -n "${SHELL:-}" ] && [ "${MACOLS_NO_RELOAD:-0}" != 1 ]; then
         printf "${BLUE}Starting a fresh %s so this terminal picks up Node and the new CLIs (same as 'source ~/%s')...${NC}\n" "${SHELL##*/}" "$rc"
